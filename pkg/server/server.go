@@ -112,12 +112,12 @@ func (c completedConfig) New() (*MySQLServer, error) {
 
 	if c.OperatorConfig.EnableMutatingWebhook {
 		c.ExtraConfig.AdmissionHooks = []hooks.AdmissionHook{
-			&myAdmsn.MySQLMutator{},
+			&myAdmsn.PerconaMutator{},
 		}
 	}
 	if c.OperatorConfig.EnableValidatingWebhook {
 		c.ExtraConfig.AdmissionHooks = append(c.ExtraConfig.AdmissionHooks,
-			&myAdmsn.MySQLValidator{},
+			&myAdmsn.PerconaValidator{},
 			&snapshot.SnapshotValidator{},
 			&dormantdatabase.DormantDatabaseValidator{},
 			&namespace.NamespaceValidator{
