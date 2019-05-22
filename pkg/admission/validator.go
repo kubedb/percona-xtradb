@@ -6,9 +6,6 @@ import (
 	"sync"
 
 	"github.com/appscode/go/log"
-	"github.com/coreos/go-semver/semver"
-	"github.com/google/uuid"
-	cat_api "github.com/kubedb/apimachinery/apis/catalog/v1alpha1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned"
 	amv "github.com/kubedb/apimachinery/pkg/validator"
@@ -25,14 +22,14 @@ import (
 	hookapi "kmodules.xyz/webhook-runtime/admission/v1beta1"
 )
 
-type MySQLValidator struct {
+type PerconaValidator struct {
 	client      kubernetes.Interface
 	extClient   cs.Interface
 	lock        sync.RWMutex
 	initialized bool
 }
 
-var _ hookapi.AdmissionHook = &MySQLValidator{}
+var _ hookapi.AdmissionHook = &PerconaValidator{}
 
 var forbiddenEnvVars = []string{
 	"MYSQL_ROOT_PASSWORD",
@@ -41,16 +38,16 @@ var forbiddenEnvVars = []string{
 	"MYSQL_ONETIME_PASSWORD",
 }
 
-func (a *MySQLValidator) Resource() (plural schema.GroupVersionResource, singular string) {
+func (a *PerconaValidator) Resource() (plural schema.GroupVersionResource, singular string) {
 	return schema.GroupVersionResource{
 			Group:    "validators.kubedb.com",
 			Version:  "v1alpha1",
-			Resource: "mysqlvalidators",
+			Resource: "perconavalidators",
 		},
-		"mysqlvalidator"
+		"perconavalidator"
 }
 
-func (a *MySQLValidator) Initialize(config *rest.Config, stopCh <-chan struct{}) error {
+func (a *PerconaValidator) Initialize(config *rest.Config, stopCh <-chan struct{}) error {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 
@@ -66,13 +63,13 @@ func (a *MySQLValidator) Initialize(config *rest.Config, stopCh <-chan struct{})
 	return err
 }
 
-func (a *MySQLValidator) Admit(req *admission.AdmissionRequest) *admission.AdmissionResponse {
+func (a *PerconaValidator) Admit(req *admission.AdmissionRequest) *admission.AdmissionResponse {
 	status := &admission.AdmissionResponse{}
 
 	if (req.Operation != admission.Create && req.Operation != admission.Update && req.Operation != admission.Delete) ||
 		len(req.SubResource) != 0 ||
 		req.Kind.Group != api.SchemeGroupVersion.Group ||
-		req.Kind.Kind != api.ResourceKindMySQL {
+		req.Kind.Kind != api.ResourceKindPercona {
 		status.Allowed = true
 		return status
 	}
@@ -87,11 +84,11 @@ func (a *MySQLValidator) Admit(req *admission.AdmissionRequest) *admission.Admis
 	case admission.Delete:
 		if req.Name != "" {
 			// req.Object.Raw = nil, so read from kubernetes
-			obj, err := a.extClient.KubedbV1alpha1().MySQLs(req.Namespace).Get(req.Name, metav1.GetOptions{})
+			obj, err := a.extClient.KubedbV1alpha1().Perconas(req.Namespace).Get(req.Name, metav1.GetOptions{})
 			if err != nil && !kerr.IsNotFound(err) {
 				return hookapi.StatusInternalServerError(err)
 			} else if err == nil && obj.Spec.TerminationPolicy == api.TerminationPolicyDoNotTerminate {
-				return hookapi.StatusBadRequest(fmt.Errorf(`mysql "%v/%v" can't be paused. To delete, change spec.terminationPolicy`, req.Namespace, req.Name))
+				return hookapi.StatusBadRequest(fmt.Errorf(`percona "%v/%v" can't be paused. To delete, change spec.terminationPolicy`, req.Namespace, req.Name))
 			}
 		}
 	default:
@@ -106,20 +103,20 @@ func (a *MySQLValidator) Admit(req *admission.AdmissionRequest) *admission.Admis
 				return hookapi.StatusBadRequest(err)
 			}
 
-			mysql := obj.(*api.MySQL).DeepCopy()
-			oldMySQL := oldObject.(*api.MySQL).DeepCopy()
-			oldMySQL.SetDefaults()
+			pxc := obj.(*api.Percona).DeepCopy()
+			oldPXC := oldObject.(*api.Percona).DeepCopy()
+			oldPXC.SetDefaults()
 			// Allow changing Database Secret only if there was no secret have set up yet.
-			if oldMySQL.Spec.DatabaseSecret == nil {
-				oldMySQL.Spec.DatabaseSecret = mysql.Spec.DatabaseSecret
+			if oldPXC.Spec.DatabaseSecret == nil {
+				oldPXC.Spec.DatabaseSecret = pxc.Spec.DatabaseSecret
 			}
 
-			if err := validateUpdate(mysql, oldMySQL, req.Kind.Kind); err != nil {
+			if err := validateUpdate(pxc, oldPXC, req.Kind.Kind); err != nil {
 				return hookapi.StatusBadRequest(fmt.Errorf("%v", err))
 			}
 		}
 		// validate database specs
-		if err = ValidateMySQL(a.client, a.extClient, obj.(*api.MySQL), false); err != nil {
+		if err = ValidatePXC(a.client, a.extClient, obj.(*api.Percona), false); err != nil {
 			return hookapi.StatusForbidden(err)
 		}
 	}
@@ -127,226 +124,90 @@ func (a *MySQLValidator) Admit(req *admission.AdmissionRequest) *admission.Admis
 	return status
 }
 
-// recursivelyVersionCompare() receives two slices versionA and versionB of size 3 containing
-// major, minor and patch parts of the given versions (versionA and versionB) in indices
-// 0, 1 and 2 respectively. This function compares these parts of versionA and versionB. It returns,
-//
-// 		0;	if all parts of versionA are equal to corresponding parts of versionB
-//		1;	if for some i, version[i] > versionB[i] where from j = 0 to i-1, versionA[j] = versionB[j]
-//	   -1;	if for some i, version[i] < versionB[i] where from j = 0 to i-1, versionA[j] = versionB[j]
-//
-// ref: https://github.com/coreos/go-semver/blob/568e959cd89871e61434c1143528d9162da89ef2/semver/semver.go#L126-L141
-func recursivelyVersionCompare(versionA []int64, versionB []int64) int {
-	if len(versionA) == 0 {
-		return 0
-	}
-
-	a := versionA[0]
-	b := versionB[0]
-
-	if a > b {
-		return 1
-	} else if a < b {
-		return -1
-	}
-
-	return recursivelyVersionCompare(versionA[1:], versionB[1:])
-}
-
-// Currently, we support Group Replication for version 5.7.25. validateVersion()
-// checks whether the given version has exactly these major (5), minor (7) and patch (25).
-func validateGroupServerVersion(version string) error {
-	recommended, err := semver.NewVersion(api.MySQLGRRecommendedVersion)
-	if err != nil {
-		return fmt.Errorf("unable to parse recommended MySQL version %s: %v", api.MySQLGRRecommendedVersion, err)
-	}
-
-	given, err := semver.NewVersion(version)
-	if err != nil {
-		return fmt.Errorf("unable to parse given MySQL version %s: %v", version, err)
-	}
-
-	if cmp := recursivelyVersionCompare(recommended.Slice(), given.Slice()); cmp != 0 {
-		return fmt.Errorf("currently supported MySQL server version for group replication is %s, but used %s",
-			api.MySQLGRRecommendedVersion, version)
-	}
-
-	return nil
-}
-
-// On a replication master and each replication slave, the --server-id
-// option must be specified to establish a unique replication ID in the
-// range from 1 to 2^32 − 1. “Unique”, means that each ID must be different
-// from every other ID in use by any other replication master or slave.
-// ref: https://dev.mysql.com/doc/refman/5.7/en/server-system-variables.html#sysvar_server_id
-//
-// We calculate a unique server-id for each server using baseServerID field in MySQL CRD.
-// Moreover we can use maximum of 9 servers in a group. So the baseServerID should be in
-// range [0, (2^32 - 1) - 9]
-func validateGroupBaseServerID(baseServerID uint) error {
-	if uint(0) < baseServerID && baseServerID <= api.MySQLMaxBaseServerID {
-		return nil
-	}
-	return fmt.Errorf("invalid baseServerId specified, should be in range [1, %d]", api.MySQLMaxBaseServerID)
-}
-
-func validateGroupReplicas(replicas int32) error {
-	if replicas == 1 {
-		return fmt.Errorf("group shouldn't start with 1 member, accepted value of 'spec.replicas' for group replication is in range [2, %d], default is %d if not specified",
-			api.MySQLMaxGroupMembers, api.MySQLDefaultGroupSize)
-	}
-
-	if replicas > api.MySQLMaxGroupMembers {
-		return fmt.Errorf("group size can't be greater than max size %d (see https://dev.mysql.com/doc/refman/5.7/en/group-replication-frequently-asked-questions.html",
-			api.MySQLMaxGroupMembers)
-	}
-
-	return nil
-}
-
-func validateMySQLGroup(replicas int32, group api.MySQLGroupSpec) error {
-	if err := validateGroupReplicas(replicas); err != nil {
-		return err
-	}
-
-	// validate group name whether it is a valid uuid
-	if _, err := uuid.Parse(group.Name); err != nil {
-		return errors.Wrapf(err, "invalid group name is set")
-	}
-
-	if err := validateGroupBaseServerID(*group.BaseServerID); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// ValidateMySQL checks if the object satisfies all the requirements.
+// ValidatePercona checks if the object satisfies all the requirements.
 // It is not method of Interface, because it is referenced from controller package too.
-func ValidateMySQL(client kubernetes.Interface, extClient cs.Interface, mysql *api.MySQL, strictValidation bool) error {
-	var (
-		err   error
-		myVer *cat_api.MySQLVersion
-	)
-
-	if mysql.Spec.Version == "" {
+func ValidatePXC(client kubernetes.Interface, extClient cs.Interface, pxc *api.Percona, strictValidation bool) error {
+	if pxc.Spec.Version == "" {
 		return errors.New(`'spec.version' is missing`)
 	}
-	if myVer, err = extClient.CatalogV1alpha1().MySQLVersions().Get(string(mysql.Spec.Version), metav1.GetOptions{}); err != nil {
+	if _, err := extClient.CatalogV1alpha1().PerconaVersions().Get(string(pxc.Spec.Version), metav1.GetOptions{}); err != nil {
 		return err
 	}
 
-	if mysql.Spec.Replicas == nil {
-		return fmt.Errorf(`spec.replicas "%v" invalid. Value must be greater than 0, but for group replication this value shouldn't be more than %d'`,
-			mysql.Spec.Replicas, api.MySQLMaxGroupMembers)
+	if pxc.Spec.Replicas == nil {
+		return fmt.Errorf(`'spec.replicas'' "%v" invalid. Value must be greater than 0`, pxc.Spec.Replicas)
 	}
 
-	if mysql.Spec.Topology != nil {
-		if mysql.Spec.Topology.Mode == nil {
-			return errors.New("a valid 'spec.topology.mode' must be set for MySQL clustering")
-		}
-
-		// currently supported cluster mode for MySQL is "GroupReplication". So
-		// '.spec.topology.mode' has been validated only for value "GroupReplication"
-		if *mysql.Spec.Topology.Mode != api.MySQLClusterModeGroup {
-			return errors.Errorf("currently supported cluster mode for MySQL is %[1]q, spec.topology.mode must be %[1]q",
-				api.MySQLClusterModeGroup)
-		}
-
-		// validation for group configuration is performed only when
-		// 'spec.topology.mode' is set to "GroupReplication"
-		if *mysql.Spec.Topology.Mode == api.MySQLClusterModeGroup {
-			// if spec.topology.mode is "GroupReplication", spec.topology.group is set to default during mutating
-			if err = validateMySQLGroup(*mysql.Spec.Replicas, *mysql.Spec.Topology.Group); err != nil {
-				return err
-			}
-		}
-	}
-
-	if err := amv.ValidateEnvVar(mysql.Spec.PodTemplate.Spec.Env, forbiddenEnvVars, api.ResourceKindMySQL); err != nil {
+	if err := amv.ValidateEnvVar(pxc.Spec.PodTemplate.Spec.Env, forbiddenEnvVars, api.ResourceKindPercona); err != nil {
 		return err
 	}
 
-	if mysql.Spec.StorageType == "" {
+	if pxc.Spec.StorageType == "" {
 		return fmt.Errorf(`'spec.storageType' is missing`)
 	}
-	if mysql.Spec.StorageType != api.StorageTypeDurable && mysql.Spec.StorageType != api.StorageTypeEphemeral {
-		return fmt.Errorf(`'spec.storageType' %s is invalid`, mysql.Spec.StorageType)
+	if pxc.Spec.StorageType != api.StorageTypeDurable && pxc.Spec.StorageType != api.StorageTypeEphemeral {
+		return fmt.Errorf(`'spec.storageType' %s is invalid`, pxc.Spec.StorageType)
 	}
-	if err := amv.ValidateStorage(client, mysql.Spec.StorageType, mysql.Spec.Storage); err != nil {
+	if err := amv.ValidateStorage(client, pxc.Spec.StorageType, pxc.Spec.Storage); err != nil {
 		return err
 	}
 
-	databaseSecret := mysql.Spec.DatabaseSecret
+	databaseSecret := pxc.Spec.DatabaseSecret
 
 	if strictValidation {
 		if databaseSecret != nil {
-			if _, err := client.CoreV1().Secrets(mysql.Namespace).Get(databaseSecret.SecretName, metav1.GetOptions{}); err != nil {
+			if _, err := client.CoreV1().Secrets(pxc.Namespace).Get(databaseSecret.SecretName, metav1.GetOptions{}); err != nil {
 				return err
 			}
 		}
 
-		// Check if mysqlVersion is deprecated.
+		// Check if perconaVersion is deprecated.
 		// If deprecated, return error
-		mysqlVersion, err := extClient.CatalogV1alpha1().MySQLVersions().Get(string(mysql.Spec.Version), metav1.GetOptions{})
+		pxcVersion, err := extClient.CatalogV1alpha1().PerconaVersions().Get(string(pxc.Spec.Version), metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 
-		if mysqlVersion.Spec.Deprecated {
-			return fmt.Errorf("mysql %s/%s is using deprecated version %v. Skipped processing", mysql.Namespace, mysql.Name, mysqlVersion.Name)
-		}
-
-		if mysql.Spec.Topology != nil && mysql.Spec.Topology.Mode != nil &&
-			*mysql.Spec.Topology.Mode == api.MySQLClusterModeGroup {
-			if err = validateGroupServerVersion(myVer.Spec.Version); err != nil {
-				return err
-			}
+		if pxcVersion.Spec.Deprecated {
+			return fmt.Errorf("percona %s/%s is using deprecated version %v. Skipped processing", pxc.Namespace, pxc.Name, pxcVersion.Name)
 		}
 	}
 
-	if mysql.Spec.Init != nil &&
-		mysql.Spec.Init.SnapshotSource != nil &&
+	if pxc.Spec.Init != nil &&
+		pxc.Spec.Init.SnapshotSource != nil &&
 		databaseSecret == nil {
 		return fmt.Errorf("for Snapshot init, 'spec.databaseSecret.secretName' of %v/%v needs to be similar to older database of snapshot %v/%v",
-			mysql.Namespace, mysql.Name, mysql.Spec.Init.SnapshotSource.Namespace, mysql.Spec.Init.SnapshotSource.Name)
+			pxc.Namespace, pxc.Name, pxc.Spec.Init.SnapshotSource.Namespace, pxc.Spec.Init.SnapshotSource.Name)
 	}
 
-	backupScheduleSpec := mysql.Spec.BackupSchedule
-	if backupScheduleSpec != nil {
-		if err := amv.ValidateBackupSchedule(client, backupScheduleSpec, mysql.Namespace); err != nil {
-			return err
-		}
-	}
-
-	if mysql.Spec.UpdateStrategy.Type == "" {
+	if pxc.Spec.UpdateStrategy.Type == "" {
 		return fmt.Errorf(`'spec.updateStrategy.type' is missing`)
 	}
 
-	if mysql.Spec.TerminationPolicy == "" {
+	if pxc.Spec.TerminationPolicy == "" {
 		return fmt.Errorf(`'spec.terminationPolicy' is missing`)
 	}
 
-	if mysql.Spec.StorageType == api.StorageTypeEphemeral && mysql.Spec.TerminationPolicy == api.TerminationPolicyPause {
+	if pxc.Spec.StorageType == api.StorageTypeEphemeral && pxc.Spec.TerminationPolicy == api.TerminationPolicyPause {
 		return fmt.Errorf(`'spec.terminationPolicy: Pause' can not be used for 'Ephemeral' storage`)
 	}
 
-	monitorSpec := mysql.Spec.Monitor
+	monitorSpec := pxc.Spec.Monitor
 	if monitorSpec != nil {
 		if err := amv.ValidateMonitorSpec(monitorSpec); err != nil {
 			return err
 		}
 	}
 
-	if err := matchWithDormantDatabase(extClient, mysql); err != nil {
+	if err := matchWithDormantDatabase(extClient, pxc); err != nil {
 		return err
 	}
 	return nil
 }
 
-func matchWithDormantDatabase(extClient cs.Interface, mysql *api.MySQL) error {
+func matchWithDormantDatabase(extClient cs.Interface, pxc *api.Percona) error {
 	// Check if DormantDatabase exists or not
-	dormantDb, err := extClient.KubedbV1alpha1().DormantDatabases(mysql.Namespace).Get(mysql.Name, metav1.GetOptions{})
+	dormantDb, err := extClient.KubedbV1alpha1().DormantDatabases(pxc.Namespace).Get(pxc.Name, metav1.GetOptions{})
 	if err != nil {
 		if !kerr.IsNotFound(err) {
 			return err
@@ -355,14 +216,14 @@ func matchWithDormantDatabase(extClient cs.Interface, mysql *api.MySQL) error {
 	}
 
 	// Check DatabaseKind
-	if value, _ := meta_util.GetStringValue(dormantDb.Labels, api.LabelDatabaseKind); value != api.ResourceKindMySQL {
-		return errors.New(fmt.Sprintf(`invalid MySQL: "%v/%v". Exists DormantDatabase "%v/%v" of different Kind`, mysql.Namespace, mysql.Name, dormantDb.Namespace, dormantDb.Name))
+	if value, _ := meta_util.GetStringValue(dormantDb.Labels, api.LabelDatabaseKind); value != api.ResourceKindPercona {
+		return errors.New(fmt.Sprintf(`invalid Percona: "%v/%v". Exists DormantDatabase "%v/%v" of different Kind`, pxc.Namespace, pxc.Name, dormantDb.Namespace, dormantDb.Name))
 	}
 
 	// Check Origin Spec
-	drmnOriginSpec := dormantDb.Spec.Origin.Spec.MySQL
+	drmnOriginSpec := dormantDb.Spec.Origin.Spec.Percona
 	drmnOriginSpec.SetDefaults()
-	originalSpec := mysql.Spec
+	originalSpec := pxc.Spec
 
 	// Skip checking UpdateStrategy
 	drmnOriginSpec.UpdateStrategy = originalSpec.UpdateStrategy
@@ -373,13 +234,10 @@ func matchWithDormantDatabase(extClient cs.Interface, mysql *api.MySQL) error {
 	// Skip checking Monitoring
 	drmnOriginSpec.Monitor = originalSpec.Monitor
 
-	// Skip Checking Backup Scheduler
-	drmnOriginSpec.BackupSchedule = originalSpec.BackupSchedule
-
 	if !meta_util.Equal(drmnOriginSpec, &originalSpec) {
 		diff := meta_util.Diff(drmnOriginSpec, &originalSpec)
-		log.Errorf("mysql spec mismatches with OriginSpec in DormantDatabases. Diff: %v", diff)
-		return errors.New(fmt.Sprintf("mysql spec mismatches with OriginSpec in DormantDatabases. Diff: %v", diff))
+		log.Errorf("percona spec mismatches with OriginSpec in DormantDatabases. Diff: %v", diff)
+		return errors.New(fmt.Sprintf("percona spec mismatches with OriginSpec in DormantDatabases. Diff: %v", diff))
 	}
 
 	return nil
