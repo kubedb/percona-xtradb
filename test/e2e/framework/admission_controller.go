@@ -91,7 +91,7 @@ func (f *Framework) RunOperatorAndServer(config *restclient.Config, kubeconfigPa
 	Expect(err).ShouldNot(HaveOccurred())
 
 	By("Starting Server and Operator")
-	serverOpt := server.NewMySQLServerOptions(os.Stdout, os.Stderr)
+	serverOpt := server.NewPerconaServerOptions(os.Stdout, os.Stderr)
 
 	serverOpt.RecommendedOptions.CoreAPI.CoreAPIKubeconfigPath = kubeconfigPath
 	serverOpt.RecommendedOptions.SecureServing.BindPort = 8443

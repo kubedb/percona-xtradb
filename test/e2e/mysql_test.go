@@ -29,13 +29,13 @@ const (
 	MYSQL_ROOT_PASSWORD  = "MYSQL_ROOT_PASSWORD"
 )
 
-var _ = Describe("MySQL", func() {
+var _ = Describe("Percona", func() {
 	var (
 		err              error
 		f                *framework.Invocation
-		mysql            *api.MySQL
-		garbageMySQL     *api.MySQLList
-		mysqlVersion     *catalog.MySQLVersion
+		percona          *api.Percona
+		garbagePercona   *api.PerconaList
+		perconaVersion   *catalog.PerconaVersion
 		snapshot         *api.Snapshot
 		secret           *core.Secret
 		skipMessage      string
@@ -45,79 +45,79 @@ var _ = Describe("MySQL", func() {
 
 	BeforeEach(func() {
 		f = root.Invoke()
-		mysql = f.MySQL()
-		garbageMySQL = new(api.MySQLList)
-		mysqlVersion = f.MySQLVersion()
+		percona = f.Percona()
+		garbagePercona = new(api.PerconaList)
+		perconaVersion = f.PerconaVersion()
 		snapshot = f.Snapshot()
 		skipMessage = ""
 		skipDataChecking = true
-		dbName = "mysql"
+		dbName = "percona"
 	})
 
 	var createAndWaitForRunning = func() {
-		By("Create MySQLVersion: " + mysqlVersion.Name)
-		err = f.CreateMySQLVersion(mysqlVersion)
+		By("Create PerconaVersion: " + perconaVersion.Name)
+		err = f.CreatePerconaVersion(perconaVersion)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Create MySQL: " + mysql.Name)
-		err = f.CreateMySQL(mysql)
+		By("Create Percona: " + percona.Name)
+		err = f.CreatePercona(percona)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Wait for Running mysql")
-		f.EventuallyMySQLRunning(mysql.ObjectMeta).Should(BeTrue())
+		By("Wait for Running percona")
+		f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
 
 		By("Wait for AppBinding to create")
-		f.EventuallyAppBinding(mysql.ObjectMeta).Should(BeTrue())
+		f.EventuallyAppBinding(percona.ObjectMeta).Should(BeTrue())
 
 		By("Check valid AppBinding Specs")
-		err := f.CheckAppBindingSpec(mysql.ObjectMeta)
+		err := f.CheckAppBindingSpec(percona.ObjectMeta)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for database to be ready")
-		f.EventuallyDatabaseReady(mysql.ObjectMeta, dbName).Should(BeTrue())
+		f.EventuallyDatabaseReady(percona.ObjectMeta, dbName).Should(BeTrue())
 	}
 
 	var testGeneralBehaviour = func() {
 		if skipMessage != "" {
 			Skip(skipMessage)
 		}
-		// Create MySQL
+		// Create Percona
 		createAndWaitForRunning()
 
 		By("Creating Table")
-		f.EventuallyCreateTable(mysql.ObjectMeta, dbName).Should(BeTrue())
+		f.EventuallyCreateTable(percona.ObjectMeta, dbName).Should(BeTrue())
 
 		By("Inserting Rows")
-		f.EventuallyInsertRow(mysql.ObjectMeta, dbName, 0, 3).Should(BeTrue())
+		f.EventuallyInsertRow(percona.ObjectMeta, dbName, 0, 3).Should(BeTrue())
 
 		By("Checking Row Count of Table")
-		f.EventuallyCountRow(mysql.ObjectMeta, dbName, 0).Should(Equal(3))
+		f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
 
-		By("Delete mysql")
-		err = f.DeleteMySQL(mysql.ObjectMeta)
+		By("Delete percona")
+		err = f.DeletePercona(percona.ObjectMeta)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Wait for mysql to be paused")
-		f.EventuallyDormantDatabaseStatus(mysql.ObjectMeta).Should(matcher.HavePaused())
+		By("Wait for percona to be paused")
+		f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
 
-		// Create MySQL object again to resume it
-		By("Create MySQL: " + mysql.Name)
-		err = f.CreateMySQL(mysql)
+		// Create Percona object again to resume it
+		By("Create Percona: " + percona.Name)
+		err = f.CreatePercona(percona)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Wait for DormantDatabase to be deleted")
-		f.EventuallyDormantDatabase(mysql.ObjectMeta).Should(BeFalse())
+		f.EventuallyDormantDatabase(percona.ObjectMeta).Should(BeFalse())
 
-		By("Wait for Running mysql")
-		f.EventuallyMySQLRunning(mysql.ObjectMeta).Should(BeTrue())
+		By("Wait for Running percona")
+		f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
 
 		By("Checking Row Count of Table")
-		f.EventuallyCountRow(mysql.ObjectMeta, dbName, 0).Should(Equal(3))
+		f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
 
 	}
 
 	var shouldTakeSnapshot = func() {
-		// Create and wait for running MySQL
+		// Create and wait for running Percona
 		createAndWaitForRunning()
 
 		By("Create Secret")
@@ -138,17 +138,17 @@ var _ = Describe("MySQL", func() {
 	}
 
 	var shouldInsertDataAndTakeSnapshot = func() {
-		// Create and wait for running MySQL
+		// Create and wait for running Percona
 		createAndWaitForRunning()
 
 		By("Creating Table")
-		f.EventuallyCreateTable(mysql.ObjectMeta, dbName).Should(BeTrue())
+		f.EventuallyCreateTable(percona.ObjectMeta, dbName).Should(BeTrue())
 
 		By("Inserting Row")
-		f.EventuallyInsertRow(mysql.ObjectMeta, dbName, 0, 3).Should(BeTrue())
+		f.EventuallyInsertRow(percona.ObjectMeta, dbName, 0, 3).Should(BeTrue())
 
 		By("Checking Row Count of Table")
-		f.EventuallyCountRow(mysql.ObjectMeta, dbName, 0).Should(Equal(3))
+		f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
 
 		By("Create Secret")
 		err := f.CreateSecret(secret)
@@ -168,49 +168,49 @@ var _ = Describe("MySQL", func() {
 	}
 
 	var deleteTestResource = func() {
-		if mysql == nil {
-			log.Infoln("Skipping cleanup. Reason: mysql is nil")
+		if percona == nil {
+			log.Infoln("Skipping cleanup. Reason: percona is nil")
 			return
 		}
 
-		By("Check if mysql " + mysql.Name + " exists.")
-		my, err := f.GetMySQL(mysql.ObjectMeta)
+		By("Check if percona " + percona.Name + " exists.")
+		pc, err := f.GetPercona(percona.ObjectMeta)
 		if err != nil {
 			if kerr.IsNotFound(err) {
-				// MySQL was not created. Hence, rest of cleanup is not necessary.
+				// Percona was not created. Hence, rest of cleanup is not necessary.
 				return
 			}
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-		By("Delete mysql")
-		err = f.DeleteMySQL(mysql.ObjectMeta)
+		By("Delete percona")
+		err = f.DeletePercona(percona.ObjectMeta)
 		if err != nil {
 			if kerr.IsNotFound(err) {
-				log.Infoln("Skipping rest of the cleanup. Reason: MySQL does not exist.")
+				log.Infoln("Skipping rest of the cleanup. Reason: Percona does not exist.")
 				return
 			}
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-		if my.Spec.TerminationPolicy == api.TerminationPolicyPause {
-			By("Wait for mysql to be paused")
-			f.EventuallyDormantDatabaseStatus(mysql.ObjectMeta).Should(matcher.HavePaused())
+		if pc.Spec.TerminationPolicy == api.TerminationPolicyPause {
+			By("Wait for percona to be paused")
+			f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
 
-			By("WipeOut mysql")
-			_, err := f.PatchDormantDatabase(mysql.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
+			By("WipeOut percona")
+			_, err := f.PatchDormantDatabase(percona.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
 				in.Spec.WipeOut = true
 				return in
 			})
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Delete Dormant Database")
-			err = f.DeleteDormantDatabase(mysql.ObjectMeta)
+			err = f.DeleteDormantDatabase(percona.ObjectMeta)
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-		By("Wait for mysql resources to be wipedOut")
-		f.EventuallyWipedOut(mysql.ObjectMeta).Should(Succeed())
+		By("Wait for percona resources to be wipedOut")
+		f.EventuallyWipedOut(percona.ObjectMeta).Should(Succeed())
 	}
 
 	var deleteSnapshot = func() {
@@ -236,17 +236,17 @@ var _ = Describe("MySQL", func() {
 	}
 
 	AfterEach(func() {
-		// delete resources for current MySQL
+		// delete resources for current Percona
 		deleteTestResource()
 
-		// old MySQL are in garbageMySQL list. delete their resources.
-		for _, my := range garbageMySQL.Items {
-			*mysql = my
+		// old Percona are in garbagePercona list. delete their resources.
+		for _, pc := range garbagePercona.Items {
+			*percona = pc
 			deleteTestResource()
 		}
 
-		By("Deleting MySQLVersion crd")
-		err := f.DeleteMySQLVersion(mysqlVersion.ObjectMeta)
+		By("Deleting PerconaVersion crd")
+		err := f.DeletePerconaVersion(perconaVersion.ObjectMeta)
 		if err != nil && !kerr.IsNotFound(err) {
 			Expect(err).NotTo(HaveOccurred())
 		}
@@ -268,7 +268,7 @@ var _ = Describe("MySQL", func() {
 
 			BeforeEach(func() {
 				skipDataChecking = false
-				snapshot.Spec.DatabaseName = mysql.Name
+				snapshot.Spec.DatabaseName = percona.Name
 			})
 
 			AfterEach(func() {
@@ -378,7 +378,7 @@ var _ = Describe("MySQL", func() {
 
 				Context("Delete One Snapshot keeping others", func() {
 					BeforeEach(func() {
-						mysql.Spec.Init = &api.InitSpec{
+						percona.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
@@ -391,7 +391,7 @@ var _ = Describe("MySQL", func() {
 					})
 
 					It("Delete One Snapshot keeping others", func() {
-						// Create MySQL and take Snapshot
+						// Create Percona and take Snapshot
 						shouldTakeSnapshot()
 
 						oldSnapshot := snapshot.DeepCopy()
@@ -451,7 +451,7 @@ var _ = Describe("MySQL", func() {
 
 				Context("With Init", func() {
 					BeforeEach(func() {
-						mysql.Spec.Init = &api.InitSpec{
+						percona.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
@@ -468,7 +468,7 @@ var _ = Describe("MySQL", func() {
 
 				Context("Delete One Snapshot keeping others", func() {
 					BeforeEach(func() {
-						mysql.Spec.Init = &api.InitSpec{
+						percona.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
@@ -481,7 +481,7 @@ var _ = Describe("MySQL", func() {
 					})
 
 					It("Delete One Snapshot keeping others", func() {
-						// Create MySQL and take Snapshot
+						// Create Percona and take Snapshot
 						shouldTakeSnapshot()
 
 						oldSnapshot := snapshot.DeepCopy()
@@ -540,7 +540,7 @@ var _ = Describe("MySQL", func() {
 
 				Context("Delete One Snapshot keeping others", func() {
 					BeforeEach(func() {
-						mysql.Spec.Init = &api.InitSpec{
+						percona.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
@@ -553,7 +553,7 @@ var _ = Describe("MySQL", func() {
 					})
 
 					It("Delete One Snapshot keeping others", func() {
-						// Create MySQL and take Snapshot
+						// Create Percona and take Snapshot
 						shouldTakeSnapshot()
 
 						oldSnapshot := snapshot.DeepCopy()
@@ -621,13 +621,13 @@ var _ = Describe("MySQL", func() {
 				})
 
 				var shouldHandleJobVolumeSuccessfully = func() {
-					// Create and wait for running MySQL
+					// Create and wait for running Percona
 					createAndWaitForRunning()
 
-					By("Get MySQL")
-					es, err := f.GetMySQL(mysql.ObjectMeta)
+					By("Get Percona")
+					es, err := f.GetPercona(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
-					mysql.Spec = es.Spec
+					percona.Spec = es.Spec
 
 					By("Create Secret")
 					err = f.CreateSecret(secret)
@@ -637,11 +637,11 @@ var _ = Describe("MySQL", func() {
 					// start
 					pvcSpec := snapshot.Spec.PodVolumeClaimSpec
 					if pvcSpec == nil {
-						pvcSpec = mysql.Spec.Storage
+						pvcSpec = percona.Spec.Storage
 					}
 					st := snapshot.Spec.StorageType
 					if st == nil {
-						st = &mysql.Spec.StorageType
+						st = &percona.Spec.StorageType
 					}
 					Expect(st).NotTo(BeNil())
 					// end
@@ -692,8 +692,8 @@ var _ = Describe("MySQL", func() {
 				var dbStorageTypeScenarios = func() {
 					Context("DBStorageType - Durable", func() {
 						BeforeEach(func() {
-							mysql.Spec.StorageType = api.StorageTypeDurable
-							mysql.Spec.Storage = &core.PersistentVolumeClaimSpec{
+							percona.Spec.StorageType = api.StorageTypeDurable
+							percona.Spec.Storage = &core.PersistentVolumeClaimSpec{
 								Resources: core.ResourceRequirements{
 									Requests: core.ResourceList{
 										core.ResourceStorage: resource.MustParse(framework.DBPvcStorageSize),
@@ -709,13 +709,13 @@ var _ = Describe("MySQL", func() {
 
 					Context("DBStorageType - Ephemeral", func() {
 						BeforeEach(func() {
-							mysql.Spec.StorageType = api.StorageTypeEphemeral
-							mysql.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
+							percona.Spec.StorageType = api.StorageTypeEphemeral
+							percona.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
 						})
 
 						Context("DBPvcSpec is nil", func() {
 							BeforeEach(func() {
-								mysql.Spec.Storage = nil
+								percona.Spec.Storage = nil
 							})
 
 							It("should Handle Job Volume Successfully", shouldHandleJobVolumeSuccessfully)
@@ -723,7 +723,7 @@ var _ = Describe("MySQL", func() {
 
 						Context("DBPvcSpec is given [not nil]", func() {
 							BeforeEach(func() {
-								mysql.Spec.Storage = &core.PersistentVolumeClaimSpec{
+								percona.Spec.Storage = &core.PersistentVolumeClaimSpec{
 									Resources: core.ResourceRequirements{
 										Requests: core.ResourceList{
 											core.ResourceStorage: resource.MustParse(framework.DBPvcStorageSize),
@@ -799,7 +799,7 @@ var _ = Describe("MySQL", func() {
 
 			Context("With Script", func() {
 				BeforeEach(func() {
-					mysql.Spec.Init = &api.InitSpec{
+					percona.Spec.Init = &api.InitSpec{
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
@@ -812,11 +812,11 @@ var _ = Describe("MySQL", func() {
 				})
 
 				It("should run successfully", func() {
-					// Create MySQL
+					// Create Percona
 					createAndWaitForRunning()
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(mysql.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
 				})
 			})
 
@@ -834,35 +834,35 @@ var _ = Describe("MySQL", func() {
 				})
 
 				var shouldInitializeFromSnapshot = func() {
-					// Create MySQL and take Snapshot
+					// Create Percona and take Snapshot
 					shouldInsertDataAndTakeSnapshot()
 
-					oldMySQL, err := f.GetMySQL(mysql.ObjectMeta)
+					oldPercona, err := f.GetPercona(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
-					garbageMySQL.Items = append(garbageMySQL.Items, *oldMySQL)
+					garbagePercona.Items = append(garbagePercona.Items, *oldPercona)
 
-					By("Create mysql from snapshot")
-					mysql = f.MySQL()
-					mysql.Spec.Init = &api.InitSpec{
+					By("Create percona from snapshot")
+					percona = f.Percona()
+					percona.Spec.Init = &api.InitSpec{
 						SnapshotSource: &api.SnapshotSourceSpec{
 							Namespace: snapshot.Namespace,
 							Name:      snapshot.Name,
 						},
 					}
 
-					By("Creating init Snapshot Mysql without secret name" + mysql.Name)
-					err = f.CreateMySQL(mysql)
+					By("Creating init Snapshot Mysql without secret name" + percona.Name)
+					err = f.CreatePercona(percona)
 					Expect(err).Should(HaveOccurred())
 
 					// for snapshot init, user have to use older secret,
 					// because the username & password  will be replaced to
-					mysql.Spec.DatabaseSecret = oldMySQL.Spec.DatabaseSecret
+					percona.Spec.DatabaseSecret = oldPercona.Spec.DatabaseSecret
 
-					// Create and wait for running MySQL
+					// Create and wait for running Percona
 					createAndWaitForRunning()
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(mysql.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
 				}
 
 				Context("From Local backend", func() {
@@ -876,7 +876,7 @@ var _ = Describe("MySQL", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						secret = f.SecretForLocalBackend()
-						snapshot.Spec.DatabaseName = mysql.Name
+						snapshot.Spec.DatabaseName = percona.Name
 						snapshot.Spec.StorageSecretName = secret.Name
 
 						snapshot.Spec.Local = &store.LocalSpec{
@@ -904,7 +904,7 @@ var _ = Describe("MySQL", func() {
 						skipDataChecking = false
 						secret = f.SecretForGCSBackend()
 						snapshot.Spec.StorageSecretName = secret.Name
-						snapshot.Spec.DatabaseName = mysql.Name
+						snapshot.Spec.DatabaseName = percona.Name
 
 						snapshot.Spec.GCS = &store.GCSSpec{
 							Bucket: os.Getenv(GCS_BUCKET_NAME),
@@ -920,94 +920,94 @@ var _ = Describe("MySQL", func() {
 
 			Context("Super Fast User - Create-Delete-Create-Delete-Create ", func() {
 				It("should resume DormantDatabase successfully", func() {
-					// Create and wait for running MySQL
+					// Create and wait for running Percona
 					createAndWaitForRunning()
 
 					By("Creating Table")
-					f.EventuallyCreateTable(mysql.ObjectMeta, dbName).Should(BeTrue())
+					f.EventuallyCreateTable(percona.ObjectMeta, dbName).Should(BeTrue())
 
 					By("Inserting Row")
-					f.EventuallyInsertRow(mysql.ObjectMeta, dbName, 0, 3).Should(BeTrue())
+					f.EventuallyInsertRow(percona.ObjectMeta, dbName, 0, 3).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(mysql.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
 
-					By("Delete mysql")
-					err = f.DeleteMySQL(mysql.ObjectMeta)
+					By("Delete percona")
+					err = f.DeletePercona(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Wait for mysql to be paused")
-					f.EventuallyDormantDatabaseStatus(mysql.ObjectMeta).Should(matcher.HavePaused())
+					By("Wait for percona to be paused")
+					f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
 
-					// Create MySQL object again to resume it
-					By("Create MySQL: " + mysql.Name)
-					err = f.CreateMySQL(mysql)
+					// Create Percona object again to resume it
+					By("Create Percona: " + percona.Name)
+					err = f.CreatePercona(percona)
 					Expect(err).NotTo(HaveOccurred())
 
 					// Delete without caring if DB is resumed
-					By("Delete mysql")
-					err = f.DeleteMySQL(mysql.ObjectMeta)
+					By("Delete percona")
+					err = f.DeletePercona(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Wait for MySQL to be deleted")
-					f.EventuallyMySQL(mysql.ObjectMeta).Should(BeFalse())
+					By("Wait for Percona to be deleted")
+					f.EventuallyPercona(percona.ObjectMeta).Should(BeFalse())
 
-					// Create MySQL object again to resume it
-					By("Create MySQL: " + mysql.Name)
-					err = f.CreateMySQL(mysql)
+					// Create Percona object again to resume it
+					By("Create Percona: " + percona.Name)
+					err = f.CreatePercona(percona)
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for DormantDatabase to be deleted")
-					f.EventuallyDormantDatabase(mysql.ObjectMeta).Should(BeFalse())
+					f.EventuallyDormantDatabase(percona.ObjectMeta).Should(BeFalse())
 
-					By("Wait for Running mysql")
-					f.EventuallyMySQLRunning(mysql.ObjectMeta).Should(BeTrue())
+					By("Wait for Running percona")
+					f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(mysql.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
 				})
 			})
 
 			Context("Without Init", func() {
 				It("should resume DormantDatabase successfully", func() {
-					// Create and wait for running MySQL
+					// Create and wait for running Percona
 					createAndWaitForRunning()
 
 					By("Creating Table")
-					f.EventuallyCreateTable(mysql.ObjectMeta, dbName).Should(BeTrue())
+					f.EventuallyCreateTable(percona.ObjectMeta, dbName).Should(BeTrue())
 
 					By("Inserting Row")
-					f.EventuallyInsertRow(mysql.ObjectMeta, dbName, 0, 3).Should(BeTrue())
+					f.EventuallyInsertRow(percona.ObjectMeta, dbName, 0, 3).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(mysql.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
 
-					By("Delete mysql")
-					err = f.DeleteMySQL(mysql.ObjectMeta)
+					By("Delete percona")
+					err = f.DeletePercona(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Wait for mysql to be paused")
-					f.EventuallyDormantDatabaseStatus(mysql.ObjectMeta).Should(matcher.HavePaused())
+					By("Wait for percona to be paused")
+					f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
 
-					// Create MySQL object again to resume it
-					By("Create MySQL: " + mysql.Name)
-					err = f.CreateMySQL(mysql)
+					// Create Percona object again to resume it
+					By("Create Percona: " + percona.Name)
+					err = f.CreatePercona(percona)
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for DormantDatabase to be deleted")
-					f.EventuallyDormantDatabase(mysql.ObjectMeta).Should(BeFalse())
+					f.EventuallyDormantDatabase(percona.ObjectMeta).Should(BeFalse())
 
-					By("Wait for Running mysql")
-					f.EventuallyMySQLRunning(mysql.ObjectMeta).Should(BeTrue())
+					By("Wait for Running percona")
+					f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(mysql.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
 				})
 			})
 
 			Context("with init Script", func() {
 				BeforeEach(func() {
-					mysql.Spec.Init = &api.InitSpec{
+					percona.Spec.Init = &api.InitSpec{
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
@@ -1020,39 +1020,39 @@ var _ = Describe("MySQL", func() {
 				})
 
 				It("should resume DormantDatabase successfully", func() {
-					// Create and wait for running MySQL
+					// Create and wait for running Percona
 					createAndWaitForRunning()
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(mysql.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
 
-					By("Delete mysql")
-					err = f.DeleteMySQL(mysql.ObjectMeta)
+					By("Delete percona")
+					err = f.DeletePercona(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Wait for mysql to be paused")
-					f.EventuallyDormantDatabaseStatus(mysql.ObjectMeta).Should(matcher.HavePaused())
+					By("Wait for percona to be paused")
+					f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
 
-					// Create MySQL object again to resume it
-					By("Create MySQL: " + mysql.Name)
-					err = f.CreateMySQL(mysql)
+					// Create Percona object again to resume it
+					By("Create Percona: " + percona.Name)
+					err = f.CreatePercona(percona)
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for DormantDatabase to be deleted")
-					f.EventuallyDormantDatabase(mysql.ObjectMeta).Should(BeFalse())
+					f.EventuallyDormantDatabase(percona.ObjectMeta).Should(BeFalse())
 
-					By("Wait for Running mysql")
-					f.EventuallyMySQLRunning(mysql.ObjectMeta).Should(BeTrue())
+					By("Wait for Running percona")
+					f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(mysql.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
 
-					mysql, err := f.GetMySQL(mysql.ObjectMeta)
+					percona, err := f.GetPercona(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(mysql.Spec.Init).NotTo(BeNil())
+					Expect(percona.Spec.Init).NotTo(BeNil())
 
-					By("Checking MySQL crd does not have kubedb.com/initialized annotation")
-					_, err = meta_util.GetString(mysql.Annotations, api.AnnotationInitialized)
+					By("Checking Percona crd does not have kubedb.com/initialized annotation")
+					_, err = meta_util.GetString(percona.Annotations, api.AnnotationInitialized)
 					Expect(err).To(HaveOccurred())
 				})
 			})
@@ -1077,68 +1077,68 @@ var _ = Describe("MySQL", func() {
 					snapshot.Spec.GCS = &store.GCSSpec{
 						Bucket: os.Getenv(GCS_BUCKET_NAME),
 					}
-					snapshot.Spec.DatabaseName = mysql.Name
+					snapshot.Spec.DatabaseName = percona.Name
 				})
 
 				It("should resume successfully", func() {
-					// Create MySQL and take Snapshot
+					// Create Percona and take Snapshot
 					shouldInsertDataAndTakeSnapshot()
 
-					oldMySQL, err := f.GetMySQL(mysql.ObjectMeta)
+					oldPercona, err := f.GetPercona(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					garbageMySQL.Items = append(garbageMySQL.Items, *oldMySQL)
+					garbagePercona.Items = append(garbagePercona.Items, *oldPercona)
 
-					By("Create mysql from snapshot")
-					mysql = f.MySQL()
-					mysql.Spec.Init = &api.InitSpec{
+					By("Create percona from snapshot")
+					percona = f.Percona()
+					percona.Spec.Init = &api.InitSpec{
 						SnapshotSource: &api.SnapshotSourceSpec{
 							Namespace: snapshot.Namespace,
 							Name:      snapshot.Name,
 						},
 					}
 
-					By("Creating MySQL without secret name to init from Snapshot: " + mysql.Name)
-					err = f.CreateMySQL(mysql)
+					By("Creating Percona without secret name to init from Snapshot: " + percona.Name)
+					err = f.CreatePercona(percona)
 					Expect(err).Should(HaveOccurred())
 
 					// for snapshot init, user have to use older secret,
 					// because the username & password  will be replaced to
-					mysql.Spec.DatabaseSecret = oldMySQL.Spec.DatabaseSecret
+					percona.Spec.DatabaseSecret = oldPercona.Spec.DatabaseSecret
 
-					// Create and wait for running MySQL
+					// Create and wait for running Percona
 					createAndWaitForRunning()
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(mysql.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
 
-					By("Delete mysql")
-					err = f.DeleteMySQL(mysql.ObjectMeta)
+					By("Delete percona")
+					err = f.DeletePercona(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Wait for mysql to be paused")
-					f.EventuallyDormantDatabaseStatus(mysql.ObjectMeta).Should(matcher.HavePaused())
+					By("Wait for percona to be paused")
+					f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
 
-					// Create MySQL object again to resume it
-					By("Create MySQL: " + mysql.Name)
-					err = f.CreateMySQL(mysql)
+					// Create Percona object again to resume it
+					By("Create Percona: " + percona.Name)
+					err = f.CreatePercona(percona)
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for DormantDatabase to be deleted")
-					f.EventuallyDormantDatabase(mysql.ObjectMeta).Should(BeFalse())
+					f.EventuallyDormantDatabase(percona.ObjectMeta).Should(BeFalse())
 
-					By("Wait for Running mysql")
-					f.EventuallyMySQLRunning(mysql.ObjectMeta).Should(BeTrue())
+					By("Wait for Running percona")
+					f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(mysql.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
 
-					mysql, err = f.GetMySQL(mysql.ObjectMeta)
+					percona, err = f.GetPercona(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(mysql.Spec.Init).ShouldNot(BeNil())
+					Expect(percona.Spec.Init).ShouldNot(BeNil())
 
-					By("Checking MySQL has kubedb.com/initialized annotation")
-					_, err = meta_util.GetString(mysql.Annotations, api.AnnotationInitialized)
+					By("Checking Percona has kubedb.com/initialized annotation")
+					_, err = meta_util.GetString(percona.Annotations, api.AnnotationInitialized)
 					Expect(err).NotTo(HaveOccurred())
 				})
 			})
@@ -1146,7 +1146,7 @@ var _ = Describe("MySQL", func() {
 			Context("Multiple times with init", func() {
 
 				BeforeEach(func() {
-					mysql.Spec.Init = &api.InitSpec{
+					percona.Spec.Init = &api.InitSpec{
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
@@ -1159,42 +1159,42 @@ var _ = Describe("MySQL", func() {
 				})
 
 				It("should resume DormantDatabase successfully", func() {
-					// Create and wait for running MySQL
+					// Create and wait for running Percona
 					createAndWaitForRunning()
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(mysql.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
 
 					for i := 0; i < 3; i++ {
 						By(fmt.Sprintf("%v-th", i+1) + " time running.")
 
-						By("Delete mysql")
-						err = f.DeleteMySQL(mysql.ObjectMeta)
+						By("Delete percona")
+						err = f.DeletePercona(percona.ObjectMeta)
 						Expect(err).NotTo(HaveOccurred())
 
-						By("Wait for mysql to be paused")
-						f.EventuallyDormantDatabaseStatus(mysql.ObjectMeta).Should(matcher.HavePaused())
+						By("Wait for percona to be paused")
+						f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
 
-						// Create MySQL object again to resume it
-						By("Create MySQL: " + mysql.Name)
-						err = f.CreateMySQL(mysql)
+						// Create Percona object again to resume it
+						By("Create Percona: " + percona.Name)
+						err = f.CreatePercona(percona)
 						Expect(err).NotTo(HaveOccurred())
 
 						By("Wait for DormantDatabase to be deleted")
-						f.EventuallyDormantDatabase(mysql.ObjectMeta).Should(BeFalse())
+						f.EventuallyDormantDatabase(percona.ObjectMeta).Should(BeFalse())
 
-						By("Wait for Running mysql")
-						f.EventuallyMySQLRunning(mysql.ObjectMeta).Should(BeTrue())
+						By("Wait for Running percona")
+						f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
 
 						By("Checking Row Count of Table")
-						f.EventuallyCountRow(mysql.ObjectMeta, dbName, 0).Should(Equal(3))
+						f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
 
-						mysql, err := f.GetMySQL(mysql.ObjectMeta)
+						percona, err := f.GetPercona(percona.ObjectMeta)
 						Expect(err).NotTo(HaveOccurred())
-						Expect(mysql.Spec.Init).ShouldNot(BeNil())
+						Expect(percona.Spec.Init).ShouldNot(BeNil())
 
-						By("Checking MySQL crd does not have kubedb.com/initialized annotation")
-						_, err = meta_util.GetString(mysql.Annotations, api.AnnotationInitialized)
+						By("Checking Percona crd does not have kubedb.com/initialized annotation")
+						_, err = meta_util.GetString(percona.Annotations, api.AnnotationInitialized)
 						Expect(err).To(HaveOccurred())
 					}
 				})
@@ -1208,7 +1208,7 @@ var _ = Describe("MySQL", func() {
 			})
 
 			AfterEach(func() {
-				snapshotList, err := f.GetSnapshotList(mysql.ObjectMeta)
+				snapshotList, err := f.GetSnapshotList(percona.ObjectMeta)
 				Expect(err).NotTo(HaveOccurred())
 
 				for _, snap := range snapshotList.Items {
@@ -1232,28 +1232,28 @@ var _ = Describe("MySQL", func() {
 					err := f.CreateSecret(secret)
 					Expect(err).NotTo(HaveOccurred())
 
-					// Create and wait for running MySQL
+					// Create and wait for running Percona
 					createAndWaitForRunning()
 
 					By("Count multiple Snapshot Object")
-					f.EventuallySnapshotCount(mysql.ObjectMeta).Should(matcher.MoreThan(3))
+					f.EventuallySnapshotCount(percona.ObjectMeta).Should(matcher.MoreThan(3))
 
-					By("Remove Backup Scheduler from MySQL")
-					_, err = f.PatchMySQL(mysql.ObjectMeta, func(in *api.MySQL) *api.MySQL {
+					By("Remove Backup Scheduler from Percona")
+					_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
 						in.Spec.BackupSchedule = nil
 						return in
 					})
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Verify multiple Succeeded Snapshot")
-					f.EventuallyMultipleSnapshotFinishedProcessing(mysql.ObjectMeta).Should(Succeed())
+					f.EventuallyMultipleSnapshotFinishedProcessing(percona.ObjectMeta).Should(Succeed())
 				}
 
 				Context("with local", func() {
 					BeforeEach(func() {
 						skipDataChecking = true
 						secret = f.SecretForLocalBackend()
-						mysql.Spec.BackupSchedule = &api.BackupScheduleSpec{
+						percona.Spec.BackupSchedule = &api.BackupScheduleSpec{
 							CronExpression: "@every 20s",
 							Backend: store.Backend{
 								StorageSecretName: secret.Name,
@@ -1273,7 +1273,7 @@ var _ = Describe("MySQL", func() {
 				Context("with GCS", func() {
 					BeforeEach(func() {
 						secret = f.SecretForGCSBackend()
-						mysql.Spec.BackupSchedule = &api.BackupScheduleSpec{
+						percona.Spec.BackupSchedule = &api.BackupScheduleSpec{
 							CronExpression: "@every 1m",
 							Backend: store.Backend{
 								StorageSecretName: secret.Name,
@@ -1296,15 +1296,15 @@ var _ = Describe("MySQL", func() {
 				})
 
 				It("should run scheduler successfully", func() {
-					// Create and wait for running MySQL
+					// Create and wait for running Percona
 					createAndWaitForRunning()
 
 					By("Create Secret")
 					err := f.CreateSecret(secret)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Update mysql")
-					_, err = f.PatchMySQL(mysql.ObjectMeta, func(in *api.MySQL) *api.MySQL {
+					By("Update percona")
+					_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
 						in.Spec.BackupSchedule = &api.BackupScheduleSpec{
 							CronExpression: "@every 20s",
 							Backend: store.Backend{
@@ -1322,17 +1322,17 @@ var _ = Describe("MySQL", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Count multiple Snapshot Object")
-					f.EventuallySnapshotCount(mysql.ObjectMeta).Should(matcher.MoreThan(3))
+					f.EventuallySnapshotCount(percona.ObjectMeta).Should(matcher.MoreThan(3))
 
-					By("Remove Backup Scheduler from MySQL")
-					_, err = f.PatchMySQL(mysql.ObjectMeta, func(in *api.MySQL) *api.MySQL {
+					By("Remove Backup Scheduler from Percona")
+					_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
 						in.Spec.BackupSchedule = nil
 						return in
 					})
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Verify multiple Succeeded Snapshot")
-					f.EventuallyMultipleSnapshotFinishedProcessing(mysql.ObjectMeta).Should(Succeed())
+					f.EventuallyMultipleSnapshotFinishedProcessing(percona.ObjectMeta).Should(Succeed())
 				})
 			})
 
@@ -1344,15 +1344,15 @@ var _ = Describe("MySQL", func() {
 				})
 
 				It("should re-use scheduler successfully", func() {
-					// Create and wait for running MySQL
+					// Create and wait for running Percona
 					createAndWaitForRunning()
 
 					By("Create Secret")
 					err := f.CreateSecret(secret)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Update mysql")
-					_, err = f.PatchMySQL(mysql.ObjectMeta, func(in *api.MySQL) *api.MySQL {
+					By("Update percona")
+					_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
 						in.Spec.BackupSchedule = &api.BackupScheduleSpec{
 							CronExpression: "@every 20s",
 							Backend: store.Backend{
@@ -1370,53 +1370,53 @@ var _ = Describe("MySQL", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Creating Table")
-					f.EventuallyCreateTable(mysql.ObjectMeta, dbName).Should(BeTrue())
+					f.EventuallyCreateTable(percona.ObjectMeta, dbName).Should(BeTrue())
 
 					By("Inserting Row")
-					f.EventuallyInsertRow(mysql.ObjectMeta, dbName, 0, 3).Should(BeTrue())
+					f.EventuallyInsertRow(percona.ObjectMeta, dbName, 0, 3).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(mysql.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
 
 					By("Count multiple Snapshot Object")
-					f.EventuallySnapshotCount(mysql.ObjectMeta).Should(matcher.MoreThan(3))
+					f.EventuallySnapshotCount(percona.ObjectMeta).Should(matcher.MoreThan(3))
 
 					By("Verify multiple Succeeded Snapshot")
-					f.EventuallyMultipleSnapshotFinishedProcessing(mysql.ObjectMeta).Should(Succeed())
+					f.EventuallyMultipleSnapshotFinishedProcessing(percona.ObjectMeta).Should(Succeed())
 
-					By("Delete mysql")
-					err = f.DeleteMySQL(mysql.ObjectMeta)
+					By("Delete percona")
+					err = f.DeletePercona(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Wait for mysql to be paused")
-					f.EventuallyDormantDatabaseStatus(mysql.ObjectMeta).Should(matcher.HavePaused())
+					By("Wait for percona to be paused")
+					f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
 
-					// Create MySQL object again to resume it
-					By("Create MySQL: " + mysql.Name)
-					err = f.CreateMySQL(mysql)
+					// Create Percona object again to resume it
+					By("Create Percona: " + percona.Name)
+					err = f.CreatePercona(percona)
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for DormantDatabase to be deleted")
-					f.EventuallyDormantDatabase(mysql.ObjectMeta).Should(BeFalse())
+					f.EventuallyDormantDatabase(percona.ObjectMeta).Should(BeFalse())
 
-					By("Wait for Running mysql")
-					f.EventuallyMySQLRunning(mysql.ObjectMeta).Should(BeTrue())
+					By("Wait for Running percona")
+					f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(mysql.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
 
 					By("Count multiple Snapshot Object")
-					f.EventuallySnapshotCount(mysql.ObjectMeta).Should(matcher.MoreThan(5))
+					f.EventuallySnapshotCount(percona.ObjectMeta).Should(matcher.MoreThan(5))
 
-					By("Remove Backup Scheduler from MySQL")
-					_, err = f.PatchMySQL(mysql.ObjectMeta, func(in *api.MySQL) *api.MySQL {
+					By("Remove Backup Scheduler from Percona")
+					_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
 						in.Spec.BackupSchedule = nil
 						return in
 					})
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Verify multiple Succeeded Snapshot")
-					f.EventuallyMultipleSnapshotFinishedProcessing(mysql.ObjectMeta).Should(Succeed())
+					f.EventuallyMultipleSnapshotFinishedProcessing(percona.ObjectMeta).Should(Succeed())
 				})
 			})
 		})
@@ -1430,31 +1430,31 @@ var _ = Describe("MySQL", func() {
 				snapshot.Spec.GCS = &store.GCSSpec{
 					Bucket: os.Getenv(GCS_BUCKET_NAME),
 				}
-				snapshot.Spec.DatabaseName = mysql.Name
+				snapshot.Spec.DatabaseName = percona.Name
 			})
 
 			Context("with TerminationDoNotTerminate", func() {
 				BeforeEach(func() {
 					skipDataChecking = true
-					mysql.Spec.TerminationPolicy = api.TerminationPolicyDoNotTerminate
+					percona.Spec.TerminationPolicy = api.TerminationPolicyDoNotTerminate
 				})
 
 				It("should work successfully", func() {
-					// Create and wait for running MySQL
+					// Create and wait for running Percona
 					createAndWaitForRunning()
 
-					By("Delete mysql")
-					err = f.DeleteMySQL(mysql.ObjectMeta)
+					By("Delete percona")
+					err = f.DeletePercona(percona.ObjectMeta)
 					Expect(err).Should(HaveOccurred())
 
-					By("MySQL is not paused. Check for mysql")
-					f.EventuallyMySQL(mysql.ObjectMeta).Should(BeTrue())
+					By("Percona is not paused. Check for percona")
+					f.EventuallyPercona(percona.ObjectMeta).Should(BeTrue())
 
-					By("Check for Running mysql")
-					f.EventuallyMySQLRunning(mysql.ObjectMeta).Should(BeTrue())
+					By("Check for Running percona")
+					f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
 
-					By("Update mysql to set spec.terminationPolicy = Pause")
-					_, err := f.PatchMySQL(mysql.ObjectMeta, func(in *api.MySQL) *api.MySQL {
+					By("Update percona to set spec.terminationPolicy = Pause")
+					_, err := f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
 						in.Spec.TerminationPolicy = api.TerminationPolicyPause
 						return in
 					})
@@ -1476,22 +1476,22 @@ var _ = Describe("MySQL", func() {
 				})
 
 				It("should create DormantDatabase and resume from it", func() {
-					// Run MySQL and take snapshot
+					// Run Percona and take snapshot
 					shouldInsertDataAndTakeSnapshot()
 
-					By("Deleting MySQL crd")
-					err = f.DeleteMySQL(mysql.ObjectMeta)
+					By("Deleting Percona crd")
+					err = f.DeletePercona(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					// DormantDatabase.Status= paused, means mysql object is deleted
-					By("Waiting for mysql to be paused")
-					f.EventuallyDormantDatabaseStatus(mysql.ObjectMeta).Should(matcher.HavePaused())
+					// DormantDatabase.Status= paused, means percona object is deleted
+					By("Waiting for percona to be paused")
+					f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
 
 					By("Checking PVC hasn't been deleted")
-					f.EventuallyPVCCount(mysql.ObjectMeta).Should(Equal(1))
+					f.EventuallyPVCCount(percona.ObjectMeta).Should(Equal(1))
 
 					By("Checking Secret hasn't been deleted")
-					f.EventuallyDBSecretCount(mysql.ObjectMeta).Should(Equal(1))
+					f.EventuallyDBSecretCount(percona.ObjectMeta).Should(Equal(1))
 
 					By("Checking snapshot hasn't been deleted")
 					f.EventuallySnapshot(snapshot.ObjectMeta).Should(BeTrue())
@@ -1501,26 +1501,26 @@ var _ = Describe("MySQL", func() {
 						f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
 					}
 
-					// Create MySQL object again to resume it
-					By("Create (resume) MySQL: " + mysql.Name)
-					err = f.CreateMySQL(mysql)
+					// Create Percona object again to resume it
+					By("Create (resume) Percona: " + percona.Name)
+					err = f.CreatePercona(percona)
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for DormantDatabase to be deleted")
-					f.EventuallyDormantDatabase(mysql.ObjectMeta).Should(BeFalse())
+					f.EventuallyDormantDatabase(percona.ObjectMeta).Should(BeFalse())
 
-					By("Wait for Running mysql")
-					f.EventuallyMySQLRunning(mysql.ObjectMeta).Should(BeTrue())
+					By("Wait for Running percona")
+					f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
 
 					By("Checking row count of table")
-					f.EventuallyCountRow(mysql.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
 				})
 			})
 
 			Context("with TerminationPolicyDelete", func() {
 
 				BeforeEach(func() {
-					mysql.Spec.TerminationPolicy = api.TerminationPolicyDelete
+					percona.Spec.TerminationPolicy = api.TerminationPolicyDelete
 				})
 
 				AfterEach(func() {
@@ -1535,24 +1535,24 @@ var _ = Describe("MySQL", func() {
 				})
 
 				It("should not create DormantDatabase and should not delete secret and snapshot", func() {
-					// Run MySQL and take snapshot
+					// Run Percona and take snapshot
 					shouldInsertDataAndTakeSnapshot()
 
-					By("Delete mysql")
-					err = f.DeleteMySQL(mysql.ObjectMeta)
+					By("Delete percona")
+					err = f.DeletePercona(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("wait until mysql is deleted")
-					f.EventuallyMySQL(mysql.ObjectMeta).Should(BeFalse())
+					By("wait until percona is deleted")
+					f.EventuallyPercona(percona.ObjectMeta).Should(BeFalse())
 
 					By("Checking DormantDatabase is not created")
-					f.EventuallyDormantDatabase(mysql.ObjectMeta).Should(BeFalse())
+					f.EventuallyDormantDatabase(percona.ObjectMeta).Should(BeFalse())
 
 					By("Checking PVC has been deleted")
-					f.EventuallyPVCCount(mysql.ObjectMeta).Should(Equal(0))
+					f.EventuallyPVCCount(percona.ObjectMeta).Should(Equal(0))
 
 					By("Checking Secret hasn't been deleted")
-					f.EventuallyDBSecretCount(mysql.ObjectMeta).Should(Equal(1))
+					f.EventuallyDBSecretCount(percona.ObjectMeta).Should(Equal(1))
 
 					By("Checking Snapshot hasn't been deleted")
 					f.EventuallySnapshot(snapshot.ObjectMeta).Should(BeTrue())
@@ -1567,31 +1567,31 @@ var _ = Describe("MySQL", func() {
 			Context("with TerminationPolicyWipeOut", func() {
 
 				BeforeEach(func() {
-					mysql.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
+					percona.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
 				})
 
 				It("should not create DormantDatabase and should wipeOut all", func() {
-					// Run MySQL and take snapshot
+					// Run Percona and take snapshot
 					shouldInsertDataAndTakeSnapshot()
 
-					By("Delete mysql")
-					err = f.DeleteMySQL(mysql.ObjectMeta)
+					By("Delete percona")
+					err = f.DeletePercona(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("wait until mysql is deleted")
-					f.EventuallyMySQL(mysql.ObjectMeta).Should(BeFalse())
+					By("wait until percona is deleted")
+					f.EventuallyPercona(percona.ObjectMeta).Should(BeFalse())
 
 					By("Checking DormantDatabase is not created")
-					f.EventuallyDormantDatabase(mysql.ObjectMeta).Should(BeFalse())
+					f.EventuallyDormantDatabase(percona.ObjectMeta).Should(BeFalse())
 
 					By("Checking PVCs has been deleted")
-					f.EventuallyPVCCount(mysql.ObjectMeta).Should(Equal(0))
+					f.EventuallyPVCCount(percona.ObjectMeta).Should(Equal(0))
 
 					By("Checking Snapshots has been deleted")
 					f.EventuallySnapshot(snapshot.ObjectMeta).Should(BeFalse())
 
 					By("Checking Secrets has been deleted")
-					f.EventuallyDBSecretCount(mysql.ObjectMeta).Should(Equal(0))
+					f.EventuallyDBSecretCount(percona.ObjectMeta).Should(Equal(0))
 				})
 			})
 		})
@@ -1606,7 +1606,7 @@ var _ = Describe("MySQL", func() {
 					}
 
 					dbName = f.App()
-					mysql.Spec.PodTemplate.Spec.Env = []core.EnvVar{
+					percona.Spec.PodTemplate.Spec.Env = []core.EnvVar{
 						{
 							Name:  MYSQL_DATABASE,
 							Value: dbName,
@@ -1619,19 +1619,19 @@ var _ = Describe("MySQL", func() {
 
 			Context("Root Password as EnvVar", func() {
 
-				It("should reject to create MySQL CRD", func() {
+				It("should reject to create Percona CRD", func() {
 					if skipMessage != "" {
 						Skip(skipMessage)
 					}
 
-					mysql.Spec.PodTemplate.Spec.Env = []core.EnvVar{
+					percona.Spec.PodTemplate.Spec.Env = []core.EnvVar{
 						{
 							Name:  MYSQL_ROOT_PASSWORD,
 							Value: "not@secret",
 						},
 					}
-					By("Create MySQL: " + mysql.Name)
-					err = f.CreateMySQL(mysql)
+					By("Create Percona: " + percona.Name)
+					err = f.CreatePercona(percona)
 					Expect(err).To(HaveOccurred())
 				})
 			})
@@ -1644,7 +1644,7 @@ var _ = Describe("MySQL", func() {
 					}
 
 					dbName = f.App()
-					mysql.Spec.PodTemplate.Spec.Env = []core.EnvVar{
+					percona.Spec.PodTemplate.Spec.Env = []core.EnvVar{
 						{
 							Name:  MYSQL_DATABASE,
 							Value: dbName,
@@ -1654,7 +1654,7 @@ var _ = Describe("MySQL", func() {
 					testGeneralBehaviour()
 
 					By("Patching EnvVar")
-					_, _, err = util.PatchMySQL(f.ExtClient().KubedbV1alpha1(), mysql, func(in *api.MySQL) *api.MySQL {
+					_, _, err = util.PatchPercona(f.ExtClient().KubedbV1alpha1(), percona, func(in *api.Percona) *api.Percona {
 						in.Spec.PodTemplate.Spec.Env = []core.EnvVar{
 							{
 								Name:  MYSQL_DATABASE,
@@ -1698,7 +1698,7 @@ var _ = Describe("MySQL", func() {
 					err := f.CreateConfigMap(userConfig)
 					Expect(err).NotTo(HaveOccurred())
 
-					mysql.Spec.ConfigSource = &core.VolumeSource{
+					percona.Spec.ConfigSource = &core.VolumeSource{
 						ConfigMap: &core.ConfigMapVolumeSource{
 							LocalObjectReference: core.LocalObjectReference{
 								Name: userConfig.Name,
@@ -1706,12 +1706,12 @@ var _ = Describe("MySQL", func() {
 						},
 					}
 
-					// Create MySQL
+					// Create Percona
 					createAndWaitForRunning()
 
-					By("Checking mysql configured from provided custom configuration")
+					By("Checking percona configured from provided custom configuration")
 					for _, cfg := range customConfigs {
-						f.EventuallyMySQLVariable(mysql.ObjectMeta, dbName, cfg).Should(matcher.UseCustomConfig(cfg))
+						f.EventuallyPerconaVariable(percona.ObjectMeta, dbName, cfg).Should(matcher.UseCustomConfig(cfg))
 					}
 				})
 			})
@@ -1725,17 +1725,17 @@ var _ = Describe("MySQL", func() {
 					Skip(skipMessage)
 				}
 
-				// Create MySQL
+				// Create Percona
 				createAndWaitForRunning()
 
 				By("Creating Table")
-				f.EventuallyCreateTable(mysql.ObjectMeta, dbName).Should(BeTrue())
+				f.EventuallyCreateTable(percona.ObjectMeta, dbName).Should(BeTrue())
 
 				By("Inserting Rows")
-				f.EventuallyInsertRow(mysql.ObjectMeta, dbName, 0, 3).Should(BeTrue())
+				f.EventuallyInsertRow(percona.ObjectMeta, dbName, 0, 3).Should(BeTrue())
 
 				By("Checking Row Count of Table")
-				f.EventuallyCountRow(mysql.ObjectMeta, dbName, 0).Should(Equal(3))
+				f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
 			}
 
 			Context("Ephemeral", func() {
@@ -1743,9 +1743,9 @@ var _ = Describe("MySQL", func() {
 				Context("General Behaviour", func() {
 
 					BeforeEach(func() {
-						mysql.Spec.StorageType = api.StorageTypeEphemeral
-						mysql.Spec.Storage = nil
-						mysql.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
+						percona.Spec.StorageType = api.StorageTypeEphemeral
+						percona.Spec.Storage = nil
+						percona.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
 					})
 
 					It("should run successfully", shouldRunSuccessfully)
@@ -1754,15 +1754,15 @@ var _ = Describe("MySQL", func() {
 				Context("With TerminationPolicyPause", func() {
 
 					BeforeEach(func() {
-						mysql.Spec.StorageType = api.StorageTypeEphemeral
-						mysql.Spec.Storage = nil
-						mysql.Spec.TerminationPolicy = api.TerminationPolicyPause
+						percona.Spec.StorageType = api.StorageTypeEphemeral
+						percona.Spec.Storage = nil
+						percona.Spec.TerminationPolicy = api.TerminationPolicyPause
 					})
 
-					It("should reject to create MySQL object", func() {
+					It("should reject to create Percona object", func() {
 
-						By("Creating MySQL: " + mysql.Name)
-						err := f.CreateMySQL(mysql)
+						By("Creating Percona: " + percona.Name)
+						err := f.CreatePercona(percona)
 						Expect(err).To(HaveOccurred())
 					})
 				})

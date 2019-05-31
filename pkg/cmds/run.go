@@ -11,17 +11,17 @@ import (
 )
 
 func NewCmdRun(version string, out, errOut io.Writer, stopCh <-chan struct{}) *cobra.Command {
-	o := server.NewMySQLServerOptions(out, errOut)
+	o := server.NewPerconaServerOptions(out, errOut)
 
 	cmd := &cobra.Command{
 		Use:               "run",
-		Short:             "Launch MySQL server",
+		Short:             "Launch Percona server",
 		DisableAutoGenTag: true,
 		PreRun: func(c *cobra.Command, args []string) {
 			cli.SendPeriodicAnalytics(c, version)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			log.Infoln("Starting mysql-server...")
+			log.Infoln("Starting percona-server...")
 
 			if err := o.Complete(); err != nil {
 				return err

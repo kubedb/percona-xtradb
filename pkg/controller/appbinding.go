@@ -16,7 +16,7 @@ import (
 	appcat_util "kmodules.xyz/custom-resources/client/clientset/versioned/typed/appcatalog/v1alpha1/util"
 )
 
-func (c *Controller) ensureAppBinding(db *api.MySQL) (kutil.VerbType, error) {
+func (c *Controller) ensureAppBinding(db *api.Percona) (kutil.VerbType, error) {
 	appmeta := db.AppBindingMeta()
 
 	meta := metav1.ObjectMeta{

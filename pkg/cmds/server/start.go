@@ -17,7 +17,7 @@ import (
 
 const defaultEtcdPathPrefix = "/registry/kubedb.com"
 
-type MySQLServerOptions struct {
+type PerconaServerOptions struct {
 	RecommendedOptions *genericoptions.RecommendedOptions
 	ExtraOptions       *ExtraOptions
 
@@ -25,8 +25,8 @@ type MySQLServerOptions struct {
 	StdErr io.Writer
 }
 
-func NewMySQLServerOptions(out, errOut io.Writer) *MySQLServerOptions {
-	o := &MySQLServerOptions{
+func NewPerconaServerOptions(out, errOut io.Writer) *PerconaServerOptions {
+	o := &PerconaServerOptions{
 		// TODO we will nil out the etcd storage options.  This requires a later level of k8s.io/apiserver
 		RecommendedOptions: genericoptions.NewRecommendedOptions(
 			defaultEtcdPathPrefix,
@@ -43,20 +43,20 @@ func NewMySQLServerOptions(out, errOut io.Writer) *MySQLServerOptions {
 	return o
 }
 
-func (o MySQLServerOptions) AddFlags(fs *pflag.FlagSet) {
+func (o PerconaServerOptions) AddFlags(fs *pflag.FlagSet) {
 	o.RecommendedOptions.AddFlags(fs)
 	o.ExtraOptions.AddFlags(fs)
 }
 
-func (o MySQLServerOptions) Validate(args []string) error {
+func (o PerconaServerOptions) Validate(args []string) error {
 	return nil
 }
 
-func (o *MySQLServerOptions) Complete() error {
+func (o *PerconaServerOptions) Complete() error {
 	return nil
 }
 
-func (o MySQLServerOptions) Config() (*server.MySQLServerConfig, error) {
+func (o PerconaServerOptions) Config() (*server.PerconaServerConfig, error) {
 	// TODO have a "real" external address
 	if err := o.RecommendedOptions.SecureServing.MaybeDefaultWithSelfSignedCerts("localhost", nil, []net.IP{net.ParseIP("127.0.0.1")}); err != nil {
 		return nil, fmt.Errorf("error creating self-signed certificates: %v", err)
@@ -73,7 +73,7 @@ func (o MySQLServerOptions) Config() (*server.MySQLServerConfig, error) {
 		return nil, err
 	}
 
-	config := &server.MySQLServerConfig{
+	config := &server.PerconaServerConfig{
 		GenericConfig:  serverConfig,
 		ExtraConfig:    server.ExtraConfig{},
 		OperatorConfig: controllerConfig,
@@ -81,7 +81,7 @@ func (o MySQLServerOptions) Config() (*server.MySQLServerConfig, error) {
 	return config, nil
 }
 
-func (o MySQLServerOptions) Run(stopCh <-chan struct{}) error {
+func (o PerconaServerOptions) Run(stopCh <-chan struct{}) error {
 	config, err := o.Config()
 	if err != nil {
 		return err

@@ -116,7 +116,7 @@ func (a *PerconaValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 			}
 		}
 		// validate database specs
-		if err = ValidatePXC(a.client, a.extClient, obj.(*api.Percona), false); err != nil {
+		if err = ValidatePercona(a.client, a.extClient, obj.(*api.Percona), false); err != nil {
 			return hookapi.StatusForbidden(err)
 		}
 	}
@@ -126,7 +126,7 @@ func (a *PerconaValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 
 // ValidatePercona checks if the object satisfies all the requirements.
 // It is not method of Interface, because it is referenced from controller package too.
-func ValidatePXC(client kubernetes.Interface, extClient cs.Interface, pxc *api.Percona, strictValidation bool) error {
+func ValidatePercona(client kubernetes.Interface, extClient cs.Interface, pxc *api.Percona, strictValidation bool) error {
 	if pxc.Spec.Version == "" {
 		return errors.New(`'spec.version' is missing`)
 	}

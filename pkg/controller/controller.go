@@ -46,13 +46,13 @@ type Controller struct {
 	// labelselector for event-handler of Snapshot, Dormant and Job
 	selector labels.Selector
 
-	// MySQL
-	myQueue    *queue.Worker
-	myInformer cache.SharedIndexInformer
-	myLister   api_listers.MySQLLister
+	// Percona
+	pxcQueue    *queue.Worker
+	pxcInformer cache.SharedIndexInformer
+	pxcLister   api_listers.PerconaLister
 }
 
-var _ amc.Snapshotter = &Controller{}
+//var _ amc.Snapshotter = &Controller{}
 var _ amc.Deleter = &Controller{}
 
 func New(
@@ -81,7 +81,7 @@ func New(
 		cronController: cronController,
 		recorder:       recorder,
 		selector: labels.SelectorFromSet(map[string]string{
-			api.LabelDatabaseKind: api.ResourceKindMySQL,
+			api.LabelDatabaseKind: api.ResourceKindPercona,
 		}),
 	}
 }
@@ -90,22 +90,23 @@ func New(
 func (c *Controller) EnsureCustomResourceDefinitions() error {
 	log.Infoln("Ensuring CustomResourceDefinition...")
 	crds := []*crd_api.CustomResourceDefinition{
-		api.MySQL{}.CustomResourceDefinition(),
-		catalog.MySQLVersion{}.CustomResourceDefinition(),
+		api.Percona{}.CustomResourceDefinition(),
+		catalog.PerconaVersion{}.CustomResourceDefinition(),
 		api.DormantDatabase{}.CustomResourceDefinition(),
 		api.Snapshot{}.CustomResourceDefinition(),
-		authorization.MySQLRole{}.CustomResourceDefinition(),
+		// TODO: need to be clear about this role crd and tasks related to this
+		//authorization.MySQLRole{}.CustomResourceDefinition(),
 		authorization.DatabaseAccessRequest{}.CustomResourceDefinition(),
 		appcat.AppBinding{}.CustomResourceDefinition(),
 	}
 	return apiext_util.RegisterCRDs(c.ApiExtKubeClient, crds)
 }
 
-// Init initializes mysql, DormantDB amd Snapshot watcher
+// Init initializes percona, DormantDB amd Snapshot watcher
 func (c *Controller) Init() error {
 	c.initWatcher()
 	c.DrmnQueue = drmnc.NewController(c.Controller, c, c.Config, nil, c.recorder).AddEventHandlerFunc(c.selector)
-	c.SnapQueue, c.JobQueue = snapc.NewController(c.Controller, c, c.Config, nil, c.recorder).AddEventHandlerFunc(c.selector)
+	//c.SnapQueue, c.JobQueue = snapc.NewController(c.Controller, c, c.Config, nil, c.recorder).AddEventHandlerFunc(c.selector)
 
 	return nil
 }
@@ -116,10 +117,10 @@ func (c *Controller) RunControllers(stopCh <-chan struct{}) {
 	c.cronController.StartCron()
 
 	// Watch x  TPR objects
-	c.myQueue.Run(stopCh)
+	c.pxcQueue.Run(stopCh)
 	c.DrmnQueue.Run(stopCh)
-	c.SnapQueue.Run(stopCh)
-	c.JobQueue.Run(stopCh)
+	//c.SnapQueue.Run(stopCh)
+	//c.JobQueue.Run(stopCh)
 }
 
 // Blocks caller. Intended to be called as a Go routine.
@@ -167,30 +168,30 @@ func (c *Controller) StartAndRunControllers(stopCh <-chan struct{}) {
 	log.Infoln("Stopping KubeDB controller")
 }
 
-func (c *Controller) pushFailureEvent(mysql *api.MySQL, reason string) {
+func (c *Controller) pushFailureEvent(pxc *api.Percona, reason string) {
 	c.recorder.Eventf(
-		mysql,
+		pxc,
 		core.EventTypeWarning,
 		eventer.EventReasonFailedToStart,
-		`Fail to be ready MySQL: "%v". Reason: %v`,
-		mysql.Name,
+		`Fail to be ready Percona: "%v". Reason: %v`,
+		pxc.Name,
 		reason,
 	)
 
-	my, err := util.UpdateMySQLStatus(c.ExtClient.KubedbV1alpha1(), mysql, func(in *api.MySQLStatus) *api.MySQLStatus {
+	per, err := util.UpdatePerconaStatus(c.ExtClient.KubedbV1alpha1(), pxc, func(in *api.PerconaStatus) *api.PerconaStatus {
 		in.Phase = api.DatabasePhaseFailed
 		in.Reason = reason
-		in.ObservedGeneration = types.NewIntHash(mysql.Generation, meta_util.GenerationHash(mysql))
+		in.ObservedGeneration = types.NewIntHash(pxc.Generation, meta_util.GenerationHash(pxc))
 		return in
 	}, apis.EnableStatusSubresource)
 
 	if err != nil {
 		c.recorder.Eventf(
-			mysql,
+			pxc,
 			core.EventTypeWarning,
 			eventer.EventReasonFailedToUpdate,
 			err.Error(),
 		)
 	}
-	mysql.Status = my.Status
+	pxc.Status = per.Status
 }

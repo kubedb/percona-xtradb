@@ -59,7 +59,7 @@ func (f *Framework) CleanWorkloadLeftOvers() {
 	// delete statefulset
 	if err := f.kubeClient.AppsV1().StatefulSets(f.namespace).DeleteCollection(deleteInForeground(), metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
-			api.LabelDatabaseKind: api.ResourceKindMySQL,
+			api.LabelDatabaseKind: api.ResourceKindPercona,
 		}).String(),
 	}); err != nil && !kerr.IsNotFound(err) {
 		fmt.Printf("error in deletion of Statefulset. Error: %v", err)
@@ -68,7 +68,7 @@ func (f *Framework) CleanWorkloadLeftOvers() {
 	// delete pvc
 	if err := f.kubeClient.CoreV1().PersistentVolumeClaims(f.namespace).DeleteCollection(deleteInForeground(), metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
-			api.LabelDatabaseKind: api.ResourceKindMySQL,
+			api.LabelDatabaseKind: api.ResourceKindPercona,
 		}).String(),
 	}); err != nil && !kerr.IsNotFound(err) {
 		fmt.Printf("error in deletion of PVC. Error: %v", err)
@@ -77,20 +77,20 @@ func (f *Framework) CleanWorkloadLeftOvers() {
 	// delete secret
 	if err := f.kubeClient.CoreV1().Secrets(f.namespace).DeleteCollection(deleteInForeground(), metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
-			api.LabelDatabaseKind: api.ResourceKindMySQL,
+			api.LabelDatabaseKind: api.ResourceKindPercona,
 		}).String(),
 	}); err != nil && !kerr.IsNotFound(err) {
 		fmt.Printf("error in deletion of Secret. Error: %v", err)
 	}
 }
 
-func (f *Framework) WaitUntilPodRunningBySelector(mysql *api.MySQL) error {
+func (f *Framework) WaitUntilPodRunningBySelector(percona *api.Percona) error {
 	return core_util.WaitUntilPodRunningBySelector(
 		f.kubeClient,
-		mysql.Namespace,
+		percona.Namespace,
 		&metav1.LabelSelector{
-			MatchLabels: mysql.OffshootSelectors(),
+			MatchLabels: percona.OffshootSelectors(),
 		},
-		int(types.Int32(mysql.Spec.Replicas)),
+		int(types.Int32(percona.Spec.Replicas)),
 	)
 }

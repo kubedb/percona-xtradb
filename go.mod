@@ -30,8 +30,12 @@ require (
 	github.com/kubedb/apimachinery v0.0.0-20190526014453-48e4bab67179
 =======
 	github.com/kr/pty v1.1.4 // indirect
+<<<<<<< HEAD
 	github.com/kubedb/apimachinery v0.0.0-20190522071750-ea389ac28bb6
 >>>>>>> Add all
+=======
+	github.com/kubedb/apimachinery v0.0.0-20190523070111-2d8126efa6f1
+>>>>>>> add percona xtradb cluster setup
 	github.com/lib/pq v1.1.1 // indirect
 	github.com/magiconair/properties v1.8.1 // indirect
 	github.com/mattn/go-isatty v0.0.8 // indirect
@@ -43,6 +47,7 @@ require (
 <<<<<<< HEAD
 =======
 	github.com/prometheus/client_golang v0.9.3 // indirect
+	github.com/prometheus/common v0.4.1 // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
 >>>>>>> Add all
 	github.com/spf13/cobra v0.0.4
@@ -59,6 +64,7 @@ require (
 	k8s.io/apiserver v0.0.0-20190508183956-3a0abf14e58a
 	k8s.io/cli-runtime v0.0.0-20190508184404-b26560c459bd // indirect
 	k8s.io/client-go v11.0.0+incompatible
+	k8s.io/klog v0.3.1 // indirect
 	k8s.io/kube-aggregator v0.0.0-20190508104018-6d3d96b06d29
 <<<<<<< HEAD
 	kmodules.xyz/client-go v0.0.0-20190524133821-9c8a87771aea

@@ -9,47 +9,43 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (i *Invocation) MySQLVersion() *api.MySQLVersion {
-	return &api.MySQLVersion{
+func (i *Invocation) PerconaVersion() *api.PerconaVersion {
+	return &api.PerconaVersion{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: DBVersion,
 			Labels: map[string]string{
 				"app": i.app,
 			},
 		},
-		Spec: api.MySQLVersionSpec{
+		Spec: api.PerconaVersionSpec{
 			Version: DBVersion,
-			DB: api.MySQLVersionDatabase{
-				Image: fmt.Sprintf("%s/mysql:%s", DockerRegistry, DBVersion),
+			DB: api.PerconaVersionDatabase{
+				Image: fmt.Sprintf("%s/percona:%s", DockerRegistry, DBVersion),
 			},
-			Exporter: api.MySQLVersionExporter{
+			Exporter: api.PerconaVersionExporter{
 				Image: fmt.Sprintf("%s/mysqld-exporter:%s", DockerRegistry, ExporterTag),
 			},
-			Tools: api.MySQLVersionTools{
-				Image: fmt.Sprintf("%s/mysql-tools:%s", DockerRegistry, DBToolsTag),
-			},
-			InitContainer: api.MySQLVersionInitContainer{
+			InitContainer: api.PerconaVersionInitContainer{
 				Image: "kubedb/busybox",
 			},
-			PodSecurityPolicies: api.MySQLVersionPodSecurityPolicy{
-				SnapshotterPolicyName: "mysql-snapshot",
-				DatabasePolicyName:    "mysql-db",
+			PodSecurityPolicies: api.PerconaVersionPodSecurityPolicy{
+				DatabasePolicyName: "percona-db",
 			},
 		},
 	}
 }
 
-func (f *Framework) CreateMySQLVersion(obj *api.MySQLVersion) error {
-	_, err := f.extClient.CatalogV1alpha1().MySQLVersions().Create(obj)
+func (f *Framework) CreatePerconaVersion(obj *api.PerconaVersion) error {
+	_, err := f.extClient.CatalogV1alpha1().PerconaVersions().Create(obj)
 	if err != nil && kerr.IsAlreadyExists(err) {
-		e2 := f.extClient.CatalogV1alpha1().MySQLVersions().Delete(obj.Name, &metav1.DeleteOptions{})
+		e2 := f.extClient.CatalogV1alpha1().PerconaVersions().Delete(obj.Name, &metav1.DeleteOptions{})
 		Expect(e2).NotTo(HaveOccurred())
-		_, e2 = f.extClient.CatalogV1alpha1().MySQLVersions().Create(obj)
+		_, e2 = f.extClient.CatalogV1alpha1().PerconaVersions().Create(obj)
 		return e2
 	}
 	return nil
 }
 
-func (f *Framework) DeleteMySQLVersion(meta metav1.ObjectMeta) error {
-	return f.extClient.CatalogV1alpha1().MySQLVersions().Delete(meta.Name, &metav1.DeleteOptions{})
+func (f *Framework) DeletePerconaVersion(meta metav1.ObjectMeta) error {
+	return f.extClient.CatalogV1alpha1().PerconaVersions().Delete(meta.Name, &metav1.DeleteOptions{})
 }

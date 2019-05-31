@@ -2,7 +2,6 @@ package controller
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/appscode/go/log"
@@ -22,13 +21,13 @@ import (
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
 )
 
-func (c *Controller) ensureStatefulSet(mysql *api.MySQL) (kutil.VerbType, error) {
-	if err := c.checkStatefulSet(mysql); err != nil {
+func (c *Controller) ensureStatefulSet(pxc *api.Percona) (kutil.VerbType, error) {
+	if err := c.checkStatefulSet(pxc); err != nil {
 		return kutil.VerbUnchanged, err
 	}
 
-	// Create statefulSet for MySQL database
-	statefulSet, vt, err := c.createStatefulSet(mysql)
+	// Create statefulSet for Percona
+	statefulSet, vt, err := c.createStatefulSet(pxc)
 	if err != nil {
 		return kutil.VerbUnchanged, err
 	}
@@ -39,7 +38,7 @@ func (c *Controller) ensureStatefulSet(mysql *api.MySQL) (kutil.VerbType, error)
 			return kutil.VerbUnchanged, err
 		}
 		c.recorder.Eventf(
-			mysql,
+			pxc,
 			core.EventTypeNormal,
 			eventer.EventReasonSuccessful,
 			"Successfully %v StatefulSet",
@@ -49,9 +48,9 @@ func (c *Controller) ensureStatefulSet(mysql *api.MySQL) (kutil.VerbType, error)
 	return vt, nil
 }
 
-func (c *Controller) checkStatefulSet(mysql *api.MySQL) error {
-	// SatatefulSet for MySQL database
-	statefulSet, err := c.Client.AppsV1().StatefulSets(mysql.Namespace).Get(mysql.OffshootName(), metav1.GetOptions{})
+func (c *Controller) checkStatefulSet(pxc *api.Percona) error {
+	// SatatefulSet for Percona
+	statefulSet, err := c.Client.AppsV1().StatefulSets(pxc.Namespace).Get(pxc.OffshootName(), metav1.GetOptions{})
 	if err != nil {
 		if kerr.IsNotFound(err) {
 			return nil
@@ -59,49 +58,49 @@ func (c *Controller) checkStatefulSet(mysql *api.MySQL) error {
 		return err
 	}
 
-	if statefulSet.Labels[api.LabelDatabaseKind] != api.ResourceKindMySQL ||
-		statefulSet.Labels[api.LabelDatabaseName] != mysql.Name {
-		return fmt.Errorf(`intended statefulSet "%v/%v" already exists`, mysql.Namespace, mysql.OffshootName())
+	if statefulSet.Labels[api.LabelDatabaseKind] != api.ResourceKindPercona ||
+		statefulSet.Labels[api.LabelDatabaseName] != pxc.Name {
+		return fmt.Errorf(`intended statefulSet "%v/%v" already exists`, pxc.Namespace, pxc.OffshootName())
 	}
 
 	return nil
 }
 
-func (c *Controller) createStatefulSet(mysql *api.MySQL) (*apps.StatefulSet, kutil.VerbType, error) {
+func (c *Controller) createStatefulSet(pxc *api.Percona) (*apps.StatefulSet, kutil.VerbType, error) {
 	statefulSetMeta := metav1.ObjectMeta{
-		Name:      mysql.OffshootName(),
-		Namespace: mysql.Namespace,
+		Name:      pxc.OffshootName(),
+		Namespace: pxc.Namespace,
 	}
 
-	ref, rerr := reference.GetReference(clientsetscheme.Scheme, mysql)
+	ref, rerr := reference.GetReference(clientsetscheme.Scheme, pxc)
 	if rerr != nil {
 		return nil, kutil.VerbUnchanged, rerr
 	}
 
-	mysqlVersion, err := c.ExtClient.CatalogV1alpha1().MySQLVersions().Get(string(mysql.Spec.Version), metav1.GetOptions{})
+	pxcVersion, err := c.ExtClient.CatalogV1alpha1().PerconaVersions().Get(string(pxc.Spec.Version), metav1.GetOptions{})
 	if err != nil {
 		return nil, kutil.VerbUnchanged, rerr
 	}
 
 	return app_util.CreateOrPatchStatefulSet(c.Client, statefulSetMeta, func(in *apps.StatefulSet) *apps.StatefulSet {
-		in.Labels = mysql.OffshootLabels()
-		in.Annotations = mysql.Spec.PodTemplate.Controller.Annotations
+		in.Labels = pxc.OffshootLabels()
+		in.Annotations = pxc.Spec.PodTemplate.Controller.Annotations
 		core_util.EnsureOwnerReference(&in.ObjectMeta, ref)
 
-		in.Spec.Replicas = mysql.Spec.Replicas
+		in.Spec.Replicas = pxc.Spec.Replicas
 		in.Spec.ServiceName = c.GoverningService
 		in.Spec.Selector = &metav1.LabelSelector{
-			MatchLabels: mysql.OffshootSelectors(),
+			MatchLabels: pxc.OffshootSelectors(),
 		}
-		in.Spec.Template.Labels = mysql.OffshootSelectors()
-		in.Spec.Template.Annotations = mysql.Spec.PodTemplate.Annotations
+		in.Spec.Template.Labels = pxc.OffshootSelectors()
+		in.Spec.Template.Annotations = pxc.Spec.PodTemplate.Annotations
 		in.Spec.Template.Spec.InitContainers = core_util.UpsertContainers(
 			in.Spec.Template.Spec.InitContainers,
 			append(
 				[]core.Container{
 					{
 						Name:            "remove-lost-found",
-						Image:           mysqlVersion.Spec.InitContainer.Image,
+						Image:           pxcVersion.Spec.InitContainer.Image,
 						ImagePullPolicy: core.PullIfNotPresent,
 						Command: []string{
 							"rm",
@@ -114,50 +113,113 @@ func (c *Controller) createStatefulSet(mysql *api.MySQL) (*apps.StatefulSet, kut
 								MountPath: "/var/lib/mysql",
 							},
 						},
-						Resources: mysql.Spec.PodTemplate.Spec.Resources,
+						Resources: pxc.Spec.PodTemplate.Spec.Resources,
 					},
 				},
-				mysql.Spec.PodTemplate.Spec.InitContainers...,
+				pxc.Spec.PodTemplate.Spec.InitContainers...,
 			),
 		)
 
+		//entryPointArgs := strings.Join(pxc.Spec.PodTemplate.Spec.Args, " ")
 		container := core.Container{
-			Name:            api.ResourceSingularMySQL,
-			Image:           mysqlVersion.Spec.DB.Image,
+			Name:            api.ResourceSingularPercona,
+			Image:           pxcVersion.Spec.DB.Image,
 			ImagePullPolicy: core.PullIfNotPresent,
-			Args:            mysql.Spec.PodTemplate.Spec.Args,
-			Resources:       mysql.Spec.PodTemplate.Spec.Resources,
-			LivenessProbe:   mysql.Spec.PodTemplate.Spec.LivenessProbe,
-			ReadinessProbe:  mysql.Spec.PodTemplate.Spec.ReadinessProbe,
-			Lifecycle:       mysql.Spec.PodTemplate.Spec.Lifecycle,
+			Args:            pxc.Spec.PodTemplate.Spec.Args,
+			Resources:       pxc.Spec.PodTemplate.Spec.Resources,
+			LivenessProbe:   pxc.Spec.PodTemplate.Spec.LivenessProbe,
+			ReadinessProbe:  pxc.Spec.PodTemplate.Spec.ReadinessProbe,
+			Lifecycle:       pxc.Spec.PodTemplate.Spec.Lifecycle,
 			Ports: []core.ContainerPort{
 				{
 					Name:          "db",
 					ContainerPort: api.MySQLNodePort,
 					Protocol:      core.ProtocolTCP,
 				},
+				//{
+				//	Name:          "com1",
+				//	ContainerPort: 4567,
+				//},
+				//{
+				//	Name:          "com2",
+				//	ContainerPort: 4568,
+				//},
 			},
+			//
+			//			Command: []string{
+			//				"/bin/bash", "-c",
+			//				fmt.Sprintf(`
+			//index=$(cat /etc/hostname | grep -o '[^-]*$')
+			//NAMESPACE=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+			//
+			//CLUSTER_JOIN=
+			//if [[ "${index}" -gt "0" ]]; then
+			//  CLUSTER_JOIN=%[1]s-0.%[2]s.$NAMESPACE.svc.cluster.local
+			//
+			//  while true; do
+			//    out=$(ping $CLUSTER_JOIN -c 1 2>/dev/null)
+			//    if [[ -n "$out" ]]; then
+			//      break
+			//    fi
+			//
+			//    sleep 1
+			//  done
+			//
+			//  for i in {60..0}; do
+			//    echo .
+			//    sleep 1
+			//  done
+			//fi
+			//
+			//# export CLUSTER_NAME=%[3]s
+			//export CLUSTER_JOIN
+			//
+			//echo
+			//echo "================================="
+			//echo "CLUSTER_JOIN=${CLUSTER_JOIN}"
+			//echo "CLUSTER_NAME=${CLUSTER_NAME}"
+			//echo "================================="
+			//echo
+			//
+			//echo
+			//
+			//. /entrypoint.sh
+			//# . /entrypoint.sh --wsrep_node_address=%[1]s-${index}.%[2]s.$NAMESPACE
+			//# . /entrypoint.sh --wsrep_node_address=%[1]s-${index}.%[2]s.$NAMESPACE.svc.cluster.local --bind-address=0.0.0.0
+			//`, pxc.Name, c.GoverningService),
+			//			},
 		}
-		if mysql.Spec.Topology != nil && mysql.Spec.Topology.Mode != nil &&
-			*mysql.Spec.Topology.Mode == api.MySQLClusterModeGroup {
+
+		if pxc.Spec.PXC != nil {
 			container.Command = []string{
 				"peer-finder",
 			}
-			userProvidedArgs := strings.Join(mysql.Spec.PodTemplate.Spec.Args, " ")
+			userProvidedArgs := strings.Join(pxc.Spec.PodTemplate.Spec.Args, " ")
 			container.Args = []string{
 				fmt.Sprintf("-service=%s", c.GoverningService),
 				fmt.Sprintf("-on-start=/on-start.sh %s", userProvidedArgs),
 			}
-			if container.LivenessProbe != nil && structs.IsZero(*container.LivenessProbe) {
-				container.LivenessProbe = nil
-			}
-			if container.ReadinessProbe != nil && structs.IsZero(*container.ReadinessProbe) {
-				container.ReadinessProbe = nil
-			}
+			container.Ports = append(container.Ports, []core.ContainerPort{
+				{
+					Name:          "com1",
+					ContainerPort: 4567,
+				},
+				{
+					Name:          "com2",
+					ContainerPort: 4568,
+				},
+			}...)
 		}
+		if container.LivenessProbe != nil && structs.IsZero(*container.LivenessProbe) {
+			container.LivenessProbe = nil
+		}
+		if container.ReadinessProbe != nil && structs.IsZero(*container.ReadinessProbe) {
+			container.ReadinessProbe = nil
+		}
+
 		in.Spec.Template.Spec.Containers = core_util.UpsertContainer(in.Spec.Template.Spec.Containers, container)
 
-		if mysql.GetMonitoringVendor() == mona.VendorPrometheus {
+		if pxc.GetMonitoringVendor() == mona.VendorPrometheus {
 			in.Spec.Template.Spec.Containers = core_util.UpsertContainer(in.Spec.Template.Spec.Containers, core.Container{
 				Name: "exporter",
 				Command: []string{
@@ -169,55 +231,56 @@ func (c *Controller) createStatefulSet(mysql *api.MySQL) (*apps.StatefulSet, kut
 					// ref: https://github.com/prometheus/mysqld_exporter#setting-the-mysql-servers-data-source-name
 					fmt.Sprintf(`export DATA_SOURCE_NAME="${MYSQL_ROOT_USERNAME:-}:${MYSQL_ROOT_PASSWORD:-}@(127.0.0.1:3306)/"
 						/bin/mysqld_exporter --web.listen-address=:%v --web.telemetry-path=%v %v`,
-						mysql.Spec.Monitor.Prometheus.Port, mysql.StatsService().Path(), strings.Join(mysql.Spec.Monitor.Args, " ")),
+						pxc.Spec.Monitor.Prometheus.Port, pxc.StatsService().Path(), strings.Join(pxc.Spec.Monitor.Args, " ")),
 				},
-				Image: mysqlVersion.Spec.Exporter.Image,
+				Image: pxcVersion.Spec.Exporter.Image,
 				Ports: []core.ContainerPort{
 					{
 						Name:          api.PrometheusExporterPortName,
 						Protocol:      core.ProtocolTCP,
-						ContainerPort: mysql.Spec.Monitor.Prometheus.Port,
+						ContainerPort: pxc.Spec.Monitor.Prometheus.Port,
 					},
 				},
-				Env:             mysql.Spec.Monitor.Env,
-				Resources:       mysql.Spec.Monitor.Resources,
-				SecurityContext: mysql.Spec.Monitor.SecurityContext,
+				Env:             pxc.Spec.Monitor.Env,
+				Resources:       pxc.Spec.Monitor.Resources,
+				SecurityContext: pxc.Spec.Monitor.SecurityContext,
 			})
 		}
 		// Set Admin Secret as MYSQL_ROOT_PASSWORD env variable
-		in = upsertEnv(in, mysql)
-		in = upsertDataVolume(in, mysql)
-		in = upsertCustomConfig(in, mysql)
+		in = upsertEnv(in, pxc)
+		in = upsertDataVolume(in, pxc)
+		in = upsertCustomConfig(in, pxc)
 
-		if mysql.Spec.Init != nil && mysql.Spec.Init.ScriptSource != nil {
-			in = upsertInitScript(in, mysql.Spec.Init.ScriptSource.VolumeSource)
+		if pxc.Spec.Init != nil && pxc.Spec.Init.ScriptSource != nil {
+			in = upsertInitScript(in, pxc.Spec.Init.ScriptSource.VolumeSource)
 		}
 
-		in.Spec.Template.Spec.NodeSelector = mysql.Spec.PodTemplate.Spec.NodeSelector
-		in.Spec.Template.Spec.Affinity = mysql.Spec.PodTemplate.Spec.Affinity
-		if mysql.Spec.PodTemplate.Spec.SchedulerName != "" {
-			in.Spec.Template.Spec.SchedulerName = mysql.Spec.PodTemplate.Spec.SchedulerName
+		in.Spec.Template.Spec.NodeSelector = pxc.Spec.PodTemplate.Spec.NodeSelector
+		in.Spec.Template.Spec.Affinity = pxc.Spec.PodTemplate.Spec.Affinity
+		if pxc.Spec.PodTemplate.Spec.SchedulerName != "" {
+			in.Spec.Template.Spec.SchedulerName = pxc.Spec.PodTemplate.Spec.SchedulerName
 		}
-		in.Spec.Template.Spec.Tolerations = mysql.Spec.PodTemplate.Spec.Tolerations
-		in.Spec.Template.Spec.ImagePullSecrets = mysql.Spec.PodTemplate.Spec.ImagePullSecrets
-		in.Spec.Template.Spec.PriorityClassName = mysql.Spec.PodTemplate.Spec.PriorityClassName
-		in.Spec.Template.Spec.Priority = mysql.Spec.PodTemplate.Spec.Priority
-		in.Spec.Template.Spec.SecurityContext = mysql.Spec.PodTemplate.Spec.SecurityContext
+		in.Spec.Template.Spec.Tolerations = pxc.Spec.PodTemplate.Spec.Tolerations
+		in.Spec.Template.Spec.ImagePullSecrets = pxc.Spec.PodTemplate.Spec.ImagePullSecrets
+		in.Spec.Template.Spec.PriorityClassName = pxc.Spec.PodTemplate.Spec.PriorityClassName
+		in.Spec.Template.Spec.Priority = pxc.Spec.PodTemplate.Spec.Priority
+		in.Spec.Template.Spec.SecurityContext = pxc.Spec.PodTemplate.Spec.SecurityContext
+		//in.Spec.Template.Spec.SecurityContext = pxc.Spec.PodTemplate.Spec.SecurityContext
 
 		if c.EnableRBAC {
-			in.Spec.Template.Spec.ServiceAccountName = mysql.OffshootName()
+			in.Spec.Template.Spec.ServiceAccountName = pxc.OffshootName()
 		}
 
-		in.Spec.UpdateStrategy = mysql.Spec.UpdateStrategy
-		in = upsertUserEnv(in, mysql)
+		in.Spec.UpdateStrategy = pxc.Spec.UpdateStrategy
+		in = upsertUserEnv(in, pxc)
 
 		return in
 	})
 }
 
-func upsertDataVolume(statefulSet *apps.StatefulSet, mysql *api.MySQL) *apps.StatefulSet {
+func upsertDataVolume(statefulSet *apps.StatefulSet, pxc *api.Percona) *apps.StatefulSet {
 	for i, container := range statefulSet.Spec.Template.Spec.Containers {
-		if container.Name == api.ResourceSingularMySQL {
+		if container.Name == api.ResourceSingularPercona {
 			volumeMount := core.VolumeMount{
 				Name:      "data",
 				MountPath: "/var/lib/mysql",
@@ -226,8 +289,8 @@ func upsertDataVolume(statefulSet *apps.StatefulSet, mysql *api.MySQL) *apps.Sta
 			volumeMounts = core_util.UpsertVolumeMount(volumeMounts, volumeMount)
 			statefulSet.Spec.Template.Spec.Containers[i].VolumeMounts = volumeMounts
 
-			pvcSpec := mysql.Spec.Storage
-			if mysql.Spec.StorageType == api.StorageTypeEphemeral {
+			pvcSpec := pxc.Spec.Storage
+			if pxc.Spec.StorageType == api.StorageTypeEphemeral {
 				ed := core.EmptyDirVolumeSource{}
 				if pvcSpec != nil {
 					if sz, found := pvcSpec.Resources.Requests[core.ResourceStorage]; found {
@@ -247,7 +310,7 @@ func upsertDataVolume(statefulSet *apps.StatefulSet, mysql *api.MySQL) *apps.Sta
 					pvcSpec.AccessModes = []core.PersistentVolumeAccessMode{
 						core.ReadWriteOnce,
 					}
-					log.Infof(`Using "%v" as AccessModes in mysql.Spec.Storage`, core.ReadWriteOnce)
+					log.Infof(`Using "%v" as AccessModes in percona.Spec.Storage`, core.ReadWriteOnce)
 				}
 
 				claim := core.PersistentVolumeClaim{
@@ -269,18 +332,18 @@ func upsertDataVolume(statefulSet *apps.StatefulSet, mysql *api.MySQL) *apps.Sta
 	return statefulSet
 }
 
-func upsertEnv(statefulSet *apps.StatefulSet, mysql *api.MySQL) *apps.StatefulSet {
+func upsertEnv(statefulSet *apps.StatefulSet, pxc *api.Percona) *apps.StatefulSet {
 	for i, container := range statefulSet.Spec.Template.Spec.Containers {
-		if container.Name == api.ResourceSingularMySQL || container.Name == "exporter" {
+		if container.Name == api.ResourceSingularPercona || container.Name == "exporter" {
 			envs := []core.EnvVar{
 				{
 					Name: "MYSQL_ROOT_PASSWORD",
 					ValueFrom: &core.EnvVarSource{
 						SecretKeyRef: &core.SecretKeySelector{
 							LocalObjectReference: core.LocalObjectReference{
-								Name: mysql.Spec.DatabaseSecret.SecretName,
+								Name: pxc.Spec.DatabaseSecret.SecretName,
 							},
-							Key: KeyMySQLPassword,
+							Key: KeyPerconaPassword,
 						},
 					},
 				},
@@ -289,44 +352,25 @@ func upsertEnv(statefulSet *apps.StatefulSet, mysql *api.MySQL) *apps.StatefulSe
 					ValueFrom: &core.EnvVarSource{
 						SecretKeyRef: &core.SecretKeySelector{
 							LocalObjectReference: core.LocalObjectReference{
-								Name: mysql.Spec.DatabaseSecret.SecretName,
+								Name: pxc.Spec.DatabaseSecret.SecretName,
 							},
-							Key: KeyMySQLUser,
+							Key: KeyPerconaUser,
 						},
 					},
 				},
 			}
-			if mysql.Spec.Topology != nil &&
-				mysql.Spec.Topology.Mode != nil &&
-				*mysql.Spec.Topology.Mode == api.MySQLClusterModeGroup &&
-				container.Name == api.ResourceSingularMySQL {
-				envs = append(envs, []core.EnvVar{
-					{
-						Name:  "BASE_NAME",
-						Value: mysql.Name,
-					},
-					{
-						Name:  "GOV_SVC",
-						Value: mysql.GoverningServiceName(),
-					},
-					{
-						Name: "POD_NAMESPACE",
-						ValueFrom: &core.EnvVarSource{
-							FieldRef: &core.ObjectFieldSelector{
-								FieldPath: "metadata.namespace",
-							},
-						},
-					},
-					{
-						Name:  "GROUP_NAME",
-						Value: mysql.Spec.Topology.Group.Name,
-					},
-					{
-						Name:  "BASE_SERVER_ID",
-						Value: strconv.Itoa(int(*mysql.Spec.Topology.Group.BaseServerID)),
-					},
-				}...)
+
+			if pxc.Spec.PXC != nil {
+				envs = append(envs, core.EnvVar{
+					Name:  "CLUSTER_NAME",
+					Value: pxc.Spec.PXC.ClusterName,
+				})
+				//envs = append(envs, core.EnvVar{
+				//	Name:  "GOV_SVC",
+				//	Value: statefulSet.Spec.ServiceName,
+				//})
 			}
+
 			statefulSet.Spec.Template.Spec.Containers[i].Env = core_util.UpsertEnvVars(container.Env, envs...)
 		}
 	}
@@ -335,10 +379,10 @@ func upsertEnv(statefulSet *apps.StatefulSet, mysql *api.MySQL) *apps.StatefulSe
 }
 
 // upsertUserEnv add/overwrite env from user provided env in crd spec
-func upsertUserEnv(statefulSet *apps.StatefulSet, mysql *api.MySQL) *apps.StatefulSet {
+func upsertUserEnv(statefulSet *apps.StatefulSet, pxc *api.Percona) *apps.StatefulSet {
 	for i, container := range statefulSet.Spec.Template.Spec.Containers {
-		if container.Name == api.ResourceSingularMySQL {
-			statefulSet.Spec.Template.Spec.Containers[i].Env = core_util.UpsertEnvVars(container.Env, mysql.Spec.PodTemplate.Spec.Env...)
+		if container.Name == api.ResourceSingularPercona {
+			statefulSet.Spec.Template.Spec.Containers[i].Env = core_util.UpsertEnvVars(container.Env, pxc.Spec.PodTemplate.Spec.Env...)
 			return statefulSet
 		}
 	}
@@ -347,7 +391,7 @@ func upsertUserEnv(statefulSet *apps.StatefulSet, mysql *api.MySQL) *apps.Statef
 
 func upsertInitScript(statefulSet *apps.StatefulSet, script core.VolumeSource) *apps.StatefulSet {
 	for i, container := range statefulSet.Spec.Template.Spec.Containers {
-		if container.Name == api.ResourceSingularMySQL {
+		if container.Name == api.ResourceSingularPercona {
 			volumeMount := core.VolumeMount{
 				Name:      "initial-script",
 				MountPath: "/docker-entrypoint-initdb.d",
@@ -384,10 +428,10 @@ func (c *Controller) checkStatefulSetPodStatus(statefulSet *apps.StatefulSet) er
 	return nil
 }
 
-func upsertCustomConfig(statefulSet *apps.StatefulSet, mysql *api.MySQL) *apps.StatefulSet {
-	if mysql.Spec.ConfigSource != nil {
+func upsertCustomConfig(statefulSet *apps.StatefulSet, pxc *api.Percona) *apps.StatefulSet {
+	if pxc.Spec.ConfigSource != nil {
 		for i, container := range statefulSet.Spec.Template.Spec.Containers {
-			if container.Name == api.ResourceSingularMySQL {
+			if container.Name == api.ResourceSingularPercona {
 				configVolumeMount := core.VolumeMount{
 					Name:      "custom-config",
 					MountPath: "/etc/mysql/conf.d",
@@ -398,7 +442,7 @@ func upsertCustomConfig(statefulSet *apps.StatefulSet, mysql *api.MySQL) *apps.S
 
 				configVolume := core.Volume{
 					Name:         "custom-config",
-					VolumeSource: *mysql.Spec.ConfigSource,
+					VolumeSource: *pxc.Spec.ConfigSource,
 				}
 
 				volumes := statefulSet.Spec.Template.Spec.Volumes
