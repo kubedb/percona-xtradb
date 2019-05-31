@@ -8,9 +8,8 @@ import (
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/pkg/admission/dormantdatabase"
 	"github.com/kubedb/apimachinery/pkg/admission/namespace"
-	"github.com/kubedb/apimachinery/pkg/admission/snapshot"
 	"github.com/kubedb/apimachinery/pkg/eventer"
-	myAdmsn "github.com/kubedb/percona/pkg/admission"
+	pxcAdmsn "github.com/kubedb/percona/pkg/admission"
 	"github.com/kubedb/percona/pkg/controller"
 	admission "k8s.io/api/admission/v1beta1"
 	core "k8s.io/api/core/v1"
@@ -55,7 +54,7 @@ func init() {
 	)
 }
 
-type MySQLServerConfig struct {
+type PerconaServerConfig struct {
 	GenericConfig  *genericapiserver.RecommendedConfig
 	ExtraConfig    ExtraConfig
 	OperatorConfig *controller.OperatorConfig
@@ -65,13 +64,13 @@ type ExtraConfig struct {
 	AdmissionHooks []hooks.AdmissionHook
 }
 
-// MySQLServer contains state for a Kubernetes cluster master/api server.
-type MySQLServer struct {
+// PerconaServer contains state for a Kubernetes cluster master/api server.
+type PerconaServer struct {
 	GenericAPIServer *genericapiserver.GenericAPIServer
 	Operator         *controller.Controller
 }
 
-func (op *MySQLServer) Run(stopCh <-chan struct{}) error {
+func (op *PerconaServer) Run(stopCh <-chan struct{}) error {
 	go op.Operator.Run(stopCh)
 	return op.GenericAPIServer.PrepareRun().Run(stopCh)
 }
@@ -88,7 +87,7 @@ type CompletedConfig struct {
 }
 
 // Complete fills in any fields not set that are required to have valid data. It's mutating the receiver.
-func (c *MySQLServerConfig) Complete() CompletedConfig {
+func (c *PerconaServerConfig) Complete() CompletedConfig {
 	completedCfg := completedConfig{
 		c.GenericConfig.Complete(),
 		c.ExtraConfig,
@@ -103,8 +102,8 @@ func (c *MySQLServerConfig) Complete() CompletedConfig {
 	return CompletedConfig{&completedCfg}
 }
 
-// New returns a new instance of MySQLServer from the given config.
-func (c completedConfig) New() (*MySQLServer, error) {
+// New returns a new instance of PerconaServer from the given config.
+func (c completedConfig) New() (*PerconaServer, error) {
 	genericServer, err := c.GenericConfig.New("kubedb-server", genericapiserver.NewEmptyDelegate()) // completion is done in Complete, no need for a second time
 	if err != nil {
 		return nil, err
@@ -112,16 +111,16 @@ func (c completedConfig) New() (*MySQLServer, error) {
 
 	if c.OperatorConfig.EnableMutatingWebhook {
 		c.ExtraConfig.AdmissionHooks = []hooks.AdmissionHook{
-			&myAdmsn.PerconaMutator{},
+			&pxcAdmsn.PerconaMutator{},
 		}
 	}
 	if c.OperatorConfig.EnableValidatingWebhook {
 		c.ExtraConfig.AdmissionHooks = append(c.ExtraConfig.AdmissionHooks,
-			&myAdmsn.PerconaValidator{},
-			&snapshot.SnapshotValidator{},
+			&pxcAdmsn.PerconaValidator{},
+			//&snapshot.SnapshotValidator{},
 			&dormantdatabase.DormantDatabaseValidator{},
 			&namespace.NamespaceValidator{
-				Resources: []string{api.ResourcePluralMySQL},
+				Resources: []string{api.ResourcePluralPercona},
 			},
 		)
 	}
@@ -131,7 +130,7 @@ func (c completedConfig) New() (*MySQLServer, error) {
 		return nil, err
 	}
 
-	s := &MySQLServer{
+	s := &PerconaServer{
 		GenericAPIServer: genericServer,
 		Operator:         ctrl,
 	}
@@ -189,16 +188,16 @@ func (c completedConfig) New() (*MySQLServer, error) {
 		s.GenericAPIServer.AddPostStartHookOrDie("validating-webhook-xray",
 			func(context genericapiserver.PostStartHookContext) error {
 				go func() {
-					xray := reg_util.NewCreateValidatingWebhookXray(c.OperatorConfig.ClientConfig, apiserviceName, &api.MySQL{
+					xray := reg_util.NewCreateValidatingWebhookXray(c.OperatorConfig.ClientConfig, apiserviceName, &api.Percona{
 						TypeMeta: metav1.TypeMeta{
 							APIVersion: api.SchemeGroupVersion.String(),
-							Kind:       api.ResourceKindMySQL,
+							Kind:       api.ResourceKindPercona,
 						},
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      "test-mysql-for-webhook-xray",
+							Name:      "test-percona-for-webhook-xray",
 							Namespace: "default",
 						},
-						Spec: api.MySQLSpec{
+						Spec: api.PerconaSpec{
 							StorageType: api.StorageType("Invalid"),
 						},
 					}, context.StopCh)

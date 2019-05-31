@@ -46,7 +46,7 @@ func (c *OperatorConfig) New() (*Controller, error) {
 		return nil, err
 	}
 
-	recorder := eventer.NewEventRecorder(c.KubeClient, "MySQL operator")
+	recorder := eventer.NewEventRecorder(c.KubeClient, "Percona operator")
 
 	ctrl := New(
 		c.ClientConfig,
@@ -67,7 +67,7 @@ func (c *OperatorConfig) New() (*Controller, error) {
 
 	// Initialize Job and Snapshot Informer. Later EventHandler will be added to these informers.
 	ctrl.DrmnInformer = dormantdatabase.NewController(ctrl.Controller, ctrl, ctrl.Config, tweakListOptions, recorder).InitInformer()
-	ctrl.SnapInformer, ctrl.JobInformer = snapc.NewController(ctrl.Controller, ctrl, ctrl.Config, tweakListOptions, recorder).InitInformer()
+	//ctrl.SnapInformer, ctrl.JobInformer = snapc.NewController(ctrl.Controller, ctrl, ctrl.Config, tweakListOptions, recorder).InitInformer()
 
 	if err := ctrl.EnsureCustomResourceDefinitions(); err != nil {
 		return nil, err

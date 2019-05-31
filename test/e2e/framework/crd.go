@@ -12,9 +12,9 @@ import (
 func (f *Framework) EventuallyCRD() GomegaAsyncAssertion {
 	return Eventually(
 		func() error {
-			// Check MySQL TPR
-			if _, err := f.extClient.KubedbV1alpha1().MySQLs(core.NamespaceAll).List(metav1.ListOptions{}); err != nil {
-				return errors.New("CRD MySQL is not ready")
+			// Check Percona TPR
+			if _, err := f.extClient.KubedbV1alpha1().Perconas(core.NamespaceAll).List(metav1.ListOptions{}); err != nil {
+				return errors.New("CRD Percona is not ready")
 			}
 
 			// Check Snapshots TPR

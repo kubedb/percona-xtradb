@@ -44,8 +44,8 @@ func New(
 		extClient:        extClient,
 		kaClient:         kaClient,
 		appCatalogClient: appCatalogClient,
-		name:             "mysql-operator",
-		namespace:        rand.WithUniqSuffix(api.ResourceSingularMySQL),
+		name:             "percona-operator",
+		namespace:        rand.WithUniqSuffix(api.ResourceSingularPercona),
 		StorageClass:     storageClass,
 	}
 }
@@ -53,7 +53,7 @@ func New(
 func (f *Framework) Invoke() *Invocation {
 	return &Invocation{
 		Framework: f,
-		app:       rand.WithUniqSuffix("mysql-e2e"),
+		app:       rand.WithUniqSuffix("percona-e2e"),
 	}
 }
 

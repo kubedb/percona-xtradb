@@ -68,7 +68,7 @@ func (f *Framework) EventuallyWipedOut(meta metav1.ObjectMeta) GomegaAsyncAssert
 		func() error {
 			labelMap := map[string]string{
 				api.LabelDatabaseName: meta.Name,
-				api.LabelDatabaseKind: api.ResourceKindMySQL,
+				api.LabelDatabaseKind: api.ResourceKindPercona,
 			}
 			labelSelector := labels.SelectorFromSet(labelMap)
 

@@ -15,56 +15,56 @@ import (
 const (
 	mysqlUser = "root"
 
-	KeyMySQLUser     = "username"
-	KeyMySQLPassword = "password"
+	KeyPerconaUser     = "username"
+	KeyPerconaPassword = "password"
 )
 
-func (c *Controller) ensureDatabaseSecret(mysql *api.MySQL) error {
-	if mysql.Spec.DatabaseSecret == nil {
-		secretVolumeSource, err := c.createDatabaseSecret(mysql)
+func (c *Controller) ensureDatabaseSecret(pxc *api.Percona) error {
+	if pxc.Spec.DatabaseSecret == nil {
+		secretVolumeSource, err := c.createDatabaseSecret(pxc)
 		if err != nil {
 			return err
 		}
 
-		ms, _, err := util.PatchMySQL(c.ExtClient.KubedbV1alpha1(), mysql, func(in *api.MySQL) *api.MySQL {
+		per, _, err := util.PatchPercona(c.ExtClient.KubedbV1alpha1(), pxc, func(in *api.Percona) *api.Percona {
 			in.Spec.DatabaseSecret = secretVolumeSource
 			return in
 		})
 		if err != nil {
 			return err
 		}
-		mysql.Spec.DatabaseSecret = ms.Spec.DatabaseSecret
+		pxc.Spec.DatabaseSecret = per.Spec.DatabaseSecret
 		return nil
 	}
-	return c.upgradeDatabaseSecret(mysql)
+	return c.upgradeDatabaseSecret(pxc)
 }
 
-func (c *Controller) createDatabaseSecret(mysql *api.MySQL) (*core.SecretVolumeSource, error) {
-	authSecretName := mysql.Name + "-auth"
+func (c *Controller) createDatabaseSecret(pxc *api.Percona) (*core.SecretVolumeSource, error) {
+	authSecretName := pxc.Name + "-auth"
 
-	sc, err := c.checkSecret(authSecretName, mysql)
+	sc, err := c.checkSecret(authSecretName, pxc)
 	if err != nil {
 		return nil, err
 	}
 	if sc == nil {
 		randPassword := ""
 
-		// if the password starts with "-", it will cause error in bash scripts (in mysql-tools)
+		// if the password starts with "-", it will cause error in bash scripts (in percona-tools)
 		for randPassword = rand.GeneratePassword(); randPassword[0] == '-'; {
 		}
 
 		secret := &core.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   authSecretName,
-				Labels: mysql.OffshootSelectors(),
+				Labels: pxc.OffshootSelectors(),
 			},
 			Type: core.SecretTypeOpaque,
 			StringData: map[string]string{
-				KeyMySQLUser:     mysqlUser,
-				KeyMySQLPassword: randPassword,
+				KeyPerconaUser:     mysqlUser,
+				KeyPerconaPassword: randPassword,
 			},
 		}
-		if _, err := c.Client.CoreV1().Secrets(mysql.Namespace).Create(secret); err != nil {
+		if _, err := c.Client.CoreV1().Secrets(pxc.Namespace).Create(secret); err != nil {
 			return nil, err
 		}
 	}
@@ -75,16 +75,16 @@ func (c *Controller) createDatabaseSecret(mysql *api.MySQL) (*core.SecretVolumeS
 
 // This is done to fix 0.8.0 -> 0.9.0 upgrade due to
 // https://github.com/kubedb/percona/pull/115/files#diff-10ddaf307bbebafda149db10a28b9c24R17 commit
-func (c *Controller) upgradeDatabaseSecret(mysql *api.MySQL) error {
+func (c *Controller) upgradeDatabaseSecret(pxc *api.Percona) error {
 	meta := metav1.ObjectMeta{
-		Name:      mysql.Spec.DatabaseSecret.SecretName,
-		Namespace: mysql.Namespace,
+		Name:      pxc.Spec.DatabaseSecret.SecretName,
+		Namespace: pxc.Namespace,
 	}
 
 	_, _, err := core_util.CreateOrPatchSecret(c.Client, meta, func(in *core.Secret) *core.Secret {
-		if _, ok := in.Data[KeyMySQLUser]; !ok {
+		if _, ok := in.Data[KeyPerconaUser]; !ok {
 			if val, ok2 := in.Data["user"]; ok2 {
-				in.StringData = map[string]string{KeyMySQLUser: string(val)}
+				in.StringData = map[string]string{KeyPerconaUser: string(val)}
 			}
 		}
 		return in
@@ -92,8 +92,8 @@ func (c *Controller) upgradeDatabaseSecret(mysql *api.MySQL) error {
 	return err
 }
 
-func (c *Controller) checkSecret(secretName string, mysql *api.MySQL) (*core.Secret, error) {
-	secret, err := c.Client.CoreV1().Secrets(mysql.Namespace).Get(secretName, metav1.GetOptions{})
+func (c *Controller) checkSecret(secretName string, pxc *api.Percona) (*core.Secret, error) {
+	secret, err := c.Client.CoreV1().Secrets(pxc.Namespace).Get(secretName, metav1.GetOptions{})
 	if err != nil {
 		if kerr.IsNotFound(err) {
 			return nil, nil
@@ -101,9 +101,9 @@ func (c *Controller) checkSecret(secretName string, mysql *api.MySQL) (*core.Sec
 		return nil, err
 	}
 
-	if secret.Labels[api.LabelDatabaseKind] != api.ResourceKindMySQL ||
-		secret.Labels[api.LabelDatabaseName] != mysql.Name {
-		return nil, fmt.Errorf(`intended secret "%v/%v" already exists`, mysql.Namespace, secretName)
+	if secret.Labels[api.LabelDatabaseKind] != api.ResourceKindPercona ||
+		secret.Labels[api.LabelDatabaseName] != pxc.Name {
+		return nil, fmt.Errorf(`intended secret "%v/%v" already exists`, pxc.Namespace, secretName)
 	}
 	return secret, nil
 }

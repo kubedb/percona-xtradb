@@ -33,12 +33,12 @@ func (f *Framework) forwardPort(meta metav1.ObjectMeta, clientPodIndex int) (*po
 	return tunnel, nil
 }
 
-func (f *Framework) getMySQLClient(meta metav1.ObjectMeta, tunnel *portforward.Tunnel, dbName string) (*xorm.Engine, error) {
-	mysql, err := f.GetMySQL(meta)
+func (f *Framework) getPerconaClient(meta metav1.ObjectMeta, tunnel *portforward.Tunnel, dbName string) (*xorm.Engine, error) {
+	percona, err := f.GetPercona(meta)
 	if err != nil {
 		return nil, err
 	}
-	pass, err := f.GetMySQLRootPassword(mysql)
+	pass, err := f.GetMySQLRootPassword(percona)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (f *Framework) EventuallyDatabaseReady(meta metav1.ObjectMeta, dbName strin
 			}
 			defer tunnel.Close()
 
-			en, err := f.getMySQLClient(meta, tunnel, dbName)
+			en, err := f.getPerconaClient(meta, tunnel, dbName)
 			if err != nil {
 				return false
 			}
@@ -82,7 +82,7 @@ func (f *Framework) EventuallyCreateTable(meta metav1.ObjectMeta, dbName string)
 			}
 			defer tunnel.Close()
 
-			en, err := f.getMySQLClient(meta, tunnel, dbName)
+			en, err := f.getPerconaClient(meta, tunnel, dbName)
 			if err != nil {
 				return false
 			}
@@ -115,7 +115,7 @@ func (f *Framework) EventuallyInsertRow(meta metav1.ObjectMeta, dbName string, c
 			}
 			defer tunnel.Close()
 
-			en, err := f.getMySQLClient(meta, tunnel, dbName)
+			en, err := f.getPerconaClient(meta, tunnel, dbName)
 			if err != nil {
 				return false
 			}
@@ -150,7 +150,7 @@ func (f *Framework) EventuallyCountRow(meta metav1.ObjectMeta, dbName string, cl
 			}
 			defer tunnel.Close()
 
-			en, err := f.getMySQLClient(meta, tunnel, dbName)
+			en, err := f.getPerconaClient(meta, tunnel, dbName)
 			if err != nil {
 				return -1
 			}
@@ -172,7 +172,7 @@ func (f *Framework) EventuallyCountRow(meta metav1.ObjectMeta, dbName string, cl
 	)
 }
 
-func (f *Framework) EventuallyMySQLVariable(meta metav1.ObjectMeta, dbName string, config string) GomegaAsyncAssertion {
+func (f *Framework) EventuallyPerconaVariable(meta metav1.ObjectMeta, dbName string, config string) GomegaAsyncAssertion {
 	configPair := strings.Split(config, "=")
 	sql := fmt.Sprintf("SHOW VARIABLES LIKE '%s';", configPair[0])
 	return Eventually(
@@ -183,7 +183,7 @@ func (f *Framework) EventuallyMySQLVariable(meta metav1.ObjectMeta, dbName strin
 			}
 			defer tunnel.Close()
 
-			en, err := f.getMySQLClient(meta, tunnel, dbName)
+			en, err := f.getPerconaClient(meta, tunnel, dbName)
 			if err != nil {
 				return nil
 			}
