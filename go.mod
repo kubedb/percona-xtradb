@@ -13,19 +13,24 @@ require (
 	github.com/appscode/osm v0.11.0 // indirect
 	github.com/aws/aws-sdk-go v1.14.33 // indirect
 	github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27
+	github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/go-semver v0.3.0
 	github.com/coreos/prometheus-operator v0.29.0
 	github.com/denisenkom/go-mssqldb v0.0.0-20190423183735-731ef375ac02 // indirect
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
-	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
+	github.com/emicklei/go-restful v2.9.6+incompatible // indirect
 	github.com/fatih/structs v1.1.0
+	github.com/go-logfmt/logfmt v0.4.0 // indirect
+	github.com/go-openapi/spec v0.19.2 // indirect
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/go-xorm/builder v0.0.0-20190422082613-0c156dfdb061 // indirect
 	github.com/go-xorm/core v0.6.0 // indirect
 	github.com/go-xorm/xorm v0.7.0
 	github.com/google/uuid v1.1.1
+	github.com/googleapis/gax-go/v2 v2.0.5 // indirect
 	github.com/gorilla/mux v1.7.2 // indirect
 	github.com/graymeta/stow v0.0.0-00010101000000-000000000000
+<<<<<<< HEAD
 <<<<<<< HEAD
 	github.com/kubedb/apimachinery v0.0.0-20190526014453-48e4bab67179
 =======
@@ -36,14 +41,18 @@ require (
 =======
 	github.com/kubedb/apimachinery v0.0.0-20190523070111-2d8126efa6f1
 >>>>>>> add percona xtradb cluster setup
+=======
+	github.com/kubedb/apimachinery v0.0.0-20190620093837-209a0fb34c12
+>>>>>>> Add Percona XtraDB cluster
 	github.com/lib/pq v1.1.1 // indirect
 	github.com/magiconair/properties v1.8.1 // indirect
-	github.com/mattn/go-isatty v0.0.8 // indirect
+	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
 	github.com/ncw/swift v1.0.47 // indirect
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/pkg/errors v0.8.1
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 	github.com/prometheus/client_golang v0.9.3 // indirect
@@ -51,11 +60,15 @@ require (
 	github.com/sirupsen/logrus v1.4.2 // indirect
 >>>>>>> Add all
 	github.com/spf13/cobra v0.0.4
+=======
+	github.com/prometheus/client_golang v0.9.4 // indirect
+	github.com/prometheus/tsdb v0.7.1 // indirect
+	github.com/sirupsen/logrus v1.4.2 // indirect
+	github.com/spf13/cobra v0.0.5
+>>>>>>> Add Percona XtraDB cluster
 	github.com/spf13/pflag v1.0.3
 	github.com/ziutek/mymysql v1.5.4 // indirect
-	golang.org/x/crypto v0.0.0-20190513172903-22d7a77e9e5f // indirect
-	golang.org/x/net v0.0.0-20190514140710-3ec191127204 // indirect
-	golang.org/x/sys v0.0.0-20190516110030-61b9204099cb // indirect
+	go.etcd.io/bbolt v1.3.3 // indirect
 	google.golang.org/grpc v1.19.1 // indirect
 	gopkg.in/square/go-jose.v2 v2.2.2 // indirect
 	k8s.io/api v0.0.0-20190503110853-61630f889b3c
@@ -64,13 +77,17 @@ require (
 	k8s.io/apiserver v0.0.0-20190508183956-3a0abf14e58a
 	k8s.io/cli-runtime v0.0.0-20190508184404-b26560c459bd // indirect
 	k8s.io/client-go v11.0.0+incompatible
-	k8s.io/klog v0.3.1 // indirect
+	k8s.io/klog v0.3.3 // indirect
 	k8s.io/kube-aggregator v0.0.0-20190508104018-6d3d96b06d29
+<<<<<<< HEAD
 <<<<<<< HEAD
 	kmodules.xyz/client-go v0.0.0-20190524133821-9c8a87771aea
 	kmodules.xyz/custom-resources v0.0.0-20190508103408-464e8324c3ec
 =======
 	k8s.io/kubernetes v1.14.2 // indirect
+=======
+	k8s.io/kubernetes v1.14.3 // indirect
+>>>>>>> Add Percona XtraDB cluster
 	kmodules.xyz/client-go v0.0.0-20190508091620-0d215c04352f
 	kmodules.xyz/custom-resources v0.0.0-20190225012057-ed1c15a0bbda
 >>>>>>> Add all

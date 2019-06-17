@@ -132,22 +132,5 @@ func (c *Controller) ensureRBACStuff(pxc *api.Percona) error {
 		return err
 	}
 
-	//// Create New SNapshot ServiceAccount
-	//if err := c.createServiceAccount(pxc, pxc.SnapshotSAName()); err != nil {
-	//	if !kerr.IsAlreadyExists(err) {
-	//		return err
-	//	}
-	//}
-
-	//// Create New Role for Snapshot
-	//if err := c.ensureRole(pxc, pxc.SnapshotSAName(), snapshotPolicyName); err != nil {
-	//	return err
-	//}
-
-	//// Create New RoleBinding for Snapshot
-	//if err := c.createRoleBinding(pxc, pxc.SnapshotSAName()); err != nil {
-	//	return err
-	//}
-
 	return nil
 }

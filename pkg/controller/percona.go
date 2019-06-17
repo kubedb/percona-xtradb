@@ -77,7 +77,7 @@ func (c *Controller) create(pxc *api.Percona) error {
 	}
 
 	// ensure database StatefulSet
-	vt2, err := c.ensureStatefulSet(pxc)
+	vt2, err := c.ensurePerconaXtraDBNode(pxc)
 	if err != nil {
 		return err
 	}
@@ -130,18 +130,6 @@ func (c *Controller) create(pxc *api.Percona) error {
 	}
 	pxc.Status = per.Status
 
-	//// Ensure Schedule backup
-	//if err := c.ensureBackupScheduler(pxc); err != nil {
-	//	c.recorder.Eventf(
-	//		pxc,
-	//		core.EventTypeWarning,
-	//		eventer.EventReasonFailedToSchedule,
-	//		err.Error(),
-	//	)
-	//	log.Errorln(err)
-	//	// Don't return error. Continue processing rest.
-	//}
-
 	// ensure StatsService for desired monitoring
 	if _, err := c.ensureStatsService(pxc); err != nil {
 		c.recorder.Eventf(
@@ -176,73 +164,9 @@ func (c *Controller) create(pxc *api.Percona) error {
 	return nil
 }
 
-//func (c *Controller) ensureBackupScheduler(pxc *api.Percona) error {
-//	pxcVersion, err := c.ExtClient.CatalogV1alpha1().PerconaVersions().Get(string(pxc.Spec.Version), metav1.GetOptions{})
-//	if err != nil {
-//		return fmt.Errorf("failed to get PerconaVersion %v for %v/%v. Reason: %v", pxc.Spec.Version, pxc.Namespace, pxc.Name, err)
-//	}
-//	// Setup Schedule backup
-//	if pxc.Spec.BackupSchedule != nil {
-//		err := c.cronController.ScheduleBackup(pxc, pxc.Spec.BackupSchedule, pxcVersion)
-//		if err != nil {
-//			return fmt.Errorf("failed to schedule snapshot for %v/%v. Reason: %v", pxc.Namespace, pxc.Name, err)
-//		}
-//	} else {
-//		c.cronController.StopBackupScheduling(pxc.ObjectMeta)
-//	}
-//	return nil
-//}
-
 func (c *Controller) initialize(pxc *api.Percona) error {
 	// TODO: integrate stash
 	return nil
-	//per, err := util.UpdatePerconaStatus(c.ExtClient.KubedbV1alpha1(), pxc, func(in *api.PerconaStatus) *api.PerconaStatus {
-	//	in.Phase = api.DatabasePhaseInitializing
-	//	return in
-	//}, apis.EnableStatusSubresource)
-	//if err != nil {
-	//	return err
-	//}
-	//pxc.Status = per.Status
-
-	//snapshotSource := pxc.Spec.Init.SnapshotSource
-	//// Event for notification that kubernetes objects are creating
-	//c.recorder.Eventf(
-	//	pxc,
-	//	core.EventTypeNormal,
-	//	eventer.EventReasonInitializing,
-	//	`Initializing from Snapshot: "%v"`,
-	//	snapshotSource.Name,
-	//)
-
-	//namespace := snapshotSource.Namespace
-	//if namespace == "" {
-	//	namespace = pxc.Namespace
-	//}
-	//snapshot, err := c.ExtClient.KubedbV1alpha1().Snapshots(namespace).Get(snapshotSource.Name, metav1.GetOptions{})
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//secret, err := storage.NewOSMSecret(c.Client, snapshot.OSMSecretName(), snapshot.Namespace, snapshot.Spec.Backend)
-	//if err != nil {
-	//	return err
-	//}
-	//_, err = c.Client.CoreV1().Secrets(secret.Namespace).Create(secret)
-	//if err != nil && !kerr.IsAlreadyExists(err) {
-	//	return err
-	//}
-
-	//job, err := c.createRestoreJob(pxc, snapshot)
-	//if err != nil {
-	//	return err
-	//}
-
-	//if err := c.SetJobOwnerReference(snapshot, job); err != nil {
-	//	return err
-	//}
-
-	//return nil
 }
 
 func (c *Controller) terminate(pxc *api.Percona) error {
