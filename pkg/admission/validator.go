@@ -124,6 +124,24 @@ func (a *PerconaValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 	return status
 }
 
+// validatePXC checks whether the configurations for Percona XtraDB Cluster are ok
+func validatePXC(pxcSpec *api.PXCSpec) error {
+	if pxcSpec != nil {
+		if len(pxcSpec.ClusterName) == 0 {
+			return errors.New(`'spec.pxc.clusterName' can't be empty'`)
+		}
+		if len(pxcSpec.ClusterName) > api.PerconaMaxClusterNameLength {
+			return errors.Errorf(`'spec.pxc.clusterName' "%s" shouldn't have more than %d characters'`,
+				api.PerconaMaxClusterNameLength)
+		}
+		if *pxcSpec.Proxysql.Replicas > 1 {
+			return errors.Errorf(`'spec.pxc.proxysql.replicas' "%v" is invalid. Currently, supported replicas for proxysql is 1`)
+		}
+	}
+
+	return nil
+}
+
 // ValidatePercona checks if the object satisfies all the requirements.
 // It is not method of Interface, because it is referenced from controller package too.
 func ValidatePercona(client kubernetes.Interface, extClient cs.Interface, pxc *api.Percona, strictValidation bool) error {
@@ -135,7 +153,17 @@ func ValidatePercona(client kubernetes.Interface, extClient cs.Interface, pxc *a
 	}
 
 	if pxc.Spec.Replicas == nil {
-		return fmt.Errorf(`'spec.replicas'' "%v" invalid. Value must be greater than 0`, pxc.Spec.Replicas)
+		return fmt.Errorf(`'spec.replicas' "%v" invalid. Value must be 1 for standalone percona server, but for percona xtradb cluster value must be greater than 0`,
+			pxc.Spec.Replicas)
+	}
+
+	if pxc.Spec.PXC == nil && *pxc.Spec.Replicas > api.PerconaStandaloneReplicas {
+		return fmt.Errorf(`'spec.replicas' "%v" invalid. Value must be 1 for standalone percona server`,
+			pxc.Spec.Replicas)
+	}
+
+	if err := validatePXC(pxc.Spec.PXC); err != nil {
+		return err
 	}
 
 	if err := amv.ValidateEnvVar(pxc.Spec.PodTemplate.Spec.Env, forbiddenEnvVars, api.ResourceKindPercona); err != nil {

@@ -19,15 +19,469 @@ import (
 	app_util "kmodules.xyz/client-go/apps/v1"
 	core_util "kmodules.xyz/client-go/core/v1"
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
+	ofst "kmodules.xyz/offshoot-api/api/v1"
 )
 
-func (c *Controller) ensureStatefulSet(pxc *api.Percona) (kutil.VerbType, error) {
-	if err := c.checkStatefulSet(pxc); err != nil {
+type workloadOptions struct {
+	// App level options
+	stsName   string
+	labels    map[string]string
+	selectors map[string]string
+
+	// db container options
+	conatainerName string
+	image          string
+	cmd            []string // cmd of `percona` container
+	args           []string // args of `percona` container
+	ports          []core.ContainerPort
+	envList        []core.EnvVar // envList of `percona` container
+	volumeMount    []core.VolumeMount
+	configSource   *core.VolumeSource
+
+	// monitor container
+	monitorContainer *core.Container
+
+	// pod Template level options
+	replicas       *int32
+	gvrSvcName     string
+	podTemplate    *ofst.PodTemplateSpec
+	pvcSpec        *core.PersistentVolumeClaimSpec
+	initContainers []core.Container
+	volume         []core.Volume // volumes to mount on stsPodTemplate
+}
+
+func (c *Controller) ensurePerconaXtraDBNode(pxc *api.Percona) (kutil.VerbType, error) {
+	if pxc.Spec.PXC != nil {
+		vt1, err := c.ensurePerconaXtraDB(pxc)
+		if err != nil {
+			return vt1, err
+		}
+
+		vt2, err := c.ensureProxysql(pxc)
+		if err != nil {
+			return vt2, err
+		}
+
+		if vt1 == kutil.VerbCreated && vt2 == kutil.VerbCreated {
+			return kutil.VerbCreated, nil
+		} else if vt1 != kutil.VerbUnchanged || vt2 != kutil.VerbUnchanged {
+			return kutil.VerbPatched, nil
+		}
+	}
+
+	return kutil.VerbUnchanged, nil
+}
+
+func (c *Controller) ensurePerconaXtraDB(pxc *api.Percona) (kutil.VerbType, error) {
+	pxcVersion, err := c.ExtClient.CatalogV1alpha1().PerconaVersions().Get(string(pxc.Spec.Version), metav1.GetOptions{})
+	if err != nil {
 		return kutil.VerbUnchanged, err
 	}
 
-	// Create statefulSet for Percona
-	statefulSet, vt, err := c.createStatefulSet(pxc)
+	initContainers := append([]core.Container{
+		{
+			Name:            "remove-lost-found",
+			Image:           pxcVersion.Spec.InitContainer.Image,
+			ImagePullPolicy: core.PullIfNotPresent,
+			Command: []string{
+				"rm",
+				"-rf",
+				"/var/lib/mysql/lost+found",
+			},
+			VolumeMounts: []core.VolumeMount{
+				{
+					Name: "data",
+					MountPath: api.PerconaDataMountPath,
+				},
+			},
+			Resources: pxc.Spec.PodTemplate.Spec.Resources,
+		},
+	})
+
+	var cmds, args []string
+	var ports = []core.ContainerPort{
+		{
+			Name:          "mysql",
+			ContainerPort: api.MySQLNodePort,
+			Protocol:      core.ProtocolTCP,
+		},
+	}
+	if pxc.Spec.PXC != nil {
+		cmds = []string{
+			"peer-finder",
+		}
+		userProvidedArgs := strings.Join(pxc.Spec.PodTemplate.Spec.Args, " ")
+		args = []string{
+			fmt.Sprintf("-service=%s", c.GoverningService),
+			fmt.Sprintf("-on-start=/on-start.sh %s", userProvidedArgs),
+		}
+		ports = append(ports, []core.ContainerPort{
+			{
+				Name:          "sst",
+				ContainerPort: 4567,
+			},
+			{
+				Name:          "replication",
+				ContainerPort: 4568,
+			},
+		}...)
+	}
+
+	var volumes []core.Volume
+	var volumeMounts []core.VolumeMount
+
+	if pxc.Spec.Init != nil && pxc.Spec.Init.ScriptSource != nil {
+		volumes = append(volumes, core.Volume{
+			Name:         "initial-script",
+			VolumeSource: pxc.Spec.Init.ScriptSource.VolumeSource,
+		})
+		volumeMounts = append(volumeMounts, core.VolumeMount{
+			Name: "initial-script",
+			MountPath: api.PerconaInitDBMountPath,
+		})
+	}
+	pxc.Spec.PodTemplate.Spec.ServiceAccountName = pxc.OffshootName()
+
+	var envList []core.EnvVar
+	if pxc.Spec.PXC != nil {
+		envList = []core.EnvVar{
+			{
+				Name: "MYSQL_USER",
+				ValueFrom: &core.EnvVarSource{
+					SecretKeyRef: &core.SecretKeySelector{
+						LocalObjectReference: core.LocalObjectReference{
+							Name: pxc.Spec.DatabaseSecret.SecretName,
+						},
+						Key: api.ProxysqlUser,
+					},
+				},
+			},
+			{
+				Name: "MYSQL_PASSWORD",
+				ValueFrom: &core.EnvVarSource{
+					SecretKeyRef: &core.SecretKeySelector{
+						LocalObjectReference: core.LocalObjectReference{
+							Name: pxc.Spec.DatabaseSecret.SecretName,
+						},
+						Key: api.ProxysqlPassword,
+					},
+				},
+			},
+			{
+				Name:  "CLUSTER_NAME",
+				Value: pxc.Spec.PXC.ClusterName,
+			},
+		}
+	}
+
+	var monitorContainer core.Container
+	if pxc.GetMonitoringVendor() == mona.VendorPrometheus {
+		monitorContainer = core.Container{
+			Name: "exporter",
+			Command: []string{
+				"/bin/sh",
+			},
+			Args: []string{
+				"-c",
+				// DATA_SOURCE_NAME=user:password@tcp(localhost:5555)/dbname
+				// ref: https://github.com/prometheus/mysqld_exporter#setting-the-mysql-servers-data-source-name
+				fmt.Sprintf(`export DATA_SOURCE_NAME="${MYSQL_ROOT_USERNAME:-}:${MYSQL_ROOT_PASSWORD:-}@(127.0.0.1:3306)/"
+						/bin/mysqld_exporter --web.listen-address=:%v --web.telemetry-path=%v %v`,
+					pxc.Spec.Monitor.Prometheus.Port, pxc.StatsService().Path(), strings.Join(pxc.Spec.Monitor.Args, " ")),
+			},
+			Image: pxcVersion.Spec.Exporter.Image,
+			Ports: []core.ContainerPort{
+				{
+					Name:          api.PrometheusExporterPortName,
+					Protocol:      core.ProtocolTCP,
+					ContainerPort: pxc.Spec.Monitor.Prometheus.Port,
+				},
+			},
+			Env:             pxc.Spec.Monitor.Env,
+			Resources:       pxc.Spec.Monitor.Resources,
+			SecurityContext: pxc.Spec.Monitor.SecurityContext,
+		}
+	}
+
+	opts := workloadOptions{
+		stsName:          pxc.OffshootName(),
+		labels:           pxc.XtraDBLabels(),
+		selectors:        pxc.XtraDBSelectors(),
+		conatainerName:   api.ResourceSingularPercona,
+		image:            pxcVersion.Spec.DB.Image,
+		args:             args,
+		cmd:              cmds,
+		ports:            ports,
+		envList:          envList,
+		initContainers:   initContainers,
+		gvrSvcName:       c.GoverningService,
+		podTemplate:      &pxc.Spec.PodTemplate,
+		configSource:     pxc.Spec.ConfigSource,
+		pvcSpec:          pxc.Spec.Storage,
+		replicas:         pxc.Spec.Replicas,
+		volume:           volumes,
+		volumeMount:      volumeMounts,
+		monitorContainer: &monitorContainer,
+	}
+
+	return c.ensureStatefulSet(pxc, pxc.Spec.UpdateStrategy, opts)
+}
+
+func (c *Controller) ensureProxysql(pxc *api.Percona) (kutil.VerbType, error) {
+	pxcVersion, err := c.ExtClient.CatalogV1alpha1().PerconaVersions().Get(string(pxc.Spec.Version), metav1.GetOptions{})
+	if err != nil {
+		return kutil.VerbUnchanged, err
+	}
+
+	var ports = []core.ContainerPort{
+		{
+			Name:          "mysql",
+			ContainerPort: api.ProxysqlMySQLNodePort,
+			Protocol:      core.ProtocolTCP,
+		},
+		{
+			Name:          api.ProxysqlAdminPortName,
+			ContainerPort: api.ProxysqlAdminPort,
+			Protocol:      core.ProtocolTCP,
+		},
+	}
+
+	var volumes []core.Volume
+	var volumeMounts []core.VolumeMount
+
+	volumeMounts = append(volumeMounts, core.VolumeMount{
+		Name: "data",
+		MountPath: api.ProxysqlDataMountPath,
+	})
+	volumes = append(volumes, core.Volume{
+		Name: "data",
+		VolumeSource: core.VolumeSource{
+			EmptyDir: &core.EmptyDirVolumeSource{},
+		},
+	})
+
+	pxc.Spec.PodTemplate.Spec.ServiceAccountName = pxc.OffshootName()
+	proxysqlServiceName, err := c.createProxysqlService(pxc)
+	if err != nil {
+		return kutil.VerbUnchanged, err
+	}
+
+	var envList []core.EnvVar
+	var peers []string
+	for i := 0; i < int(*pxc.Spec.Replicas); i += 1 {
+		peers = append(peers, pxc.PeerName(i))
+	}
+	envList = append(envList, []core.EnvVar{
+		{
+			Name: "MYSQL_ROOT_PASSWORD",
+			ValueFrom: &core.EnvVarSource{
+				SecretKeyRef: &core.SecretKeySelector{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: pxc.Spec.DatabaseSecret.SecretName,
+					},
+					Key: KeyPerconaPassword,
+				},
+			},
+		},
+		{
+			Name: "MYSQL_PROXY_USER",
+			ValueFrom: &core.EnvVarSource{
+				SecretKeyRef: &core.SecretKeySelector{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: pxc.Spec.DatabaseSecret.SecretName,
+					},
+					Key: api.ProxysqlUser,
+				},
+			},
+		},
+		{
+			Name: "MYSQL_PROXY_PASSWORD",
+			ValueFrom: &core.EnvVarSource{
+				SecretKeyRef: &core.SecretKeySelector{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: pxc.Spec.DatabaseSecret.SecretName,
+					},
+					Key: api.ProxysqlPassword,
+				},
+			},
+		},
+		{
+			Name:  "PEERS",
+			Value: strings.Join(peers, ","),
+		},
+	}...)
+
+	opts := workloadOptions{
+		stsName:        pxc.ProxysqlName(),
+		labels:         pxc.ProxysqlLabels(),
+		selectors:      pxc.ProxysqlSelectors(),
+		conatainerName: "proxysql",
+		image:          pxcVersion.Spec.Proxysql.Image,
+		args:           nil,
+		cmd:            nil,
+		ports:          ports,
+		envList:        envList,
+		initContainers: nil,
+		gvrSvcName:     proxysqlServiceName,
+		podTemplate:    &pxc.Spec.PXC.Proxysql.PodTemplate,
+		configSource:   nil,
+		pvcSpec:        nil,
+		replicas:       pxc.Spec.PXC.Proxysql.Replicas,
+		volume:         volumes,
+		volumeMount:    volumeMounts,
+	}
+
+	return c.ensureStatefulSet(pxc, pxc.Spec.UpdateStrategy, opts)
+}
+
+func (c *Controller) checkStatefulSet(pxc *api.Percona, stsName string) error {
+	// StatefulSet for MongoDB database
+	statefulSet, err := c.Client.AppsV1().StatefulSets(pxc.Namespace).Get(stsName, metav1.GetOptions{})
+	if err != nil {
+		if kerr.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+
+	if statefulSet.Labels[api.LabelDatabaseKind] != api.ResourceKindPercona ||
+		statefulSet.Labels[api.LabelDatabaseName] != pxc.Name {
+		return fmt.Errorf(`intended statefulSet "%v/%v" already exists`, pxc.Namespace, stsName)
+	}
+
+	return nil
+}
+
+func upsertCustomConfig(template core.PodTemplateSpec, configSource *core.VolumeSource) core.PodTemplateSpec {
+	for i, container := range template.Spec.Containers {
+		if container.Name == api.ResourceSingularPercona {
+			configVolumeMount := core.VolumeMount{
+				Name: "custom-config",
+				MountPath: api.PerconaCustomConfigMountPath,
+			}
+			volumeMounts := container.VolumeMounts
+			volumeMounts = core_util.UpsertVolumeMount(volumeMounts, configVolumeMount)
+			template.Spec.Containers[i].VolumeMounts = volumeMounts
+
+			configVolume := core.Volume{
+				Name:         "custom-config",
+				VolumeSource: *configSource,
+			}
+
+			volumes := template.Spec.Volumes
+			volumes = core_util.UpsertVolume(volumes, configVolume)
+			template.Spec.Volumes = volumes
+			break
+		}
+	}
+
+	return template
+}
+
+func (c *Controller) ensureStatefulSet(
+	pxc *api.Percona,
+	updateStrategy apps.StatefulSetUpdateStrategy,
+	opts workloadOptions) (kutil.VerbType, error) {
+	// Take value of podTemplate
+	var pt ofst.PodTemplateSpec
+	if opts.podTemplate != nil {
+		pt = *opts.podTemplate
+	}
+	if err := c.checkStatefulSet(pxc, opts.stsName); err != nil {
+		return kutil.VerbUnchanged, err
+	}
+
+	// Create statefulSet for Percona database
+	statefulSetMeta := metav1.ObjectMeta{
+		Name:      opts.stsName,
+		Namespace: pxc.Namespace,
+	}
+
+	ref, rerr := reference.GetReference(clientsetscheme.Scheme, pxc)
+	if rerr != nil {
+		return kutil.VerbUnchanged, rerr
+	}
+
+	readinessProbe := pt.Spec.ReadinessProbe
+	if readinessProbe != nil && structs.IsZero(*readinessProbe) {
+		readinessProbe = nil
+	}
+	livenessProbe := pt.Spec.LivenessProbe
+	if livenessProbe != nil && structs.IsZero(*livenessProbe) {
+		livenessProbe = nil
+	}
+
+	statefulSet, vt, err := app_util.CreateOrPatchStatefulSet(c.Client, statefulSetMeta, func(in *apps.StatefulSet) *apps.StatefulSet {
+		in.Labels = opts.labels
+		in.Annotations = pt.Controller.Annotations
+		core_util.EnsureOwnerReference(&in.ObjectMeta, ref)
+
+		in.Spec.Replicas = opts.replicas
+		in.Spec.ServiceName = opts.gvrSvcName
+		in.Spec.Selector = &metav1.LabelSelector{
+			MatchLabels: opts.selectors,
+		}
+		in.Spec.Template.Labels = opts.selectors
+		in.Spec.Template.Annotations = pt.Annotations
+		in.Spec.Template.Spec.InitContainers = core_util.UpsertContainers(
+			in.Spec.Template.Spec.InitContainers,
+			pt.Spec.InitContainers,
+		)
+		in.Spec.Template.Spec.Containers = core_util.UpsertContainer(
+			in.Spec.Template.Spec.Containers,
+			core.Container{
+				Name:            opts.conatainerName,
+				Image:           opts.image,
+				ImagePullPolicy: core.PullIfNotPresent,
+				Command:         opts.cmd,
+				Args:            opts.args,
+				Ports:           opts.ports,
+				Env:             core_util.UpsertEnvVars(opts.envList, pt.Spec.Env...),
+				Resources:       pt.Spec.Resources,
+				Lifecycle:       pt.Spec.Lifecycle,
+				LivenessProbe:   livenessProbe,
+				ReadinessProbe:  readinessProbe,
+				VolumeMounts:    opts.volumeMount,
+			})
+
+		in.Spec.Template.Spec.InitContainers = core_util.UpsertContainers(
+			in.Spec.Template.Spec.InitContainers,
+			opts.initContainers,
+		)
+
+		if opts.monitorContainer != nil && pxc.GetMonitoringVendor() == mona.VendorPrometheus {
+			in.Spec.Template.Spec.Containers = core_util.UpsertContainer(
+				in.Spec.Template.Spec.Containers, *opts.monitorContainer)
+		}
+
+		in.Spec.Template.Spec.Volumes = core_util.UpsertVolume(in.Spec.Template.Spec.Volumes, opts.volume...)
+
+		in = upsertEnv(in, pxc)
+		in = upsertDataVolume(in, pxc)
+
+		if opts.configSource != nil {
+			in.Spec.Template = upsertCustomConfig(in.Spec.Template, opts.configSource)
+		}
+
+		in.Spec.Template.Spec.NodeSelector = pt.Spec.NodeSelector
+		in.Spec.Template.Spec.Affinity = pt.Spec.Affinity
+		if pt.Spec.SchedulerName != "" {
+			in.Spec.Template.Spec.SchedulerName = pt.Spec.SchedulerName
+		}
+		in.Spec.Template.Spec.Tolerations = pt.Spec.Tolerations
+		in.Spec.Template.Spec.ImagePullSecrets = pt.Spec.ImagePullSecrets
+		in.Spec.Template.Spec.PriorityClassName = pt.Spec.PriorityClassName
+		in.Spec.Template.Spec.Priority = pt.Spec.Priority
+		in.Spec.Template.Spec.SecurityContext = pt.Spec.SecurityContext
+
+		if c.EnableRBAC {
+			in.Spec.Template.Spec.ServiceAccountName = pt.Spec.ServiceAccountName
+		}
+
+		in.Spec.UpdateStrategy = updateStrategy
+		return in
+	})
+
 	if err != nil {
 		return kutil.VerbUnchanged, err
 	}
@@ -41,241 +495,12 @@ func (c *Controller) ensureStatefulSet(pxc *api.Percona) (kutil.VerbType, error)
 			pxc,
 			core.EventTypeNormal,
 			eventer.EventReasonSuccessful,
-			"Successfully %v StatefulSet",
-			vt,
+			"Successfully %v StatefulSet %v/%v",
+			vt, pxc.Namespace, opts.stsName,
 		)
 	}
+
 	return vt, nil
-}
-
-func (c *Controller) checkStatefulSet(pxc *api.Percona) error {
-	// SatatefulSet for Percona
-	statefulSet, err := c.Client.AppsV1().StatefulSets(pxc.Namespace).Get(pxc.OffshootName(), metav1.GetOptions{})
-	if err != nil {
-		if kerr.IsNotFound(err) {
-			return nil
-		}
-		return err
-	}
-
-	if statefulSet.Labels[api.LabelDatabaseKind] != api.ResourceKindPercona ||
-		statefulSet.Labels[api.LabelDatabaseName] != pxc.Name {
-		return fmt.Errorf(`intended statefulSet "%v/%v" already exists`, pxc.Namespace, pxc.OffshootName())
-	}
-
-	return nil
-}
-
-func (c *Controller) createStatefulSet(pxc *api.Percona) (*apps.StatefulSet, kutil.VerbType, error) {
-	statefulSetMeta := metav1.ObjectMeta{
-		Name:      pxc.OffshootName(),
-		Namespace: pxc.Namespace,
-	}
-
-	ref, rerr := reference.GetReference(clientsetscheme.Scheme, pxc)
-	if rerr != nil {
-		return nil, kutil.VerbUnchanged, rerr
-	}
-
-	pxcVersion, err := c.ExtClient.CatalogV1alpha1().PerconaVersions().Get(string(pxc.Spec.Version), metav1.GetOptions{})
-	if err != nil {
-		return nil, kutil.VerbUnchanged, rerr
-	}
-
-	return app_util.CreateOrPatchStatefulSet(c.Client, statefulSetMeta, func(in *apps.StatefulSet) *apps.StatefulSet {
-		in.Labels = pxc.OffshootLabels()
-		in.Annotations = pxc.Spec.PodTemplate.Controller.Annotations
-		core_util.EnsureOwnerReference(&in.ObjectMeta, ref)
-
-		in.Spec.Replicas = pxc.Spec.Replicas
-		in.Spec.ServiceName = c.GoverningService
-		in.Spec.Selector = &metav1.LabelSelector{
-			MatchLabels: pxc.OffshootSelectors(),
-		}
-		in.Spec.Template.Labels = pxc.OffshootSelectors()
-		in.Spec.Template.Annotations = pxc.Spec.PodTemplate.Annotations
-		in.Spec.Template.Spec.InitContainers = core_util.UpsertContainers(
-			in.Spec.Template.Spec.InitContainers,
-			append(
-				[]core.Container{
-					{
-						Name:            "remove-lost-found",
-						Image:           pxcVersion.Spec.InitContainer.Image,
-						ImagePullPolicy: core.PullIfNotPresent,
-						Command: []string{
-							"rm",
-							"-rf",
-							"/var/lib/mysql/lost+found",
-						},
-						VolumeMounts: []core.VolumeMount{
-							{
-								Name:      "data",
-								MountPath: "/var/lib/mysql",
-							},
-						},
-						Resources: pxc.Spec.PodTemplate.Spec.Resources,
-					},
-				},
-				pxc.Spec.PodTemplate.Spec.InitContainers...,
-			),
-		)
-
-		//entryPointArgs := strings.Join(pxc.Spec.PodTemplate.Spec.Args, " ")
-		container := core.Container{
-			Name:            api.ResourceSingularPercona,
-			Image:           pxcVersion.Spec.DB.Image,
-			ImagePullPolicy: core.PullIfNotPresent,
-			Args:            pxc.Spec.PodTemplate.Spec.Args,
-			Resources:       pxc.Spec.PodTemplate.Spec.Resources,
-			LivenessProbe:   pxc.Spec.PodTemplate.Spec.LivenessProbe,
-			ReadinessProbe:  pxc.Spec.PodTemplate.Spec.ReadinessProbe,
-			Lifecycle:       pxc.Spec.PodTemplate.Spec.Lifecycle,
-			Ports: []core.ContainerPort{
-				{
-					Name:          "db",
-					ContainerPort: api.MySQLNodePort,
-					Protocol:      core.ProtocolTCP,
-				},
-				//{
-				//	Name:          "com1",
-				//	ContainerPort: 4567,
-				//},
-				//{
-				//	Name:          "com2",
-				//	ContainerPort: 4568,
-				//},
-			},
-			//
-			//			Command: []string{
-			//				"/bin/bash", "-c",
-			//				fmt.Sprintf(`
-			//index=$(cat /etc/hostname | grep -o '[^-]*$')
-			//NAMESPACE=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
-			//
-			//CLUSTER_JOIN=
-			//if [[ "${index}" -gt "0" ]]; then
-			//  CLUSTER_JOIN=%[1]s-0.%[2]s.$NAMESPACE.svc.cluster.local
-			//
-			//  while true; do
-			//    out=$(ping $CLUSTER_JOIN -c 1 2>/dev/null)
-			//    if [[ -n "$out" ]]; then
-			//      break
-			//    fi
-			//
-			//    sleep 1
-			//  done
-			//
-			//  for i in {60..0}; do
-			//    echo .
-			//    sleep 1
-			//  done
-			//fi
-			//
-			//# export CLUSTER_NAME=%[3]s
-			//export CLUSTER_JOIN
-			//
-			//echo
-			//echo "================================="
-			//echo "CLUSTER_JOIN=${CLUSTER_JOIN}"
-			//echo "CLUSTER_NAME=${CLUSTER_NAME}"
-			//echo "================================="
-			//echo
-			//
-			//echo
-			//
-			//. /entrypoint.sh
-			//# . /entrypoint.sh --wsrep_node_address=%[1]s-${index}.%[2]s.$NAMESPACE
-			//# . /entrypoint.sh --wsrep_node_address=%[1]s-${index}.%[2]s.$NAMESPACE.svc.cluster.local --bind-address=0.0.0.0
-			//`, pxc.Name, c.GoverningService),
-			//			},
-		}
-
-		if pxc.Spec.PXC != nil {
-			container.Command = []string{
-				"peer-finder",
-			}
-			userProvidedArgs := strings.Join(pxc.Spec.PodTemplate.Spec.Args, " ")
-			container.Args = []string{
-				fmt.Sprintf("-service=%s", c.GoverningService),
-				fmt.Sprintf("-on-start=/on-start.sh %s", userProvidedArgs),
-			}
-			container.Ports = append(container.Ports, []core.ContainerPort{
-				{
-					Name:          "com1",
-					ContainerPort: 4567,
-				},
-				{
-					Name:          "com2",
-					ContainerPort: 4568,
-				},
-			}...)
-		}
-		if container.LivenessProbe != nil && structs.IsZero(*container.LivenessProbe) {
-			container.LivenessProbe = nil
-		}
-		if container.ReadinessProbe != nil && structs.IsZero(*container.ReadinessProbe) {
-			container.ReadinessProbe = nil
-		}
-
-		in.Spec.Template.Spec.Containers = core_util.UpsertContainer(in.Spec.Template.Spec.Containers, container)
-
-		if pxc.GetMonitoringVendor() == mona.VendorPrometheus {
-			in.Spec.Template.Spec.Containers = core_util.UpsertContainer(in.Spec.Template.Spec.Containers, core.Container{
-				Name: "exporter",
-				Command: []string{
-					"/bin/sh",
-				},
-				Args: []string{
-					"-c",
-					// DATA_SOURCE_NAME=user:password@tcp(localhost:5555)/dbname
-					// ref: https://github.com/prometheus/mysqld_exporter#setting-the-mysql-servers-data-source-name
-					fmt.Sprintf(`export DATA_SOURCE_NAME="${MYSQL_ROOT_USERNAME:-}:${MYSQL_ROOT_PASSWORD:-}@(127.0.0.1:3306)/"
-						/bin/mysqld_exporter --web.listen-address=:%v --web.telemetry-path=%v %v`,
-						pxc.Spec.Monitor.Prometheus.Port, pxc.StatsService().Path(), strings.Join(pxc.Spec.Monitor.Args, " ")),
-				},
-				Image: pxcVersion.Spec.Exporter.Image,
-				Ports: []core.ContainerPort{
-					{
-						Name:          api.PrometheusExporterPortName,
-						Protocol:      core.ProtocolTCP,
-						ContainerPort: pxc.Spec.Monitor.Prometheus.Port,
-					},
-				},
-				Env:             pxc.Spec.Monitor.Env,
-				Resources:       pxc.Spec.Monitor.Resources,
-				SecurityContext: pxc.Spec.Monitor.SecurityContext,
-			})
-		}
-		// Set Admin Secret as MYSQL_ROOT_PASSWORD env variable
-		in = upsertEnv(in, pxc)
-		in = upsertDataVolume(in, pxc)
-		in = upsertCustomConfig(in, pxc)
-
-		if pxc.Spec.Init != nil && pxc.Spec.Init.ScriptSource != nil {
-			in = upsertInitScript(in, pxc.Spec.Init.ScriptSource.VolumeSource)
-		}
-
-		in.Spec.Template.Spec.NodeSelector = pxc.Spec.PodTemplate.Spec.NodeSelector
-		in.Spec.Template.Spec.Affinity = pxc.Spec.PodTemplate.Spec.Affinity
-		if pxc.Spec.PodTemplate.Spec.SchedulerName != "" {
-			in.Spec.Template.Spec.SchedulerName = pxc.Spec.PodTemplate.Spec.SchedulerName
-		}
-		in.Spec.Template.Spec.Tolerations = pxc.Spec.PodTemplate.Spec.Tolerations
-		in.Spec.Template.Spec.ImagePullSecrets = pxc.Spec.PodTemplate.Spec.ImagePullSecrets
-		in.Spec.Template.Spec.PriorityClassName = pxc.Spec.PodTemplate.Spec.PriorityClassName
-		in.Spec.Template.Spec.Priority = pxc.Spec.PodTemplate.Spec.Priority
-		in.Spec.Template.Spec.SecurityContext = pxc.Spec.PodTemplate.Spec.SecurityContext
-		//in.Spec.Template.Spec.SecurityContext = pxc.Spec.PodTemplate.Spec.SecurityContext
-
-		if c.EnableRBAC {
-			in.Spec.Template.Spec.ServiceAccountName = pxc.OffshootName()
-		}
-
-		in.Spec.UpdateStrategy = pxc.Spec.UpdateStrategy
-		in = upsertUserEnv(in, pxc)
-
-		return in
-	})
 }
 
 func upsertDataVolume(statefulSet *apps.StatefulSet, pxc *api.Percona) *apps.StatefulSet {
@@ -360,17 +585,6 @@ func upsertEnv(statefulSet *apps.StatefulSet, pxc *api.Percona) *apps.StatefulSe
 				},
 			}
 
-			if pxc.Spec.PXC != nil {
-				envs = append(envs, core.EnvVar{
-					Name:  "CLUSTER_NAME",
-					Value: pxc.Spec.PXC.ClusterName,
-				})
-				//envs = append(envs, core.EnvVar{
-				//	Name:  "GOV_SVC",
-				//	Value: statefulSet.Spec.ServiceName,
-				//})
-			}
-
 			statefulSet.Spec.Template.Spec.Containers[i].Env = core_util.UpsertEnvVars(container.Env, envs...)
 		}
 	}
@@ -426,31 +640,4 @@ func (c *Controller) checkStatefulSetPodStatus(statefulSet *apps.StatefulSet) er
 		return err
 	}
 	return nil
-}
-
-func upsertCustomConfig(statefulSet *apps.StatefulSet, pxc *api.Percona) *apps.StatefulSet {
-	if pxc.Spec.ConfigSource != nil {
-		for i, container := range statefulSet.Spec.Template.Spec.Containers {
-			if container.Name == api.ResourceSingularPercona {
-				configVolumeMount := core.VolumeMount{
-					Name:      "custom-config",
-					MountPath: "/etc/mysql/conf.d",
-				}
-				volumeMounts := container.VolumeMounts
-				volumeMounts = core_util.UpsertVolumeMount(volumeMounts, configVolumeMount)
-				statefulSet.Spec.Template.Spec.Containers[i].VolumeMounts = volumeMounts
-
-				configVolume := core.Volume{
-					Name:         "custom-config",
-					VolumeSource: *pxc.Spec.ConfigSource,
-				}
-
-				volumes := statefulSet.Spec.Template.Spec.Volumes
-				volumes = core_util.UpsertVolume(volumes, configVolume)
-				statefulSet.Spec.Template.Spec.Volumes = volumes
-				break
-			}
-		}
-	}
-	return statefulSet
 }

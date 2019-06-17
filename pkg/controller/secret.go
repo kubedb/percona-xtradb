@@ -64,6 +64,18 @@ func (c *Controller) createDatabaseSecret(pxc *api.Percona) (*core.SecretVolumeS
 				KeyPerconaPassword: randPassword,
 			},
 		}
+
+		if pxc.Spec.PXC != nil {
+			randProxysqlPassword := ""
+
+			// if the password starts with "-", it will cause error in bash scripts (in percona-tools)
+			for randProxysqlPassword = rand.GeneratePassword(); randProxysqlPassword[0] == '-'; {
+			}
+
+			secret.StringData[api.ProxysqlUser] = "proxysql"
+			secret.StringData[api.ProxysqlPassword] = randProxysqlPassword
+		}
+
 		if _, err := c.Client.CoreV1().Secrets(pxc.Namespace).Create(secret); err != nil {
 			return nil, err
 		}
