@@ -14,7 +14,6 @@ require (
 	github.com/aws/aws-sdk-go v1.14.33 // indirect
 	github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27
 	github.com/coreos/bbolt v1.3.3 // indirect
-	github.com/coreos/go-semver v0.3.0
 	github.com/coreos/prometheus-operator v0.29.0
 	github.com/denisenkom/go-mssqldb v0.0.0-20190423183735-731ef375ac02 // indirect
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
@@ -26,7 +25,6 @@ require (
 	github.com/go-xorm/builder v0.0.0-20190422082613-0c156dfdb061 // indirect
 	github.com/go-xorm/core v0.6.0 // indirect
 	github.com/go-xorm/xorm v0.7.0
-	github.com/google/uuid v1.1.1
 	github.com/googleapis/gax-go/v2 v2.0.5 // indirect
 	github.com/gorilla/mux v1.7.2 // indirect
 	github.com/graymeta/stow v0.0.0-00010101000000-000000000000

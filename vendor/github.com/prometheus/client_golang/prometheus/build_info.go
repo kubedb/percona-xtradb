@@ -1,10 +1,9 @@
-// Copyright 2013-2015 CoreOS, Inc.
-//
+// Copyright 2019 The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,27 +11,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package semver
+// +build go1.12
 
-import (
-	"sort"
-)
+package prometheus
 
-type Versions []*Version
+import "runtime/debug"
 
-func (s Versions) Len() int {
-	return len(s)
-}
-
-func (s Versions) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-func (s Versions) Less(i, j int) bool {
-	return s[i].LessThan(*s[j])
-}
-
-// Sort sorts the given slice of Version
-func Sort(versions []*Version) {
-	sort.Sort(Versions(versions))
+// readBuildInfo is a wrapper around debug.ReadBuildInfo for Go 1.12+.
+func readBuildInfo() (path, version, sum string) {
+	path, version, sum = "unknown", "unknown", "unknown"
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		path = bi.Main.Path
+		version = bi.Main.Version
+		sum = bi.Main.Sum
+	}
+	return
 }
