@@ -84,13 +84,25 @@ func (f *Framework) CleanWorkloadLeftOvers() {
 	}
 }
 
-func (f *Framework) WaitUntilPodRunningBySelector(percona *api.Percona) error {
-	return core_util.WaitUntilPodRunningBySelector(
-		f.kubeClient,
-		percona.Namespace,
-		&metav1.LabelSelector{
-			MatchLabels: percona.OffshootSelectors(),
-		},
-		int(types.Int32(percona.Spec.Replicas)),
-	)
+func (f *Framework) WaitUntilPodRunningBySelector(percona *api.Percona, proxysql bool) error {
+	if !proxysql {
+		return core_util.WaitUntilPodRunningBySelector(
+			f.kubeClient,
+			percona.Namespace,
+			&metav1.LabelSelector{
+				MatchLabels: percona.ClusterSelectors(),
+			},
+			int(types.Int32(percona.Spec.Replicas)),
+		)
+	} else {
+		return core_util.WaitUntilPodRunningBySelector(
+			f.kubeClient,
+			percona.Namespace,
+			&metav1.LabelSelector{
+				MatchLabels: percona.ProxysqlSelectors(),
+			},
+			int(types.Int32(percona.Spec.PXC.Proxysql.Replicas)),
+		)
+	}
+
 }

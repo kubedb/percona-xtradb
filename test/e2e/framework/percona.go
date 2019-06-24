@@ -5,6 +5,10 @@ import (
 	"time"
 
 	"github.com/appscode/go/crypto/rand"
+	"github.com/appscode/go/wait"
+	kutil "kmodules.xyz/client-go"
+
+	//"github.com/appscode/go/crypto/rand"
 	jsonTypes "github.com/appscode/go/encoding/json/types"
 	"github.com/appscode/go/types"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
@@ -42,6 +46,19 @@ func (f *Invocation) Percona() *api.Percona {
 			},
 		},
 	}
+}
+
+func (f *Invocation) PerconaXtraDBCluster() *api.Percona {
+	percona := f.Percona()
+	percona.Spec.Replicas = types.Int32P(api.PerconaDefaultClusterSize)
+	percona.Spec.PXC = &api.PXCSpec{
+		ClusterName: "pxc-k8s",
+		Proxysql: api.ProxysqlSpec{
+			Replicas: types.Int32P(1),
+		},
+	}
+
+	return percona
 }
 
 func (f *Framework) CreatePercona(obj *api.Percona) error {
@@ -112,4 +129,19 @@ func (f *Framework) CleanPercona() {
 	if err := f.extClient.KubedbV1alpha1().Perconas(f.namespace).DeleteCollection(deleteInForeground(), metav1.ListOptions{}); err != nil {
 		fmt.Printf("error in deletion of Percona. Error: %v", err)
 	}
+}
+
+func (f *Framework) WaitUntilPerconaReplicasBePatched(meta metav1.ObjectMeta, count int32) error {
+	return wait.PollImmediate(kutil.RetryInterval, kutil.ReadinessTimeout, func() (bool, error) {
+		percona, err := f.GetPercona(meta)
+		if err != nil {
+			return false, nil
+		}
+
+		if *percona.Spec.Replicas != count {
+			return false, nil
+		}
+
+		return true, nil
+	})
 }

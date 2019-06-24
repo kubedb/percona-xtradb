@@ -74,7 +74,7 @@ var _ = Describe("Percona", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for database to be ready")
-		f.EventuallyDatabaseReady(percona.ObjectMeta, dbName).Should(BeTrue())
+		f.EventuallyDatabaseReady(percona.ObjectMeta, false, dbName, 0).Should(BeTrue())
 	}
 
 	var testGeneralBehaviour = func() {
@@ -85,13 +85,13 @@ var _ = Describe("Percona", func() {
 		createAndWaitForRunning()
 
 		By("Creating Table")
-		f.EventuallyCreateTable(percona.ObjectMeta, dbName).Should(BeTrue())
+		f.EventuallyCreateTable(percona.ObjectMeta, false, dbName, 0).Should(BeTrue())
 
 		By("Inserting Rows")
-		f.EventuallyInsertRow(percona.ObjectMeta, dbName, 0, 3).Should(BeTrue())
+		f.EventuallyInsertRow(percona.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
 
 		By("Checking Row Count of Table")
-		f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
+		f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
 		By("Delete percona")
 		err = f.DeletePercona(percona.ObjectMeta)
@@ -112,7 +112,7 @@ var _ = Describe("Percona", func() {
 		f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
 
 		By("Checking Row Count of Table")
-		f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
+		f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
 	}
 
@@ -142,13 +142,13 @@ var _ = Describe("Percona", func() {
 		createAndWaitForRunning()
 
 		By("Creating Table")
-		f.EventuallyCreateTable(percona.ObjectMeta, dbName).Should(BeTrue())
+		f.EventuallyCreateTable(percona.ObjectMeta, false, dbName, 0).Should(BeTrue())
 
 		By("Inserting Row")
-		f.EventuallyInsertRow(percona.ObjectMeta, dbName, 0, 3).Should(BeTrue())
+		f.EventuallyInsertRow(percona.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
 
 		By("Checking Row Count of Table")
-		f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
+		f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
 		By("Create Secret")
 		err := f.CreateSecret(secret)
@@ -816,7 +816,7 @@ var _ = Describe("Percona", func() {
 					createAndWaitForRunning()
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
 				})
 			})
 
@@ -862,7 +862,7 @@ var _ = Describe("Percona", func() {
 					createAndWaitForRunning()
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
 				}
 
 				Context("From Local backend", func() {
@@ -924,13 +924,13 @@ var _ = Describe("Percona", func() {
 					createAndWaitForRunning()
 
 					By("Creating Table")
-					f.EventuallyCreateTable(percona.ObjectMeta, dbName).Should(BeTrue())
+					f.EventuallyCreateTable(percona.ObjectMeta, false, dbName, 0).Should(BeTrue())
 
 					By("Inserting Row")
-					f.EventuallyInsertRow(percona.ObjectMeta, dbName, 0, 3).Should(BeTrue())
+					f.EventuallyInsertRow(percona.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
 					By("Delete percona")
 					err = f.DeletePercona(percona.ObjectMeta)
@@ -964,7 +964,7 @@ var _ = Describe("Percona", func() {
 					f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
 				})
 			})
 
@@ -974,13 +974,13 @@ var _ = Describe("Percona", func() {
 					createAndWaitForRunning()
 
 					By("Creating Table")
-					f.EventuallyCreateTable(percona.ObjectMeta, dbName).Should(BeTrue())
+					f.EventuallyCreateTable(percona.ObjectMeta, false, dbName, 0).Should(BeTrue())
 
 					By("Inserting Row")
-					f.EventuallyInsertRow(percona.ObjectMeta, dbName, 0, 3).Should(BeTrue())
+					f.EventuallyInsertRow(percona.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
 					By("Delete percona")
 					err = f.DeletePercona(percona.ObjectMeta)
@@ -1001,7 +1001,7 @@ var _ = Describe("Percona", func() {
 					f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
 				})
 			})
 
@@ -1024,7 +1024,7 @@ var _ = Describe("Percona", func() {
 					createAndWaitForRunning()
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
 					By("Delete percona")
 					err = f.DeletePercona(percona.ObjectMeta)
@@ -1045,7 +1045,7 @@ var _ = Describe("Percona", func() {
 					f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
 					percona, err := f.GetPercona(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
@@ -1110,7 +1110,7 @@ var _ = Describe("Percona", func() {
 					createAndWaitForRunning()
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
 					By("Delete percona")
 					err = f.DeletePercona(percona.ObjectMeta)
@@ -1131,7 +1131,7 @@ var _ = Describe("Percona", func() {
 					f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
 					percona, err = f.GetPercona(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
@@ -1163,7 +1163,7 @@ var _ = Describe("Percona", func() {
 					createAndWaitForRunning()
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
 					for i := 0; i < 3; i++ {
 						By(fmt.Sprintf("%v-th", i+1) + " time running.")
@@ -1187,7 +1187,7 @@ var _ = Describe("Percona", func() {
 						f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
 
 						By("Checking Row Count of Table")
-						f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
+						f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
 						percona, err := f.GetPercona(percona.ObjectMeta)
 						Expect(err).NotTo(HaveOccurred())
@@ -1201,225 +1201,225 @@ var _ = Describe("Percona", func() {
 			})
 		})
 
-		Context("SnapshotScheduler", func() {
-
-			BeforeEach(func() {
-				skipDataChecking = false
-			})
-
-			AfterEach(func() {
-				snapshotList, err := f.GetSnapshotList(percona.ObjectMeta)
-				Expect(err).NotTo(HaveOccurred())
-
-				for _, snap := range snapshotList.Items {
-					snapshot = &snap
-
-					// delete snapshot and check for data wipeOut
-					deleteSnapshot()
-				}
-
-				By("Deleting secret: " + secret.Name)
-				err = f.DeleteSecret(secret.ObjectMeta)
-				if err != nil && !kerr.IsNotFound(err) {
-					Expect(err).NotTo(HaveOccurred())
-				}
-			})
-
-			Context("With Startup", func() {
-
-				var shouldStartupSchedular = func() {
-					By("Create Secret")
-					err := f.CreateSecret(secret)
-					Expect(err).NotTo(HaveOccurred())
-
-					// Create and wait for running Percona
-					createAndWaitForRunning()
-
-					By("Count multiple Snapshot Object")
-					f.EventuallySnapshotCount(percona.ObjectMeta).Should(matcher.MoreThan(3))
-
-					By("Remove Backup Scheduler from Percona")
-					_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
-						in.Spec.BackupSchedule = nil
-						return in
-					})
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Verify multiple Succeeded Snapshot")
-					f.EventuallyMultipleSnapshotFinishedProcessing(percona.ObjectMeta).Should(Succeed())
-				}
-
-				Context("with local", func() {
-					BeforeEach(func() {
-						skipDataChecking = true
-						secret = f.SecretForLocalBackend()
-						percona.Spec.BackupSchedule = &api.BackupScheduleSpec{
-							CronExpression: "@every 20s",
-							Backend: store.Backend{
-								StorageSecretName: secret.Name,
-								Local: &store.LocalSpec{
-									MountPath: "/repo",
-									VolumeSource: core.VolumeSource{
-										EmptyDir: &core.EmptyDirVolumeSource{},
-									},
-								},
-							},
-						}
-					})
-
-					It("should run scheduler successfully", shouldStartupSchedular)
-				})
-
-				Context("with GCS", func() {
-					BeforeEach(func() {
-						secret = f.SecretForGCSBackend()
-						percona.Spec.BackupSchedule = &api.BackupScheduleSpec{
-							CronExpression: "@every 1m",
-							Backend: store.Backend{
-								StorageSecretName: secret.Name,
-								GCS: &store.GCSSpec{
-									Bucket: os.Getenv(GCS_BUCKET_NAME),
-								},
-							},
-						}
-					})
-
-					It("should run scheduler successfully", shouldStartupSchedular)
-				})
-			})
-
-			Context("With Update - with Local", func() {
-
-				BeforeEach(func() {
-					skipDataChecking = true
-					secret = f.SecretForLocalBackend()
-				})
-
-				It("should run scheduler successfully", func() {
-					// Create and wait for running Percona
-					createAndWaitForRunning()
-
-					By("Create Secret")
-					err := f.CreateSecret(secret)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Update percona")
-					_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
-						in.Spec.BackupSchedule = &api.BackupScheduleSpec{
-							CronExpression: "@every 20s",
-							Backend: store.Backend{
-								StorageSecretName: secret.Name,
-								Local: &store.LocalSpec{
-									MountPath: "/repo",
-									VolumeSource: core.VolumeSource{
-										EmptyDir: &core.EmptyDirVolumeSource{},
-									},
-								},
-							},
-						}
-						return in
-					})
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Count multiple Snapshot Object")
-					f.EventuallySnapshotCount(percona.ObjectMeta).Should(matcher.MoreThan(3))
-
-					By("Remove Backup Scheduler from Percona")
-					_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
-						in.Spec.BackupSchedule = nil
-						return in
-					})
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Verify multiple Succeeded Snapshot")
-					f.EventuallyMultipleSnapshotFinishedProcessing(percona.ObjectMeta).Should(Succeed())
-				})
-			})
-
-			Context("Re-Use DormantDatabase's scheduler", func() {
-
-				BeforeEach(func() {
-					skipDataChecking = true
-					secret = f.SecretForLocalBackend()
-				})
-
-				It("should re-use scheduler successfully", func() {
-					// Create and wait for running Percona
-					createAndWaitForRunning()
-
-					By("Create Secret")
-					err := f.CreateSecret(secret)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Update percona")
-					_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
-						in.Spec.BackupSchedule = &api.BackupScheduleSpec{
-							CronExpression: "@every 20s",
-							Backend: store.Backend{
-								StorageSecretName: secret.Name,
-								Local: &store.LocalSpec{
-									MountPath: "/repo",
-									VolumeSource: core.VolumeSource{
-										EmptyDir: &core.EmptyDirVolumeSource{},
-									},
-								},
-							},
-						}
-						return in
-					})
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Creating Table")
-					f.EventuallyCreateTable(percona.ObjectMeta, dbName).Should(BeTrue())
-
-					By("Inserting Row")
-					f.EventuallyInsertRow(percona.ObjectMeta, dbName, 0, 3).Should(BeTrue())
-
-					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
-
-					By("Count multiple Snapshot Object")
-					f.EventuallySnapshotCount(percona.ObjectMeta).Should(matcher.MoreThan(3))
-
-					By("Verify multiple Succeeded Snapshot")
-					f.EventuallyMultipleSnapshotFinishedProcessing(percona.ObjectMeta).Should(Succeed())
-
-					By("Delete percona")
-					err = f.DeletePercona(percona.ObjectMeta)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Wait for percona to be paused")
-					f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
-
-					// Create Percona object again to resume it
-					By("Create Percona: " + percona.Name)
-					err = f.CreatePercona(percona)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Wait for DormantDatabase to be deleted")
-					f.EventuallyDormantDatabase(percona.ObjectMeta).Should(BeFalse())
-
-					By("Wait for Running percona")
-					f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
-
-					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
-
-					By("Count multiple Snapshot Object")
-					f.EventuallySnapshotCount(percona.ObjectMeta).Should(matcher.MoreThan(5))
-
-					By("Remove Backup Scheduler from Percona")
-					_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
-						in.Spec.BackupSchedule = nil
-						return in
-					})
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Verify multiple Succeeded Snapshot")
-					f.EventuallyMultipleSnapshotFinishedProcessing(percona.ObjectMeta).Should(Succeed())
-				})
-			})
-		})
+		//Context("SnapshotScheduler", func() {
+		//
+		//	BeforeEach(func() {
+		//		skipDataChecking = false
+		//	})
+		//
+		//	AfterEach(func() {
+		//		snapshotList, err := f.GetSnapshotList(percona.ObjectMeta)
+		//		Expect(err).NotTo(HaveOccurred())
+		//
+		//		for _, snap := range snapshotList.Items {
+		//			snapshot = &snap
+		//
+		//			// delete snapshot and check for data wipeOut
+		//			deleteSnapshot()
+		//		}
+		//
+		//		By("Deleting secret: " + secret.Name)
+		//		err = f.DeleteSecret(secret.ObjectMeta)
+		//		if err != nil && !kerr.IsNotFound(err) {
+		//			Expect(err).NotTo(HaveOccurred())
+		//		}
+		//	})
+		//
+		//	Context("With Startup", func() {
+		//
+		//		var shouldStartupSchedular = func() {
+		//			By("Create Secret")
+		//			err := f.CreateSecret(secret)
+		//			Expect(err).NotTo(HaveOccurred())
+		//
+		//			// Create and wait for running Percona
+		//			createAndWaitForRunning()
+		//
+		//			By("Count multiple Snapshot Object")
+		//			f.EventuallySnapshotCount(percona.ObjectMeta).Should(matcher.MoreThan(3))
+		//
+		//			By("Remove Backup Scheduler from Percona")
+		//			_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
+		//				in.Spec.BackupSchedule = nil
+		//				return in
+		//			})
+		//			Expect(err).NotTo(HaveOccurred())
+		//
+		//			By("Verify multiple Succeeded Snapshot")
+		//			f.EventuallyMultipleSnapshotFinishedProcessing(percona.ObjectMeta).Should(Succeed())
+		//		}
+		//
+		//		Context("with local", func() {
+		//			BeforeEach(func() {
+		//				skipDataChecking = true
+		//				secret = f.SecretForLocalBackend()
+		//				percona.Spec.BackupSchedule = &api.BackupScheduleSpec{
+		//					CronExpression: "@every 20s",
+		//					Backend: store.Backend{
+		//						StorageSecretName: secret.Name,
+		//						Local: &store.LocalSpec{
+		//							MountPath: "/repo",
+		//							VolumeSource: core.VolumeSource{
+		//								EmptyDir: &core.EmptyDirVolumeSource{},
+		//							},
+		//						},
+		//					},
+		//				}
+		//			})
+		//
+		//			It("should run scheduler successfully", shouldStartupSchedular)
+		//		})
+		//
+		//		Context("with GCS", func() {
+		//			BeforeEach(func() {
+		//				secret = f.SecretForGCSBackend()
+		//				percona.Spec.BackupSchedule = &api.BackupScheduleSpec{
+		//					CronExpression: "@every 1m",
+		//					Backend: store.Backend{
+		//						StorageSecretName: secret.Name,
+		//						GCS: &store.GCSSpec{
+		//							Bucket: os.Getenv(GCS_BUCKET_NAME),
+		//						},
+		//					},
+		//				}
+		//			})
+		//
+		//			It("should run scheduler successfully", shouldStartupSchedular)
+		//		})
+		//	})
+		//
+		//	Context("With Update - with Local", func() {
+		//
+		//		BeforeEach(func() {
+		//			skipDataChecking = true
+		//			secret = f.SecretForLocalBackend()
+		//		})
+		//
+		//		It("should run scheduler successfully", func() {
+		//			// Create and wait for running Percona
+		//			createAndWaitForRunning()
+		//
+		//			By("Create Secret")
+		//			err := f.CreateSecret(secret)
+		//			Expect(err).NotTo(HaveOccurred())
+		//
+		//			By("Update percona")
+		//			_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
+		//				in.Spec.BackupSchedule = &api.BackupScheduleSpec{
+		//					CronExpression: "@every 20s",
+		//					Backend: store.Backend{
+		//						StorageSecretName: secret.Name,
+		//						Local: &store.LocalSpec{
+		//							MountPath: "/repo",
+		//							VolumeSource: core.VolumeSource{
+		//								EmptyDir: &core.EmptyDirVolumeSource{},
+		//							},
+		//						},
+		//					},
+		//				}
+		//				return in
+		//			})
+		//			Expect(err).NotTo(HaveOccurred())
+		//
+		//			By("Count multiple Snapshot Object")
+		//			f.EventuallySnapshotCount(percona.ObjectMeta).Should(matcher.MoreThan(3))
+		//
+		//			By("Remove Backup Scheduler from Percona")
+		//			_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
+		//				in.Spec.BackupSchedule = nil
+		//				return in
+		//			})
+		//			Expect(err).NotTo(HaveOccurred())
+		//
+		//			By("Verify multiple Succeeded Snapshot")
+		//			f.EventuallyMultipleSnapshotFinishedProcessing(percona.ObjectMeta).Should(Succeed())
+		//		})
+		//	})
+		//
+		//	Context("Re-Use DormantDatabase's scheduler", func() {
+		//
+		//		BeforeEach(func() {
+		//			skipDataChecking = true
+		//			secret = f.SecretForLocalBackend()
+		//		})
+		//
+		//		It("should re-use scheduler successfully", func() {
+		//			// Create and wait for running Percona
+		//			createAndWaitForRunning()
+		//
+		//			By("Create Secret")
+		//			err := f.CreateSecret(secret)
+		//			Expect(err).NotTo(HaveOccurred())
+		//
+		//			By("Update percona")
+		//			_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
+		//				in.Spec.BackupSchedule = &api.BackupScheduleSpec{
+		//					CronExpression: "@every 20s",
+		//					Backend: store.Backend{
+		//						StorageSecretName: secret.Name,
+		//						Local: &store.LocalSpec{
+		//							MountPath: "/repo",
+		//							VolumeSource: core.VolumeSource{
+		//								EmptyDir: &core.EmptyDirVolumeSource{},
+		//							},
+		//						},
+		//					},
+		//				}
+		//				return in
+		//			})
+		//			Expect(err).NotTo(HaveOccurred())
+		//
+		//			By("Creating Table")
+		//			f.EventuallyCreateTable(percona.ObjectMeta, false, dbName, 0).Should(BeTrue())
+		//
+		//			By("Inserting Row")
+		//			f.EventuallyInsertRow(percona.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
+		//
+		//			By("Checking Row Count of Table")
+		//			f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
+		//
+		//			By("Count multiple Snapshot Object")
+		//			f.EventuallySnapshotCount(percona.ObjectMeta).Should(matcher.MoreThan(3))
+		//
+		//			By("Verify multiple Succeeded Snapshot")
+		//			f.EventuallyMultipleSnapshotFinishedProcessing(percona.ObjectMeta).Should(Succeed())
+		//
+		//			By("Delete percona")
+		//			err = f.DeletePercona(percona.ObjectMeta)
+		//			Expect(err).NotTo(HaveOccurred())
+		//
+		//			By("Wait for percona to be paused")
+		//			f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
+		//
+		//			// Create Percona object again to resume it
+		//			By("Create Percona: " + percona.Name)
+		//			err = f.CreatePercona(percona)
+		//			Expect(err).NotTo(HaveOccurred())
+		//
+		//			By("Wait for DormantDatabase to be deleted")
+		//			f.EventuallyDormantDatabase(percona.ObjectMeta).Should(BeFalse())
+		//
+		//			By("Wait for Running percona")
+		//			f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
+		//
+		//			By("Checking Row Count of Table")
+		//			f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
+		//
+		//			By("Count multiple Snapshot Object")
+		//			f.EventuallySnapshotCount(percona.ObjectMeta).Should(matcher.MoreThan(5))
+		//
+		//			By("Remove Backup Scheduler from Percona")
+		//			_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
+		//				in.Spec.BackupSchedule = nil
+		//				return in
+		//			})
+		//			Expect(err).NotTo(HaveOccurred())
+		//
+		//			By("Verify multiple Succeeded Snapshot")
+		//			f.EventuallyMultipleSnapshotFinishedProcessing(percona.ObjectMeta).Should(Succeed())
+		//		})
+		//	})
+		//})
 
 		Context("Termination Policy", func() {
 
@@ -1513,7 +1513,7 @@ var _ = Describe("Percona", func() {
 					f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
 
 					By("Checking row count of table")
-					f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
 				})
 			})
 
@@ -1711,7 +1711,7 @@ var _ = Describe("Percona", func() {
 
 					By("Checking percona configured from provided custom configuration")
 					for _, cfg := range customConfigs {
-						f.EventuallyPerconaVariable(percona.ObjectMeta, dbName, cfg).Should(matcher.UseCustomConfig(cfg))
+						f.EventuallyPerconaVariable(percona.ObjectMeta, false, dbName, 0, cfg).Should(matcher.UseCustomConfig(cfg))
 					}
 				})
 			})
@@ -1729,13 +1729,13 @@ var _ = Describe("Percona", func() {
 				createAndWaitForRunning()
 
 				By("Creating Table")
-				f.EventuallyCreateTable(percona.ObjectMeta, dbName).Should(BeTrue())
+				f.EventuallyCreateTable(percona.ObjectMeta, false, dbName, 0).Should(BeTrue())
 
 				By("Inserting Rows")
-				f.EventuallyInsertRow(percona.ObjectMeta, dbName, 0, 3).Should(BeTrue())
+				f.EventuallyInsertRow(percona.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
 
 				By("Checking Row Count of Table")
-				f.EventuallyCountRow(percona.ObjectMeta, dbName, 0).Should(Equal(3))
+				f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
 			}
 
 			Context("Ephemeral", func() {
