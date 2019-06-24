@@ -148,6 +148,15 @@ func (f *Framework) GetMySQLRootPassword(percona *api.Percona) (string, error) {
 	return password, nil
 }
 
+func (f *Framework) GetMySQLCred(percona *api.Percona, key string) (string, error) {
+	secret, err := f.kubeClient.CoreV1().Secrets(percona.Namespace).Get(percona.Spec.DatabaseSecret.SecretName, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	data := string(secret.Data[key])
+	return data, nil
+}
+
 func (f *Framework) GetSecret(meta metav1.ObjectMeta) (*core.Secret, error) {
 	return f.kubeClient.CoreV1().Secrets(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
 }
