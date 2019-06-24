@@ -1002,9 +1002,15 @@ func (ac *addrConn) resetTransport() {
 			continue
 		}
 
+<<<<<<< HEAD
 		ac.mu.Lock()
 		if ac.state == connectivity.Shutdown {
 			newTr.Close()
+=======
+			backoffFor = 0
+			ac.mu.Lock()
+			reqHandshake := ac.dopts.reqHandshake
+>>>>>>> revendor
 			ac.mu.Unlock()
 			return
 		}

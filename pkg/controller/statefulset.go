@@ -90,7 +90,7 @@ func (c *Controller) ensurePerconaXtraDB(pxc *api.Percona) (kutil.VerbType, erro
 			},
 			VolumeMounts: []core.VolumeMount{
 				{
-					Name: "data",
+					Name:      "data",
 					MountPath: api.PerconaDataMountPath,
 				},
 			},
@@ -136,7 +136,7 @@ func (c *Controller) ensurePerconaXtraDB(pxc *api.Percona) (kutil.VerbType, erro
 			VolumeSource: pxc.Spec.Init.ScriptSource.VolumeSource,
 		})
 		volumeMounts = append(volumeMounts, core.VolumeMount{
-			Name: "initial-script",
+			Name:      "initial-script",
 			MountPath: api.PerconaInitDBMountPath,
 		})
 	}
@@ -250,7 +250,7 @@ func (c *Controller) ensureProxysql(pxc *api.Percona) (kutil.VerbType, error) {
 	var volumeMounts []core.VolumeMount
 
 	volumeMounts = append(volumeMounts, core.VolumeMount{
-		Name: "data",
+		Name:      "data",
 		MountPath: api.ProxysqlDataMountPath,
 	})
 	volumes = append(volumes, core.Volume{
@@ -356,7 +356,7 @@ func upsertCustomConfig(template core.PodTemplateSpec, configSource *core.Volume
 	for i, container := range template.Spec.Containers {
 		if container.Name == api.ResourceSingularPercona {
 			configVolumeMount := core.VolumeMount{
-				Name: "custom-config",
+				Name:      "custom-config",
 				MountPath: api.PerconaCustomConfigMountPath,
 			}
 			volumeMounts := container.VolumeMounts

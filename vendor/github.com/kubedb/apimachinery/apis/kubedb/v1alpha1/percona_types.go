@@ -35,6 +35,12 @@ type PerconaSpec struct {
 	// Number of instances to deploy for Percona
 	Replicas *int32 `json:"replicas,omitempty"`
 
+<<<<<<< HEAD
+=======
+	// PXC is the cluster specification for Percona XtraDB Cluster
+	PXC *PXCSpec `json:"pxc,omitempty"`
+
+>>>>>>> revendor
 	// StorageType can be durable (default) or ephemeral
 	StorageType StorageType `json:"storageType,omitempty"`
 
@@ -74,6 +80,27 @@ type PerconaSpec struct {
 	TerminationPolicy TerminationPolicy `json:"terminationPolicy,omitempty"`
 }
 
+<<<<<<< HEAD
+=======
+type PXCSpec struct {
+	// Name of the cluster and should be identical on all nodes.
+	ClusterName string `json:"clusterName,omitempty"`
+
+	// Proxysql configuration
+	Proxysql ProxysqlSpec `json:"proxysql,omitempty"`
+}
+
+type ProxysqlSpec struct {
+	// Number of Proxysql nodes. Currently we support only replicas = 1.
+	// TODO: If replicas > 1, proxysql will be clustered
+	Replicas *int32 `json:"replicas,omitempty"`
+
+	// PodTemplate is an optional configuration for pods used to expose proxysql
+	// +optional
+	PodTemplate ofst.PodTemplateSpec `json:"podTemplate,omitempty"`
+}
+
+>>>>>>> revendor
 type PerconaStatus struct {
 	Phase  DatabasePhase `json:"phase,omitempty"`
 	Reason string        `json:"reason,omitempty"`
