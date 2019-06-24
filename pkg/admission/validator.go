@@ -148,8 +148,11 @@ func ValidatePercona(client kubernetes.Interface, extClient cs.Interface, pxc *a
 	if pxc.Spec.Version == "" {
 		return errors.New(`'spec.version' is missing`)
 	}
-	if _, err := extClient.CatalogV1alpha1().PerconaVersions().Get(string(pxc.Spec.Version), metav1.GetOptions{}); err != nil {
+	if pxcVersion, err := extClient.CatalogV1alpha1().PerconaVersions().Get(string(pxc.Spec.Version), metav1.GetOptions{}); err != nil {
 		return err
+	} else if pxc.Spec.PXC != nil && pxcVersion.Spec.Version != api.PerconaXtraDBClusterRecommendedVersion {
+		return errors.Errorf("unsupported version for xtradb cluster, recommended version is %s",
+			api.PerconaXtraDBClusterRecommendedVersion)
 	}
 
 	if pxc.Spec.Replicas == nil {

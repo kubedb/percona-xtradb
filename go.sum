@@ -334,6 +334,8 @@ github.com/kubedb/apimachinery v0.0.0-20190620054622-b3072c2bb095 h1:0yfbsPdOtjt
 github.com/kubedb/apimachinery v0.0.0-20190620054622-b3072c2bb095/go.mod h1:Egec2weMcYffh9D9kT9mBIb7m+s6gCh2TtGZRe7Hl3c=
 github.com/kubedb/apimachinery v0.0.0-20190620093837-209a0fb34c12 h1:2sIUdtQVcoPdbemg7a1+vCLU+xbfJOMInIkfChIRRSU=
 github.com/kubedb/apimachinery v0.0.0-20190620093837-209a0fb34c12/go.mod h1:Egec2weMcYffh9D9kT9mBIb7m+s6gCh2TtGZRe7Hl3c=
+github.com/kubedb/apimachinery v0.0.0-20190624111015-bd88627ac3f5 h1:wPPAJHwbyT7r987jncGCiaWljyTeTj7y7KS6MxlCh/Y=
+github.com/kubedb/apimachinery v0.0.0-20190624111015-bd88627ac3f5/go.mod h1:Egec2weMcYffh9D9kT9mBIb7m+s6gCh2TtGZRe7Hl3c=
 github.com/lib/pq v1.1.1 h1:sJZmqHoEaY7f+NPP8pgLB/WxulyR3fewgCM2qaSlBb4=
 github.com/lib/pq v1.1.1/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/magiconair/properties v1.8.0/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
