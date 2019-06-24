@@ -25,6 +25,7 @@ github.com/appscode/go/log/golog
 github.com/appscode/go/crypto/rand
 github.com/appscode/go/encoding/json/types
 github.com/appscode/go/types
+github.com/appscode/go/wait
 github.com/appscode/go/context
 github.com/appscode/go/arrays
 github.com/appscode/go/sets
@@ -206,11 +207,15 @@ github.com/jpillora/go-ogle-analytics
 # github.com/json-iterator/go v1.1.6
 github.com/json-iterator/go
 <<<<<<< HEAD
+<<<<<<< HEAD
 # github.com/kubedb/apimachinery v0.0.0-20190526014453-48e4bab67179
 github.com/kubedb/apimachinery/apis/catalog/v1alpha1
 =======
 # github.com/kubedb/apimachinery v0.0.0-20190620093837-209a0fb34c12
 >>>>>>> revendor
+=======
+# github.com/kubedb/apimachinery v0.0.0-20190624111015-bd88627ac3f5
+>>>>>>> Add version validation for xtradbcluster
 github.com/kubedb/apimachinery/apis/kubedb/v1alpha1
 github.com/kubedb/apimachinery/client/clientset/versioned
 github.com/kubedb/apimachinery/pkg/validator

@@ -30,6 +30,7 @@ require (
 	github.com/graymeta/stow v0.0.0-00010101000000-000000000000
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	github.com/kubedb/apimachinery v0.0.0-20190526014453-48e4bab67179
 =======
 	github.com/kr/pty v1.1.4 // indirect
@@ -42,6 +43,9 @@ require (
 =======
 	github.com/kubedb/apimachinery v0.0.0-20190620093837-209a0fb34c12
 >>>>>>> Add Percona XtraDB cluster
+=======
+	github.com/kubedb/apimachinery v0.0.0-20190624111015-bd88627ac3f5
+>>>>>>> Add version validation for xtradbcluster
 	github.com/lib/pq v1.1.1 // indirect
 	github.com/magiconair/properties v1.8.1 // indirect
 	github.com/mattn/go-colorable v0.1.2 // indirect
