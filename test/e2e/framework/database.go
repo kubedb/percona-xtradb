@@ -26,7 +26,6 @@ func proxysqlName(perconaName string) string {
 
 func (f *Framework) forwardPort(meta metav1.ObjectMeta, clientPodIndex, remotePort int) (*portforward.Tunnel, error) {
 	clientPodName := fmt.Sprintf("%v-%d", meta.Name, clientPodIndex)
-	fmt.Println("............", clientPodName)
 	tunnel := portforward.NewTunnel(
 		f.kubeClient.CoreV1().RESTClient(),
 		f.restConfig,

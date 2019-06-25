@@ -180,6 +180,7 @@ var _ = Describe("Percona XtraDB cluster Tests", func() {
 			By("Delete left over workloads if exists any")
 			f.CleanWorkloadLeftOvers()
 		})
+
 		Context("Basic Cluster with 3 member", func() {
 			BeforeEach(func() {
 				createAndWaitForRunning()

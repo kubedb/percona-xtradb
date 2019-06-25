@@ -19,8 +19,4 @@
 package grpc
 
 // Version is the current grpc version.
-<<<<<<< HEAD
 const Version = "1.20.1"
-=======
-const Version = "1.19.1"
->>>>>>> revendor
