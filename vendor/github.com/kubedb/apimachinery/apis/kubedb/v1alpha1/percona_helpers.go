@@ -9,10 +9,7 @@ import (
 	apps "k8s.io/api/apps/v1"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	crdutils "kmodules.xyz/client-go/apiextensions/v1beta1"
-<<<<<<< HEAD
-=======
 	v1 "kmodules.xyz/client-go/core/v1"
->>>>>>> revendor
 	meta_util "kmodules.xyz/client-go/meta"
 	appcat "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
@@ -65,8 +62,6 @@ func (p Percona) GoverningServiceName() string {
 	return p.OffshootName() + "-gvr"
 }
 
-<<<<<<< HEAD
-=======
 func (p Percona) PeerName(idx int) string {
 	return fmt.Sprintf("%s-%d.%s.%s", p.OffshootName(), idx, p.GoverningServiceName(), p.Namespace)
 }
@@ -121,7 +116,6 @@ func (p Percona) ProxysqlSelectors() map[string]string {
 	})
 }
 
->>>>>>> revendor
 type perconaApp struct {
 	*Percona
 }
@@ -238,8 +232,6 @@ func (p *PerconaSpec) SetDefaults() {
 		p.Replicas = types.Int32P(1)
 	}
 
-<<<<<<< HEAD
-=======
 	if p.PXC != nil {
 		if *p.Replicas < 3 {
 			p.Replicas = types.Int32P(PerconaDefaultClusterSize)
@@ -250,7 +242,6 @@ func (p *PerconaSpec) SetDefaults() {
 		}
 	}
 
->>>>>>> revendor
 	if p.StorageType == "" {
 		p.StorageType = StorageTypeDurable
 	}

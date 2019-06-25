@@ -128,11 +128,7 @@ type SummaryOpts struct {
 	// set it to an empty map (i.e. map[float64]float64{}).
 	//
 	// Note that the current value of DefObjectives is deprecated. It will
-<<<<<<< HEAD
-	// be replaced by an empty map in v0.10 of the library. Please
-=======
 	// be replaced by an empty map in v1.0.0 of the library. Please
->>>>>>> revendor
 	// explicitly set Objectives to the desired value to avoid problems
 	// during the transition.
 	Objectives map[float64]float64
