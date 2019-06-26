@@ -43,10 +43,10 @@ func TestPerconaValidator_Admit(t *testing.T) {
 			validator.extClient = extFake.NewSimpleClientset(
 				&catalog.PerconaVersion{
 					ObjectMeta: metaV1.ObjectMeta{
-						Name: "8.0",
+						Name: "5.7",
 					},
 					Spec: catalog.PerconaVersionSpec{
-						Version: "8.0.0",
+						Version: "5.7",
 					},
 				},
 				&catalog.PerconaVersion{
@@ -146,6 +146,16 @@ var cases = []struct {
 		api.Percona{},
 		false,
 		true,
+	},
+	{"Create Percona without single node replicas",
+		requestKind,
+		"foo",
+		"default",
+		admission.Create,
+		perconaWithoutSingleReplica(),
+		api.Percona{},
+		false,
+		false,
 	},
 	{"Create Invalid Percona",
 		requestKind,
@@ -247,6 +257,68 @@ var cases = []struct {
 		false,
 		true,
 	},
+
+	// XtraDB Cluster
+	{"Create a valid Percona XtraDB Cluster",
+		requestKind,
+		"foo",
+		"default",
+		admission.Create,
+		sampleXtraDBCluster(),
+		api.Percona{},
+		false,
+		true,
+	},
+	{"Create Percona XtraDB Cluster with insufficient node replicas",
+		requestKind,
+		"foo",
+		"default",
+		admission.Create,
+		insufficientNodeReplicas(),
+		api.Percona{},
+		false,
+		false,
+	},
+	{"Create Percona XtraDB Cluster with empty cluster name",
+		requestKind,
+		"foo",
+		"default",
+		admission.Create,
+		emptyClusterName(),
+		api.Percona{},
+		false,
+		false,
+	},
+	{"Create Percona XtraDB Cluster with larger cluster name than recommended",
+		requestKind,
+		"foo",
+		"default",
+		admission.Create,
+		largerClusterNameThanRecommended(),
+		api.Percona{},
+		false,
+		false,
+	},
+	{"Create Percona XtraDB Cluster without single proxysql replicas",
+		requestKind,
+		"foo",
+		"default",
+		admission.Create,
+		withoutSingleProxysqlReplicas(),
+		api.Percona{},
+		false,
+		false,
+	},
+	{"Create Percona XtraDB Cluster with 0 proxysql replicas",
+		requestKind,
+		"foo",
+		"default",
+		admission.Create,
+		withZeroProxysqlReplicas(),
+		api.Percona{},
+		false,
+		false,
+	},
 }
 
 func samplePercona() api.Percona {
@@ -263,7 +335,7 @@ func samplePercona() api.Percona {
 			},
 		},
 		Spec: api.PerconaSpec{
-			Version:     "8.0",
+			Version:     "5.7",
 			Replicas:    types.Int32P(1),
 			StorageType: api.StorageTypeDurable,
 			Storage: &core.PersistentVolumeClaimSpec{
@@ -295,6 +367,12 @@ func samplePercona() api.Percona {
 func getAwkwardPercona() api.Percona {
 	pxc := samplePercona()
 	pxc.Spec.Version = "3.0"
+	return pxc
+}
+
+func perconaWithoutSingleReplica() api.Percona {
+	pxc := samplePercona()
+	pxc.Spec.Replicas = types.Int32P(3)
 	return pxc
 }
 
@@ -340,4 +418,52 @@ func editSpecInvalidMonitor(old api.Percona) api.Percona {
 func pauseDatabase(old api.Percona) api.Percona {
 	old.Spec.TerminationPolicy = api.TerminationPolicyPause
 	return old
+}
+
+func sampleXtraDBCluster() api.Percona {
+	percona := samplePercona()
+	percona.Spec.Replicas = types.Int32P(3)
+	percona.Spec.PXC = &api.PXCSpec{
+		ClusterName: "foo-xtradb-cluster",
+		Proxysql: api.ProxysqlSpec{
+			Replicas: types.Int32P(1),
+		},
+	}
+
+	return percona
+}
+
+func insufficientNodeReplicas() api.Percona {
+	percona := sampleXtraDBCluster()
+	percona.Spec.Replicas = types.Int32P(1)
+
+	return percona
+}
+
+func emptyClusterName() api.Percona {
+	percona := sampleXtraDBCluster()
+	percona.Spec.PXC.ClusterName = ""
+
+	return percona
+}
+
+func largerClusterNameThanRecommended() api.Percona {
+	percona := sampleXtraDBCluster()
+	percona.Spec.PXC.ClusterName = "aaaaa-aaaaa-aaaaa-aaaaa-aaaaa-aaaaa"
+
+	return percona
+}
+
+func withoutSingleProxysqlReplicas() api.Percona {
+	percona := sampleXtraDBCluster()
+	percona.Spec.PXC.Proxysql.Replicas = types.Int32P(3)
+
+	return percona
+}
+
+func withZeroProxysqlReplicas() api.Percona {
+	percona := sampleXtraDBCluster()
+	percona.Spec.PXC.Proxysql.Replicas = types.Int32P(0)
+
+	return percona
 }

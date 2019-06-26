@@ -132,10 +132,11 @@ func validatePXC(pxcSpec *api.PXCSpec) error {
 		}
 		if len(pxcSpec.ClusterName) > api.PerconaMaxClusterNameLength {
 			return errors.Errorf(`'spec.pxc.clusterName' "%s" shouldn't have more than %d characters'`,
-				api.PerconaMaxClusterNameLength)
+				pxcSpec.ClusterName, api.PerconaMaxClusterNameLength)
 		}
-		if *pxcSpec.Proxysql.Replicas > 1 {
-			return errors.Errorf(`'spec.pxc.proxysql.replicas' "%v" is invalid. Currently, supported replicas for proxysql is 1`)
+		if *pxcSpec.Proxysql.Replicas != 1 {
+			return errors.Errorf(`'spec.pxc.proxysql.replicas' "%v" is invalid. Currently, supported replicas for proxysql is 1`,
+				pxcSpec.Proxysql.Replicas)
 		}
 	}
 
@@ -163,6 +164,11 @@ func ValidatePercona(client kubernetes.Interface, extClient cs.Interface, pxc *a
 	if pxc.Spec.PXC == nil && *pxc.Spec.Replicas > api.PerconaStandaloneReplicas {
 		return fmt.Errorf(`'spec.replicas' "%v" invalid. Value must be 1 for standalone percona server`,
 			pxc.Spec.Replicas)
+	}
+
+	if pxc.Spec.PXC != nil && *pxc.Spec.Replicas < api.PerconaDefaultClusterSize {
+		return fmt.Errorf(`'spec.replicas' "%v" invalid. Value must be %d for xtradb cluster`,
+			pxc.Spec.Replicas, api.PerconaDefaultClusterSize)
 	}
 
 	if err := validatePXC(pxc.Spec.PXC); err != nil {
