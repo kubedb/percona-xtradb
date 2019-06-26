@@ -51,22 +51,28 @@ type workloadOptions struct {
 }
 
 func (c *Controller) ensurePerconaXtraDBNode(pxc *api.Percona) (kutil.VerbType, error) {
-	if pxc.Spec.PXC != nil {
-		vt1, err := c.ensurePerconaXtraDB(pxc)
-		if err != nil {
-			return vt1, err
-		}
+	var (
+		vt1, vt2 kutil.VerbType
+		err      error
+	)
 
-		vt2, err := c.ensureProxysql(pxc)
+	vt1, err = c.ensurePerconaXtraDB(pxc)
+	if err != nil {
+		return vt1, err
+	}
+
+	if pxc.Spec.PXC != nil {
+		// currently proxysql is only for xtradb cluster
+		vt2, err = c.ensureProxysql(pxc)
 		if err != nil {
 			return vt2, err
 		}
+	}
 
-		if vt1 == kutil.VerbCreated && vt2 == kutil.VerbCreated {
-			return kutil.VerbCreated, nil
-		} else if vt1 != kutil.VerbUnchanged || vt2 != kutil.VerbUnchanged {
-			return kutil.VerbPatched, nil
-		}
+	if vt1 == kutil.VerbCreated && (pxc.Spec.PXC == nil || vt2 == kutil.VerbCreated) {
+		return kutil.VerbCreated, nil
+	} else if vt1 != kutil.VerbUnchanged || (pxc.Spec.PXC != nil && vt2 != kutil.VerbUnchanged) {
+		return kutil.VerbPatched, nil
 	}
 
 	return kutil.VerbUnchanged, nil
@@ -142,36 +148,35 @@ func (c *Controller) ensurePerconaXtraDB(pxc *api.Percona) (kutil.VerbType, erro
 	}
 	pxc.Spec.PodTemplate.Spec.ServiceAccountName = pxc.OffshootName()
 
-	var envList []core.EnvVar
+	envList := []core.EnvVar{
+		{
+			Name: "MYSQL_USER",
+			ValueFrom: &core.EnvVarSource{
+				SecretKeyRef: &core.SecretKeySelector{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: pxc.Spec.DatabaseSecret.SecretName,
+					},
+					Key: api.ProxysqlUser,
+				},
+			},
+		},
+		{
+			Name: "MYSQL_PASSWORD",
+			ValueFrom: &core.EnvVarSource{
+				SecretKeyRef: &core.SecretKeySelector{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: pxc.Spec.DatabaseSecret.SecretName,
+					},
+					Key: api.ProxysqlPassword,
+				},
+			},
+		},
+	}
 	if pxc.Spec.PXC != nil {
-		envList = []core.EnvVar{
-			{
-				Name: "MYSQL_USER",
-				ValueFrom: &core.EnvVarSource{
-					SecretKeyRef: &core.SecretKeySelector{
-						LocalObjectReference: core.LocalObjectReference{
-							Name: pxc.Spec.DatabaseSecret.SecretName,
-						},
-						Key: api.ProxysqlUser,
-					},
-				},
-			},
-			{
-				Name: "MYSQL_PASSWORD",
-				ValueFrom: &core.EnvVarSource{
-					SecretKeyRef: &core.SecretKeySelector{
-						LocalObjectReference: core.LocalObjectReference{
-							Name: pxc.Spec.DatabaseSecret.SecretName,
-						},
-						Key: api.ProxysqlPassword,
-					},
-				},
-			},
-			{
-				Name:  "CLUSTER_NAME",
-				Value: pxc.Spec.PXC.ClusterName,
-			},
-		}
+		envList = append(envList, core.EnvVar{
+			Name:  "CLUSTER_NAME",
+			Value: pxc.Spec.PXC.ClusterName,
+		})
 	}
 
 	var monitorContainer core.Container
@@ -335,7 +340,7 @@ func (c *Controller) ensureProxysql(pxc *api.Percona) (kutil.VerbType, error) {
 }
 
 func (c *Controller) checkStatefulSet(pxc *api.Percona, stsName string) error {
-	// StatefulSet for MongoDB database
+	// StatefulSet for Percona database
 	statefulSet, err := c.Client.AppsV1().StatefulSets(pxc.Namespace).Get(stsName, metav1.GetOptions{})
 	if err != nil {
 		if kerr.IsNotFound(err) {
