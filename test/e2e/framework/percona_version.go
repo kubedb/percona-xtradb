@@ -20,7 +20,10 @@ func (i *Invocation) PerconaVersion() *api.PerconaVersion {
 		Spec: api.PerconaVersionSpec{
 			Version: DBVersion,
 			DB: api.PerconaVersionDatabase{
-				Image: fmt.Sprintf("%s/percona:%s", DockerRegistry, DBVersion),
+				Image: fmt.Sprintf("%s/percona-xtradb-cluster:%s", DockerRegistry, DBVersion),
+			},
+			Proxysql: api.PerconaVersionProxysql{
+				Image: fmt.Sprintf("%s/proxysql-pxc:%s", DockerRegistry, DBVersion),
 			},
 			Exporter: api.PerconaVersionExporter{
 				Image: fmt.Sprintf("%s/mysqld-exporter:%s", DockerRegistry, ExporterTag),
@@ -28,9 +31,9 @@ func (i *Invocation) PerconaVersion() *api.PerconaVersion {
 			InitContainer: api.PerconaVersionInitContainer{
 				Image: "kubedb/busybox",
 			},
-			PodSecurityPolicies: api.PerconaVersionPodSecurityPolicy{
-				DatabasePolicyName: "percona-db",
-			},
+			//PodSecurityPolicies: api.PerconaVersionPodSecurityPolicy{
+			//	DatabasePolicyName: "percona-db",
+			//},
 		},
 	}
 }
@@ -44,6 +47,10 @@ func (f *Framework) CreatePerconaVersion(obj *api.PerconaVersion) error {
 		return e2
 	}
 	return nil
+}
+
+func (f *Framework) GetPerconaVersion(meta metav1.ObjectMeta) (*api.PerconaVersion, error) {
+	return f.extClient.CatalogV1alpha1().PerconaVersions().Get(meta.Name, metav1.GetOptions{})
 }
 
 func (f *Framework) DeletePerconaVersion(meta metav1.ObjectMeta) error {
