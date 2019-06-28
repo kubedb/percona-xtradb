@@ -7,6 +7,7 @@ import (
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/strings"
 	"github.com/appscode/go/types"
+	cat_api "github.com/kubedb/apimachinery/apis/catalog/v1alpha1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/percona/test/e2e/framework"
 	"github.com/kubedb/percona/test/e2e/matcher"
@@ -22,6 +23,7 @@ var _ = Describe("Percona XtraDB cluster Tests", func() {
 		err            error
 		f              *framework.Invocation
 		percona        *api.Percona
+		perconaVer     *cat_api.PerconaVersion
 		garbagePercona *api.PerconaList
 		//skipMessage string
 		dbName         string
@@ -30,6 +32,10 @@ var _ = Describe("Percona XtraDB cluster Tests", func() {
 	)
 
 	var createAndWaitForRunning = func() {
+		By("Create Percona Version: " + perconaVer.Name)
+		err = f.CreatePerconaVersion(perconaVer)
+		Expect(err).NotTo(HaveOccurred())
+
 		By("Create Percona: " + percona.Name)
 		err = f.CreatePercona(percona)
 		Expect(err).NotTo(HaveOccurred())
@@ -91,6 +97,31 @@ var _ = Describe("Percona XtraDB cluster Tests", func() {
 
 		By("Wait for percona resources to be wipedOut")
 		f.EventuallyWipedOut(percona.ObjectMeta).Should(Succeed())
+
+		if percona == nil {
+			log.Infoln("Skipping cleanup. Reason: percona is nil")
+			return
+		}
+
+		By("Check if percona version " + perconaVer.Name + " exists.")
+		_, err = f.GetPerconaVersion(perconaVer.ObjectMeta)
+		if err != nil {
+			if kerr.IsNotFound(err) {
+				// Percona was not created. Hence, rest of cleanup is not necessary.
+				return
+			}
+			Expect(err).NotTo(HaveOccurred())
+		}
+
+		By("Delete PerconaVersion")
+		err = f.DeletePerconaVersion(perconaVer.ObjectMeta)
+		if err != nil {
+			if kerr.IsNotFound(err) {
+				log.Infoln("Skipping rest of the cleanup. Reason: PerconaVersion does not exist.")
+				return
+			}
+			Expect(err).NotTo(HaveOccurred())
+		}
 	}
 
 	var baseName = func(proxysql bool) string {
@@ -157,6 +188,7 @@ var _ = Describe("Percona XtraDB cluster Tests", func() {
 	BeforeEach(func() {
 		f = root.Invoke()
 		percona = f.PerconaXtraDBCluster()
+		perconaVer = f.PerconaVersion()
 		garbagePercona = new(api.PerconaList)
 		//skipMessage = ""
 		dbName = "mysql"
