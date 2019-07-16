@@ -80,7 +80,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.MySQLStatus":                  schema_apimachinery_apis_kubedb_v1alpha1_MySQLStatus(ref),
 		"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.Origin":                       schema_apimachinery_apis_kubedb_v1alpha1_Origin(ref),
 		"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.OriginSpec":                   schema_apimachinery_apis_kubedb_v1alpha1_OriginSpec(ref),
-		"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.PXCSpec":                      schema_apimachinery_apis_kubedb_v1alpha1_PXCSpec(ref),
 		"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.Percona":                      schema_apimachinery_apis_kubedb_v1alpha1_Percona(ref),
 		"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.PerconaList":                  schema_apimachinery_apis_kubedb_v1alpha1_PerconaList(ref),
 		"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.PerconaSpec":                  schema_apimachinery_apis_kubedb_v1alpha1_PerconaSpec(ref),
@@ -94,7 +93,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.PostgresSummary":              schema_apimachinery_apis_kubedb_v1alpha1_PostgresSummary(ref),
 		"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.PostgresTableInfo":            schema_apimachinery_apis_kubedb_v1alpha1_PostgresTableInfo(ref),
 		"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.PostgresWALSourceSpec":        schema_apimachinery_apis_kubedb_v1alpha1_PostgresWALSourceSpec(ref),
-		"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.ProxysqlSpec":                 schema_apimachinery_apis_kubedb_v1alpha1_ProxysqlSpec(ref),
 		"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.RecoveryTarget":               schema_apimachinery_apis_kubedb_v1alpha1_RecoveryTarget(ref),
 		"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.Redis":                        schema_apimachinery_apis_kubedb_v1alpha1_Redis(ref),
 		"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.RedisClusterSpec":             schema_apimachinery_apis_kubedb_v1alpha1_RedisClusterSpec(ref),
@@ -852,11 +850,17 @@ func schema_apimachinery_apis_kubedb_v1alpha1_ElasticsearchNode(ref common.Refer
 							Ref:         ref("k8s.io/api/core/v1.ResourceRequirements"),
 						},
 					},
+					"maxUnavailable": {
+						SchemaProps: spec.SchemaProps{
+							Description: "An eviction is allowed if at most \"maxUnavailable\" pods selected by \"selector\" are unavailable after the eviction, i.e. even in absence of the evicted pod. For example, one can prevent all voluntary evictions by specifying 0. This is a mutually exclusive setting with \"minAvailable\".",
+							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.PersistentVolumeClaimSpec", "k8s.io/api/core/v1.ResourceRequirements"},
+			"k8s.io/api/core/v1.PersistentVolumeClaimSpec", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
 	}
 }
 
@@ -961,6 +965,12 @@ func schema_apimachinery_apis_kubedb_v1alpha1_ElasticsearchSpec(ref common.Refer
 							Ref:         ref("kmodules.xyz/offshoot-api/api/v1.ServiceTemplateSpec"),
 						},
 					},
+					"maxUnavailable": {
+						SchemaProps: spec.SchemaProps{
+							Description: "An eviction is allowed if at most \"maxUnavailable\" pods selected by \"selector\" are unavailable after the eviction, i.e. even in absence of the evicted pod. For example, one can prevent all voluntary evictions by specifying 0. This is a mutually exclusive setting with \"minAvailable\".",
+							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
+						},
+					},
 					"updateStrategy": {
 						SchemaProps: spec.SchemaProps{
 							Description: "updateStrategy indicates the StatefulSetUpdateStrategy that will be employed to update Pods in the StatefulSet when a revision is made to Template.",
@@ -979,7 +989,7 @@ func schema_apimachinery_apis_kubedb_v1alpha1_ElasticsearchSpec(ref common.Refer
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.BackupScheduleSpec", "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.ElasticsearchClusterTopology", "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.InitSpec", "k8s.io/api/apps/v1.StatefulSetUpdateStrategy", "k8s.io/api/core/v1.PersistentVolumeClaimSpec", "k8s.io/api/core/v1.SecretVolumeSource", "k8s.io/api/core/v1.VolumeSource", "kmodules.xyz/monitoring-agent-api/api/v1.AgentSpec", "kmodules.xyz/offshoot-api/api/v1.PodTemplateSpec", "kmodules.xyz/offshoot-api/api/v1.ServiceTemplateSpec"},
+			"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.BackupScheduleSpec", "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.ElasticsearchClusterTopology", "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.InitSpec", "k8s.io/api/apps/v1.StatefulSetUpdateStrategy", "k8s.io/api/core/v1.PersistentVolumeClaimSpec", "k8s.io/api/core/v1.SecretVolumeSource", "k8s.io/api/core/v1.VolumeSource", "k8s.io/apimachinery/pkg/util/intstr.IntOrString", "kmodules.xyz/monitoring-agent-api/api/v1.AgentSpec", "kmodules.xyz/offshoot-api/api/v1.PodTemplateSpec", "kmodules.xyz/offshoot-api/api/v1.ServiceTemplateSpec"},
 	}
 }
 
@@ -1287,7 +1297,8 @@ func schema_apimachinery_apis_kubedb_v1alpha1_InitSpec(ref common.ReferenceCallb
 					},
 					"snapshotSource": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.SnapshotSourceSpec"),
+							Description: "Deprecated",
+							Ref:         ref("github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.SnapshotSourceSpec"),
 						},
 					},
 					"postgresWAL": {
@@ -1295,11 +1306,17 @@ func schema_apimachinery_apis_kubedb_v1alpha1_InitSpec(ref common.ReferenceCallb
 							Ref: ref("github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.PostgresWALSourceSpec"),
 						},
 					},
+					"stashRestoreSession": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name of stash restoreSession in same namespace of kubedb object. ref: https://github.com/stashed/stash/blob/09af5d319bb5be889186965afb04045781d6f926/apis/stash/v1beta1/restore_session_types.go#L22",
+							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.PostgresWALSourceSpec", "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.ScriptSourceSpec", "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.SnapshotSourceSpec"},
+			"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.PostgresWALSourceSpec", "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.ScriptSourceSpec", "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.SnapshotSourceSpec", "k8s.io/api/core/v1.LocalObjectReference"},
 	}
 }
 
@@ -2158,8 +2175,22 @@ func schema_apimachinery_apis_kubedb_v1alpha1_MongoDBSpec(ref common.ReferenceCa
 					},
 					"certificateSecret": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Secret for KeyFile or SSL certificates. Contains `tls.pem` or keyfile `key.txt` depending on enableSSL. Currently SSL support is not enabled.",
+							Description: "Secret for KeyFile or SSL certificates. Contains `tls.pem` or keyfile `key.txt` depending on enableSSL.",
 							Ref:         ref("k8s.io/api/core/v1.SecretVolumeSource"),
+						},
+					},
+					"clusterAuthMode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ClusterAuthMode for replicaset or sharding. (default will be x509 if sslmode is not `disabled`.) See available ClusterAuthMode: https://docs.mongodb.com/manual/reference/program/mongod/#cmdoption-mongod-clusterauthmode",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"sslMode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SSLMode for both standalone and clusters. (default, disabled.) See more options: https://docs.mongodb.com/manual/reference/program/mongod/#cmdoption-mongod-sslmode",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"init": {
@@ -2631,33 +2662,6 @@ func schema_apimachinery_apis_kubedb_v1alpha1_OriginSpec(ref common.ReferenceCal
 	}
 }
 
-func schema_apimachinery_apis_kubedb_v1alpha1_PXCSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"clusterName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Name of the cluster and should be identical on all nodes.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"proxysql": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Proxysql configuration",
-							Ref:         ref("github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.ProxysqlSpec"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.ProxysqlSpec"},
-	}
-}
-
 func schema_apimachinery_apis_kubedb_v1alpha1_Percona(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -2768,12 +2772,6 @@ func schema_apimachinery_apis_kubedb_v1alpha1_PerconaSpec(ref common.ReferenceCa
 							Format:      "int32",
 						},
 					},
-					"pxc": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PXC is the cluster specification for Percona XtraDB Cluster",
-							Ref:         ref("github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.PXCSpec"),
-						},
-					},
 					"storageType": {
 						SchemaProps: spec.SchemaProps{
 							Description: "StorageType can be durable (default) or ephemeral",
@@ -2841,7 +2839,7 @@ func schema_apimachinery_apis_kubedb_v1alpha1_PerconaSpec(ref common.ReferenceCa
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.InitSpec", "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.PXCSpec", "k8s.io/api/apps/v1.StatefulSetUpdateStrategy", "k8s.io/api/core/v1.PersistentVolumeClaimSpec", "k8s.io/api/core/v1.SecretVolumeSource", "k8s.io/api/core/v1.VolumeSource", "kmodules.xyz/monitoring-agent-api/api/v1.AgentSpec", "kmodules.xyz/offshoot-api/api/v1.PodTemplateSpec", "kmodules.xyz/offshoot-api/api/v1.ServiceTemplateSpec"},
+			"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.InitSpec", "k8s.io/api/apps/v1.StatefulSetUpdateStrategy", "k8s.io/api/core/v1.PersistentVolumeClaimSpec", "k8s.io/api/core/v1.SecretVolumeSource", "k8s.io/api/core/v1.VolumeSource", "kmodules.xyz/monitoring-agent-api/api/v1.AgentSpec", "kmodules.xyz/offshoot-api/api/v1.PodTemplateSpec", "kmodules.xyz/offshoot-api/api/v1.ServiceTemplateSpec"},
 	}
 }
 
@@ -3298,33 +3296,6 @@ func schema_apimachinery_apis_kubedb_v1alpha1_PostgresWALSourceSpec(ref common.R
 		},
 		Dependencies: []string{
 			"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1.RecoveryTarget", "kmodules.xyz/objectstore-api/api/v1.AzureSpec", "kmodules.xyz/objectstore-api/api/v1.B2Spec", "kmodules.xyz/objectstore-api/api/v1.GCSSpec", "kmodules.xyz/objectstore-api/api/v1.LocalSpec", "kmodules.xyz/objectstore-api/api/v1.RestServerSpec", "kmodules.xyz/objectstore-api/api/v1.S3Spec", "kmodules.xyz/objectstore-api/api/v1.SwiftSpec"},
-	}
-}
-
-func schema_apimachinery_apis_kubedb_v1alpha1_ProxysqlSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"replicas": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Number of Proxysql nodes. Currently we support only replicas = 1.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"podTemplate": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PodTemplate is an optional configuration for pods used to expose proxysql",
-							Ref:         ref("kmodules.xyz/offshoot-api/api/v1.PodTemplateSpec"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"kmodules.xyz/offshoot-api/api/v1.PodTemplateSpec"},
 	}
 }
 
@@ -19584,11 +19555,43 @@ func schema_kmodulesxyz_offshoot_api_api_v1_ContainerRuntimeSettings(ref common.
 							Ref:         ref("kmodules.xyz/offshoot-api/api/v1.IONiceSettings"),
 						},
 					},
+					"envFrom": {
+						SchemaProps: spec.SchemaProps{
+							Description: "List of sources to populate environment variables in the container. The keys defined within a source must be a C_IDENTIFIER. All invalid keys will be reported as an event when the container is starting. When a key exists in multiple sources, the value associated with the last source will take precedence. Values defined by an Env with a duplicate key will take precedence. Cannot be updated.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("k8s.io/api/core/v1.EnvFromSource"),
+									},
+								},
+							},
+						},
+					},
+					"env": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "List of environment variables to set in the container. Cannot be updated.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("k8s.io/api/core/v1.EnvVar"),
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.Lifecycle", "k8s.io/api/core/v1.Probe", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext", "kmodules.xyz/offshoot-api/api/v1.IONiceSettings", "kmodules.xyz/offshoot-api/api/v1.NiceSettings"},
+			"k8s.io/api/core/v1.EnvFromSource", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.Lifecycle", "k8s.io/api/core/v1.Probe", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext", "kmodules.xyz/offshoot-api/api/v1.IONiceSettings", "kmodules.xyz/offshoot-api/api/v1.NiceSettings"},
 	}
 }
 

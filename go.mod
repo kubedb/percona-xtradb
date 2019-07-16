@@ -3,10 +3,7 @@ module github.com/kubedb/percona
 go 1.12
 
 require (
-	github.com/Azure/go-autorest v11.1.2+incompatible // indirect
-	github.com/appscode/go v0.0.0-20190523031839-1468ee3a76e8
-	github.com/appscode/osm v0.11.0 // indirect
-	github.com/aws/aws-sdk-go v1.14.33 // indirect
+	github.com/appscode/go v0.0.0-20190621064509-6b292c9166e3
 	github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27
 	github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/prometheus-operator v0.30.0
@@ -16,25 +13,16 @@ require (
 	github.com/fatih/structs v1.1.0
 	github.com/go-openapi/spec v0.19.2 // indirect
 	github.com/go-sql-driver/mysql v1.4.1
-	github.com/go-xorm/xorm v0.7.0
-	github.com/gopherjs/gopherjs v0.0.0-20190430165422-3e4dfb77656c // indirect
+	github.com/go-xorm/xorm v0.7.3
 	github.com/graymeta/stow v0.0.0-00010101000000-000000000000
-	github.com/kubedb/apimachinery v0.0.0-20190624111015-bd88627ac3f5
+	github.com/kubedb/apimachinery v0.0.0-20190716012723-fae41781e7bd
 	github.com/lib/pq v1.1.1 // indirect
-	github.com/mattn/go-colorable v0.1.2 // indirect
-	github.com/mattn/go-sqlite3 v1.10.0 // indirect
-	github.com/ncw/swift v1.0.47 // indirect
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/pkg/errors v0.8.1
-	github.com/prometheus/client_golang v0.9.4 // indirect
-	github.com/sirupsen/logrus v1.4.2 // indirect
-	github.com/smartystreets/assertions v0.0.0-20190401211740-f487f9de1cd3 // indirect
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.3
-	github.com/ziutek/mymysql v1.5.4 // indirect
 	go.etcd.io/bbolt v1.3.3 // indirect
-	gopkg.in/ini.v1 v1.42.0 // indirect
 	k8s.io/api v0.0.0-20190503110853-61630f889b3c
 	k8s.io/apiextensions-apiserver v0.0.0-20190508184259-7784d62bc471
 	k8s.io/apimachinery v0.0.0-20190508063446-a3da69d3723c
