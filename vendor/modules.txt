@@ -1,6 +1,6 @@
-# cloud.google.com/go v0.38.0
+# cloud.google.com/go v0.39.0
 cloud.google.com/go/compute/metadata
-# github.com/Azure/azure-sdk-for-go v21.3.0+incompatible
+# github.com/Azure/azure-sdk-for-go v27.3.0+incompatible
 github.com/Azure/azure-sdk-for-go/storage
 github.com/Azure/azure-sdk-for-go/version
 # github.com/Azure/go-autorest v11.1.2+incompatible
@@ -16,7 +16,7 @@ github.com/NYTimes/gziphandler
 github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
 github.com/PuerkitoBio/urlesc
-# github.com/appscode/go v0.0.0-20190523031839-1468ee3a76e8
+# github.com/appscode/go v0.0.0-20190621064509-6b292c9166e3
 github.com/appscode/go/version
 github.com/appscode/go/runtime
 github.com/appscode/go/log
@@ -38,7 +38,7 @@ github.com/appscode/go/encoding/yaml
 github.com/appscode/jsonpatch
 # github.com/appscode/osm v0.11.0
 github.com/appscode/osm/context
-# github.com/aws/aws-sdk-go v1.14.33
+# github.com/aws/aws-sdk-go v1.19.16
 github.com/aws/aws-sdk-go/aws
 github.com/aws/aws-sdk-go/aws/credentials
 github.com/aws/aws-sdk-go/aws/credentials/stscreds
@@ -49,6 +49,7 @@ github.com/aws/aws-sdk-go/aws/awserr
 github.com/aws/aws-sdk-go/service/s3/s3manager
 github.com/aws/aws-sdk-go/aws/endpoints
 github.com/aws/aws-sdk-go/internal/sdkio
+github.com/aws/aws-sdk-go/internal/ini
 github.com/aws/aws-sdk-go/internal/shareddefaults
 github.com/aws/aws-sdk-go/aws/client
 github.com/aws/aws-sdk-go/service/sts
@@ -56,10 +57,12 @@ github.com/aws/aws-sdk-go/aws/client/metadata
 github.com/aws/aws-sdk-go/aws/corehandlers
 github.com/aws/aws-sdk-go/aws/request
 github.com/aws/aws-sdk-go/internal/sdkuri
+github.com/aws/aws-sdk-go/aws/credentials/processcreds
 github.com/aws/aws-sdk-go/aws/csm
 github.com/aws/aws-sdk-go/aws/defaults
 github.com/aws/aws-sdk-go/aws/awsutil
 github.com/aws/aws-sdk-go/aws/signer/v4
+github.com/aws/aws-sdk-go/internal/s3err
 github.com/aws/aws-sdk-go/private/protocol
 github.com/aws/aws-sdk-go/private/protocol/eventstream
 github.com/aws/aws-sdk-go/private/protocol/eventstream/eventstreamapi
@@ -106,14 +109,12 @@ github.com/docker/spdystream/spdy
 # github.com/emicklei/go-restful v2.9.6+incompatible
 github.com/emicklei/go-restful
 github.com/emicklei/go-restful/log
-# github.com/evanphx/json-patch v4.2.0+incompatible
+# github.com/evanphx/json-patch v4.5.0+incompatible
 github.com/evanphx/json-patch
 # github.com/fatih/structs v1.1.0
 github.com/fatih/structs
 # github.com/ghodss/yaml v1.0.0
 github.com/ghodss/yaml
-# github.com/go-ini/ini v1.40.0
-github.com/go-ini/ini
 # github.com/go-openapi/jsonpointer v0.19.2
 github.com/go-openapi/jsonpointer
 # github.com/go-openapi/jsonreference v0.19.2
@@ -124,11 +125,11 @@ github.com/go-openapi/spec
 github.com/go-openapi/swag
 # github.com/go-sql-driver/mysql v1.4.1
 github.com/go-sql-driver/mysql
-# github.com/go-xorm/builder v0.0.0-20180322150003-a9b7ffcca3f0
+# github.com/go-xorm/builder v0.3.3
 github.com/go-xorm/builder
-# github.com/go-xorm/core v0.0.0-20180322150003-0177c08cee88
+# github.com/go-xorm/core v0.6.2
 github.com/go-xorm/core
-# github.com/go-xorm/xorm v0.7.0
+# github.com/go-xorm/xorm v0.7.3
 github.com/go-xorm/xorm
 # github.com/gogo/protobuf v1.2.1
 github.com/gogo/protobuf/proto
@@ -202,7 +203,7 @@ github.com/jmespath/go-jmespath
 github.com/jpillora/go-ogle-analytics
 # github.com/json-iterator/go v1.1.6
 github.com/json-iterator/go
-# github.com/kubedb/apimachinery v0.0.0-20190624111015-bd88627ac3f5
+# github.com/kubedb/apimachinery v0.0.0-20190716012723-fae41781e7bd
 github.com/kubedb/apimachinery/apis/kubedb/v1alpha1
 github.com/kubedb/apimachinery/client/clientset/versioned
 github.com/kubedb/apimachinery/pkg/validator
@@ -313,6 +314,8 @@ github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
 # github.com/prometheus/procfs v0.0.2
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
+# github.com/robfig/cron/v3 v3.0.0
+github.com/robfig/cron/v3
 # github.com/russross/blackfriday v1.5.2
 github.com/russross/blackfriday
 # github.com/satori/go.uuid v1.2.0
@@ -396,7 +399,7 @@ golang.org/x/text/internal/tag
 golang.org/x/time/rate
 # gomodules.xyz/version v0.0.0-20190507203204-7cec7ee542d3
 gomodules.xyz/version
-# google.golang.org/api v0.4.0
+# google.golang.org/api v0.5.0
 google.golang.org/api/storage/v1
 google.golang.org/api/gensupport
 google.golang.org/api/googleapi
@@ -460,8 +463,6 @@ gopkg.in/fsnotify.v1
 gopkg.in/inf.v0
 # gopkg.in/natefinch/lumberjack.v2 v2.0.0
 gopkg.in/natefinch/lumberjack.v2
-# gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5 => github.com/appscode/cron v0.0.0-20170717094345-ca60c6d796d4
-gopkg.in/robfig/cron.v2
 # gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
 gopkg.in/tomb.v1
 # gopkg.in/yaml.v2 v2.2.2
@@ -892,6 +893,8 @@ k8s.io/kube-openapi/pkg/handler
 k8s.io/kube-openapi/pkg/util
 k8s.io/kube-openapi/pkg/util/proto
 k8s.io/kube-openapi/pkg/schemaconv
+# k8s.io/kubernetes v1.14.2
+k8s.io/kubernetes/pkg/util/hash
 # k8s.io/utils v0.0.0-20190506122338-8fab8cb257d5 => k8s.io/utils v0.0.0-20190221042446-c2654d5206da
 k8s.io/utils/buffer
 k8s.io/utils/trace
@@ -912,6 +915,7 @@ kmodules.xyz/client-go/rbac/v1beta1
 kmodules.xyz/client-go/tools/queue
 kmodules.xyz/client-go/tools/portforward
 kmodules.xyz/client-go/tools/analytics
+kmodules.xyz/client-go/policy/v1beta1
 kmodules.xyz/client-go/apiregistration/v1beta1
 # kmodules.xyz/custom-resources v0.0.0-20190508103408-464e8324c3ec
 kmodules.xyz/custom-resources/client/clientset/versioned/scheme
@@ -963,3 +967,22 @@ sigs.k8s.io/structured-merge-diff/value
 sigs.k8s.io/structured-merge-diff/schema
 # sigs.k8s.io/yaml v1.1.0
 sigs.k8s.io/yaml
+# stash.appscode.dev/stash v0.0.0-20190711191909-920dfaea20e8
+stash.appscode.dev/stash/apis/stash/v1beta1
+stash.appscode.dev/stash/client/clientset/versioned
+stash.appscode.dev/stash/client/informers/externalversions
+stash.appscode.dev/stash/apis
+stash.appscode.dev/stash/apis/stash
+stash.appscode.dev/stash/apis/stash/v1alpha1
+stash.appscode.dev/stash/client/clientset/versioned/typed/repositories/v1alpha1
+stash.appscode.dev/stash/client/clientset/versioned/typed/stash/v1alpha1
+stash.appscode.dev/stash/client/clientset/versioned/typed/stash/v1beta1
+stash.appscode.dev/stash/client/informers/externalversions/internalinterfaces
+stash.appscode.dev/stash/client/informers/externalversions/stash
+stash.appscode.dev/stash/apis/repositories/v1alpha1
+stash.appscode.dev/stash/client/clientset/versioned/scheme
+stash.appscode.dev/stash/client/informers/externalversions/stash/v1alpha1
+stash.appscode.dev/stash/client/informers/externalversions/stash/v1beta1
+stash.appscode.dev/stash/apis/repositories
+stash.appscode.dev/stash/client/listers/stash/v1alpha1
+stash.appscode.dev/stash/client/listers/stash/v1beta1

@@ -1,3 +1,7 @@
+// Copyright 2019 The Xorm Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package core
 
 import (
@@ -71,9 +75,11 @@ var (
 
 	Char             = "CHAR"
 	Varchar          = "VARCHAR"
+	NChar            = "NCHAR"
 	NVarchar         = "NVARCHAR"
 	TinyText         = "TINYTEXT"
 	Text             = "TEXT"
+	NText            = "NTEXT"
 	Clob             = "CLOB"
 	MediumText       = "MEDIUMTEXT"
 	LongText         = "LONGTEXT"
@@ -83,12 +89,15 @@ var (
 
 	Date       = "DATE"
 	DateTime   = "DATETIME"
+	SmallDateTime   = "SMALLDATETIME"
 	Time       = "TIME"
 	TimeStamp  = "TIMESTAMP"
 	TimeStampz = "TIMESTAMPZ"
 
 	Decimal = "DECIMAL"
 	Numeric = "NUMERIC"
+	Money   = "MONEY"
+	SmallMoney = "SMALLMONEY"
 
 	Real   = "REAL"
 	Float  = "FLOAT"
@@ -126,10 +135,12 @@ var (
 		Jsonb: TEXT_TYPE,
 
 		Char:       TEXT_TYPE,
+		NChar:      TEXT_TYPE,
 		Varchar:    TEXT_TYPE,
 		NVarchar:   TEXT_TYPE,
 		TinyText:   TEXT_TYPE,
 		Text:       TEXT_TYPE,
+		NText:      TEXT_TYPE,
 		MediumText: TEXT_TYPE,
 		LongText:   TEXT_TYPE,
 		Uuid:       TEXT_TYPE,
@@ -141,12 +152,15 @@ var (
 		Time:       TIME_TYPE,
 		TimeStamp:  TIME_TYPE,
 		TimeStampz: TIME_TYPE,
+		SmallDateTime:   TIME_TYPE,
 
 		Decimal: NUMERIC_TYPE,
 		Numeric: NUMERIC_TYPE,
 		Real:    NUMERIC_TYPE,
 		Float:   NUMERIC_TYPE,
 		Double:  NUMERIC_TYPE,
+		Money:   NUMERIC_TYPE,
+		SmallMoney: NUMERIC_TYPE,
 
 		Binary:    BLOB_TYPE,
 		VarBinary: BLOB_TYPE,
@@ -293,15 +307,15 @@ func SQLType2Type(st SQLType) reflect.Type {
 		return reflect.TypeOf(float32(1))
 	case Double:
 		return reflect.TypeOf(float64(1))
-	case Char, Varchar, NVarchar, TinyText, Text, MediumText, LongText, Enum, Set, Uuid, Clob, SysName:
+	case Char, NChar, Varchar, NVarchar, TinyText, Text, NText, MediumText, LongText, Enum, Set, Uuid, Clob, SysName:
 		return reflect.TypeOf("")
 	case TinyBlob, Blob, LongBlob, Bytea, Binary, MediumBlob, VarBinary, UniqueIdentifier:
 		return reflect.TypeOf([]byte{})
 	case Bool:
 		return reflect.TypeOf(true)
-	case DateTime, Date, Time, TimeStamp, TimeStampz:
+	case DateTime, Date, Time, TimeStamp, TimeStampz, SmallDateTime:
 		return reflect.TypeOf(c_TIME_DEFAULT)
-	case Decimal, Numeric:
+	case Decimal, Numeric, Money, SmallMoney:
 		return reflect.TypeOf("")
 	default:
 		return reflect.TypeOf("")

@@ -161,7 +161,7 @@ func setDefaultsFromDormantDB(extClient cs.Interface, pxc *api.Percona) error {
 
 	if _, err := meta_util.GetString(pxc.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
 		pxc.Spec.Init != nil &&
-		pxc.Spec.Init.SnapshotSource != nil {
+		(pxc.Spec.Init.SnapshotSource != nil || pxc.Spec.Init.StashRestoreSession != nil) {
 		pxc.Annotations = core_util.UpsertMap(pxc.Annotations, map[string]string{
 			api.AnnotationInitialized: "",
 		})
