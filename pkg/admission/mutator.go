@@ -5,8 +5,6 @@ import (
 	"sync"
 
 	"github.com/appscode/go/log"
-	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
-	cs "github.com/kubedb/apimachinery/client/clientset/versioned"
 	"github.com/pkg/errors"
 	admission "k8s.io/api/admission/v1beta1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
@@ -20,6 +18,8 @@ import (
 	meta_util "kmodules.xyz/client-go/meta"
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
 	hookapi "kmodules.xyz/webhook-runtime/admission/v1beta1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	cs "kubedb.dev/apimachinery/client/clientset/versioned"
 )
 
 type PerconaMutator struct {

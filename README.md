@@ -1,4 +1,4 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/kubedb/percona)](https://goreportcard.com/report/github.com/kubedb/percona)
+[![Go Report Card](https://goreportcard.com/badge/kubedb.dev/percona-xtradb)](https://goreportcard.com/report/kubedb.dev/percona-xtradb)
 [![Build Status](https://travis-ci.org/kubedb/percona.svg?branch=master)](https://travis-ci.org/kubedb/percona)
 [![codecov](https://codecov.io/gh/kubedb/percona/branch/master/graph/badge.svg)](https://codecov.io/gh/kubedb/percona)
 [![Slack](http://slack.kubernetes.io/badge.svg)](http://slack.kubernetes.io/#kubedb)

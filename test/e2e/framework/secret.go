@@ -8,14 +8,14 @@ import (
 
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/log"
-	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
-	"github.com/kubedb/percona/pkg/controller"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	store "kmodules.xyz/objectstore-api/api/v1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	"kubedb.dev/percona-xtradb/pkg/controller"
 )
 
 func (fi *Invocation) SecretForLocalBackend() *core.Secret {

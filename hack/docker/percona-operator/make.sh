@@ -8,7 +8,7 @@ GOPATH=$(go env GOPATH)
 SRC=$GOPATH/src
 BIN=$GOPATH/bin
 ROOT=$GOPATH
-REPO_ROOT=$GOPATH/src/github.com/kubedb/percona
+REPO_ROOT=$GOPATH/src/kubedb.dev/percona-xtradb
 
 source "$REPO_ROOT/hack/libbuild/common/kubedb_image.sh"
 
@@ -16,7 +16,7 @@ APPSCODE_ENV=${APPSCODE_ENV:-dev}
 DOCKER_REGISTRY=${DOCKER_REGISTRY:-kubedb}
 IMG=percona-operator
 
-DIST=$GOPATH/src/github.com/kubedb/percona/dist
+DIST=$GOPATH/src/kubedb.dev/percona-xtradb/dist
 mkdir -p $DIST
 if [ -f "$DIST/.tag" ]; then
   export $(cat $DIST/.tag | xargs)

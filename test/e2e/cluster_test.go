@@ -7,15 +7,15 @@ import (
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/strings"
 	"github.com/appscode/go/types"
-	cat_api "github.com/kubedb/apimachinery/apis/catalog/v1alpha1"
-	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
-	"github.com/kubedb/percona/test/e2e/framework"
-	"github.com/kubedb/percona/test/e2e/matcher"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	cat_api "kubedb.dev/apimachinery/apis/catalog/v1alpha1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	"kubedb.dev/percona-xtradb/test/e2e/framework"
+	"kubedb.dev/percona-xtradb/test/e2e/matcher"
 )
 
 var _ = Describe("Percona XtraDB cluster Tests", func() {

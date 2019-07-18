@@ -7,8 +7,6 @@ import (
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
 	"github.com/fatih/structs"
-	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
-	"github.com/kubedb/apimachinery/pkg/eventer"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
@@ -20,6 +18,8 @@ import (
 	core_util "kmodules.xyz/client-go/core/v1"
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
 	ofst "kmodules.xyz/offshoot-api/api/v1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	"kubedb.dev/apimachinery/pkg/eventer"
 )
 
 type workloadOptions struct {

@@ -5,12 +5,6 @@ import (
 	"os"
 	"strings"
 
-	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
-	"github.com/kubedb/apimachinery/pkg/admission/dormantdatabase"
-	"github.com/kubedb/apimachinery/pkg/admission/namespace"
-	"github.com/kubedb/apimachinery/pkg/eventer"
-	pxcAdmsn "github.com/kubedb/percona/pkg/admission"
-	"github.com/kubedb/percona/pkg/controller"
 	admission "k8s.io/api/admission/v1beta1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,6 +19,12 @@ import (
 	dynamic_util "kmodules.xyz/client-go/dynamic"
 	hooks "kmodules.xyz/webhook-runtime/admission/v1beta1"
 	admissionreview "kmodules.xyz/webhook-runtime/registry/admissionreview/v1beta1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	"kubedb.dev/apimachinery/pkg/admission/dormantdatabase"
+	"kubedb.dev/apimachinery/pkg/admission/namespace"
+	"kubedb.dev/apimachinery/pkg/eventer"
+	pxcAdmsn "kubedb.dev/percona-xtradb/pkg/admission"
+	"kubedb.dev/percona-xtradb/pkg/controller"
 )
 
 const (
