@@ -1,11 +1,15 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/appscode/go/types"
+	config_api "github.com/kubedb/apimachinery/apis/config/v1alpha1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/reference"
 	kutil "kmodules.xyz/client-go"
@@ -29,6 +33,24 @@ func (c *Controller) ensureAppBinding(db *api.Percona) (kutil.VerbType, error) {
 		return kutil.VerbUnchanged, err
 	}
 
+	var peers []string
+	for i := 0; i < int(*db.Spec.Replicas); i += 1 {
+		peers = append(peers, db.PeerName(i))
+	}
+
+	garbdCnfJson, err := json.Marshal(config_api.GarbdConfiguration{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: config_api.SchemeGroupVersion.String(),
+			Kind:       config_api.ResourceKindGarbdConfiguration,
+		},
+		Address:   fmt.Sprintf("gcomm://%s", strings.Join(peers, ",")),
+		Group:     db.Name,
+		SSTMethod: "xtrabackup-v2",
+	})
+	if err != nil {
+		return kutil.VerbUnchanged, err
+	}
+
 	_, vt, err := appcat_util.CreateOrPatchAppBinding(c.AppCatalogClient, meta, func(in *appcat.AppBinding) *appcat.AppBinding {
 		core_util.EnsureOwnerReference(&in.ObjectMeta, ref)
 		in.Labels = db.OffshootLabels()
@@ -46,6 +68,10 @@ func (c *Controller) ensureAppBinding(db *api.Percona) (kutil.VerbType, error) {
 
 		in.Spec.Secret = &core.LocalObjectReference{
 			Name: db.Spec.DatabaseSecret.SecretName,
+		}
+
+		in.Spec.Parameters = &runtime.RawExtension{
+			Raw: garbdCnfJson,
 		}
 
 		return in

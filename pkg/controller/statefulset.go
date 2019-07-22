@@ -174,8 +174,9 @@ func (c *Controller) ensurePerconaXtraDB(pxc *api.Percona) (kutil.VerbType, erro
 	}
 	if pxc.Spec.PXC != nil {
 		envList = append(envList, core.EnvVar{
-			Name:  "CLUSTER_NAME",
-			Value: pxc.Spec.PXC.ClusterName,
+			Name: "CLUSTER_NAME",
+			//Value: pxc.Spec.PXC.ClusterName,
+			Value: pxc.Name,
 		})
 	}
 
