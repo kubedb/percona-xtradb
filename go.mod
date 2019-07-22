@@ -4,10 +4,10 @@ go 1.12
 
 require (
 	github.com/appscode/go v0.0.0-20190621064509-6b292c9166e3
+	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
 	github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27
 	github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/prometheus-operator v0.30.0
-	github.com/denisenkom/go-mssqldb v0.0.0-20190423183735-731ef375ac02 // indirect
 
 	github.com/emicklei/go-restful v2.9.6+incompatible // indirect
 	github.com/fatih/structs v1.1.0
@@ -15,7 +15,7 @@ require (
 	github.com/go-openapi/swag v0.19.4 // indirect
 	github.com/go-sql-driver/mysql v1.4.1
 
-	github.com/go-xorm/xorm v0.7.3
+	github.com/go-xorm/xorm v0.7.4
 
 	// github.com/go-xorm/xorm v0.7.4
 	github.com/golang/protobuf v1.3.2 // indirect
