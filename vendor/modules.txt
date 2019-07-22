@@ -133,7 +133,7 @@ github.com/go-openapi/jsonpointer
 github.com/go-openapi/jsonreference
 # github.com/go-openapi/spec v0.19.2
 github.com/go-openapi/spec
-# github.com/go-openapi/swag v0.19.2
+# github.com/go-openapi/swag v0.19.4
 github.com/go-openapi/swag
 # github.com/go-sql-driver/mysql v1.4.1
 github.com/go-sql-driver/mysql
@@ -152,7 +152,7 @@ github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 github.com/golang/glog
 # github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef
 github.com/golang/groupcache/lru
-# github.com/golang/protobuf v1.3.1
+# github.com/golang/protobuf v1.3.2
 github.com/golang/protobuf/jsonpb
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes/struct
@@ -217,6 +217,9 @@ github.com/jmespath/go-jmespath
 github.com/jpillora/go-ogle-analytics
 # github.com/json-iterator/go v1.1.6
 github.com/json-iterator/go
+# github.com/kubedb/apimachinery v0.0.0-20190717091715-4259a9bd2d11
+github.com/kubedb/apimachinery/apis/config/v1alpha1
+github.com/kubedb/apimachinery/apis/catalog
 # github.com/mailru/easyjson v0.0.0-20190614124828-94de47d64c63
 github.com/mailru/easyjson/jlexer
 github.com/mailru/easyjson/jwriter
@@ -282,7 +285,7 @@ github.com/prometheus/client_model/go
 github.com/prometheus/common/expfmt
 github.com/prometheus/common/model
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
-# github.com/prometheus/procfs v0.0.2
+# github.com/prometheus/procfs v0.0.3
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 # github.com/robfig/cron/v3 v3.0.0
@@ -880,7 +883,7 @@ k8s.io/kube-openapi/pkg/handler
 k8s.io/kube-openapi/pkg/util
 k8s.io/kube-openapi/pkg/util/proto
 k8s.io/kube-openapi/pkg/schemaconv
-# k8s.io/kubernetes v1.14.2
+# k8s.io/kubernetes v1.14.4
 k8s.io/kubernetes/pkg/util/hash
 # k8s.io/utils v0.0.0-20190506122338-8fab8cb257d5 => k8s.io/utils v0.0.0-20190221042446-c2654d5206da
 k8s.io/utils/buffer
