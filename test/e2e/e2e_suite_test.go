@@ -21,8 +21,8 @@ import (
 	appcat_cs "kmodules.xyz/custom-resources/client/clientset/versioned/typed/appcatalog/v1alpha1"
 	cs "kubedb.dev/apimachinery/client/clientset/versioned"
 	"kubedb.dev/apimachinery/client/clientset/versioned/scheme"
-	"kubedb.dev/percona-xtradb/pkg/controller"
-	"kubedb.dev/percona-xtradb/test/e2e/framework"
+	"kubedb.dev/percona/pkg/controller"
+	"kubedb.dev/percona/test/e2e/framework"
 )
 
 var (

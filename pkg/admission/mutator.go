@@ -22,6 +22,7 @@ import (
 	cs "kubedb.dev/apimachinery/client/clientset/versioned"
 )
 
+// PerconaMutator implements the AdmissionHook interface to mutate the Percona resources
 type PerconaMutator struct {
 	client      kubernetes.Interface
 	extClient   cs.Interface
@@ -31,6 +32,7 @@ type PerconaMutator struct {
 
 var _ hookapi.AdmissionHook = &PerconaMutator{}
 
+// Resource is the resource to use for hosting mutating admission webhook.
 func (a *PerconaMutator) Resource() (plural schema.GroupVersionResource, singular string) {
 	return schema.GroupVersionResource{
 			Group:    "mutators.kubedb.com",
@@ -40,6 +42,7 @@ func (a *PerconaMutator) Resource() (plural schema.GroupVersionResource, singula
 		"perconamutator"
 }
 
+// Initialize is called as a post-start hook
 func (a *PerconaMutator) Initialize(config *rest.Config, stopCh <-chan struct{}) error {
 	a.lock.Lock()
 	defer a.lock.Unlock()
@@ -56,6 +59,8 @@ func (a *PerconaMutator) Initialize(config *rest.Config, stopCh <-chan struct{})
 	return err
 }
 
+// Admit is called to decide whether to accept the admission request.
+// The returned response may use the Patch field to mutate the object.
 func (a *PerconaMutator) Admit(req *admission.AdmissionRequest) *admission.AdmissionResponse {
 	status := &admission.AdmissionResponse{}
 

@@ -22,6 +22,7 @@ import (
 	amv "kubedb.dev/apimachinery/pkg/validator"
 )
 
+// PerconaValidator implements the AdmissionHook interface to validate the Percona resources
 type PerconaValidator struct {
 	client      kubernetes.Interface
 	extClient   cs.Interface
@@ -38,6 +39,7 @@ var forbiddenEnvVars = []string{
 	"MYSQL_ONETIME_PASSWORD",
 }
 
+// Resource is the resource to use for hosting validating admission webhook.
 func (a *PerconaValidator) Resource() (plural schema.GroupVersionResource, singular string) {
 	return schema.GroupVersionResource{
 			Group:    "validators.kubedb.com",
@@ -47,6 +49,7 @@ func (a *PerconaValidator) Resource() (plural schema.GroupVersionResource, singu
 		"perconavalidator"
 }
 
+// Initialize is called as a post-start hook
 func (a *PerconaValidator) Initialize(config *rest.Config, stopCh <-chan struct{}) error {
 	a.lock.Lock()
 	defer a.lock.Unlock()
@@ -63,6 +66,7 @@ func (a *PerconaValidator) Initialize(config *rest.Config, stopCh <-chan struct{
 	return err
 }
 
+// Admit is called to decide whether to accept the admission request.
 func (a *PerconaValidator) Admit(req *admission.AdmissionRequest) *admission.AdmissionResponse {
 	status := &admission.AdmissionResponse{}
 
@@ -125,18 +129,15 @@ func (a *PerconaValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 }
 
 // validatePXC checks whether the configurations for Percona XtraDB Cluster are ok
-func validatePXC(pxcSpec *api.PXCSpec) error {
-	if pxcSpec != nil {
-		if len(pxcSpec.ClusterName) == 0 {
-			return errors.New(`'spec.pxc.clusterName' can't be empty'`)
-		}
-		if len(pxcSpec.ClusterName) > api.PerconaMaxClusterNameLength {
+func validatePXC(pxc *api.Percona) error {
+	if pxc.Spec.PXC != nil {
+		if len(pxc.Name) > api.PerconaMaxClusterNameLength {
 			return errors.Errorf(`'spec.pxc.clusterName' "%s" shouldn't have more than %d characters'`,
-				pxcSpec.ClusterName, api.PerconaMaxClusterNameLength)
+				pxc.Name, api.PerconaMaxClusterNameLength)
 		}
-		if *pxcSpec.Proxysql.Replicas != 1 {
+		if *pxc.Spec.PXC.Proxysql.Replicas != 1 {
 			return errors.Errorf(`'spec.pxc.proxysql.replicas' "%v" is invalid. Currently, supported replicas for proxysql is 1`,
-				pxcSpec.Proxysql.Replicas)
+				pxc.Spec.PXC.Proxysql.Replicas)
 		}
 	}
 
@@ -171,7 +172,7 @@ func ValidatePercona(client kubernetes.Interface, extClient cs.Interface, pxc *a
 			pxc.Spec.Replicas, api.PerconaDefaultClusterSize)
 	}
 
-	if err := validatePXC(pxc.Spec.PXC); err != nil {
+	if err := validatePXC(pxc); err != nil {
 		return err
 	}
 

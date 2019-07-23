@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#set -eoux pipefail
+set -eou pipefail
 
 # Environment variables passed from Pod env are as follows:
 
@@ -10,7 +10,6 @@
 #   CLUSTER_NAME        = name of the Percona XtraDB Cluster
 
 script_name=${0##*/}
-NAMESPACE="$POD_NAMESPACE"
 USER="$MYSQL_ROOT_USERNAME"
 PASSWORD="$MYSQL_ROOT_PASSWORD"
 
@@ -31,13 +30,10 @@ log "INFO" "Reading standard input..."
 while read -ra line; do
   if [[ "${line}" == *"${cur_hostname}"* ]]; then
     cur_host="$line"
-#    cur_host=$(echo -n ${line} | sed -e "s/.svc.cluster.local//g")
     log "INFO" "I am $cur_host"
     continue
   fi
   peers=("${peers[@]}" "$line")
-#  tmp=$(echo -n ${line} | sed -e "s/.svc.cluster.local//g")
-#  peers=("${peers[@]}" "$tmp")
 
 done
 log "INFO" "Trying to start cluster with peers'${peers[*]}'"
@@ -46,7 +42,7 @@ log "INFO" "Trying to start cluster with peers'${peers[*]}'"
 # If CLUSTER_JOIN is empty the a new cluster will be bootstrapped
 export CLUSTER_JOIN=${peers[0]}
 if [[ -n "${CLUSTER_JOIN}" ]]; then
-  # wait for the server ${CLUSTER_JOIN} be running (alive)
+  # wait for the server named ${CLUSTER_JOIN} to be running (alive)
   log "INFO" "Waiting for the server ${CLUSTER_JOIN} be running..."
   for i in {900..0}; do
     out=$(mysqladmin -u ${USER} --password=${PASSWORD} --host=${CLUSTER_JOIN} ping 2>/dev/null)

@@ -12,6 +12,7 @@ const (
 	PostgresKey         = ResourceSingularPostgres + "." + GenericKey
 	ElasticsearchKey    = ResourceSingularElasticsearch + "." + GenericKey
 	MySQLKey            = ResourceSingularMySQL + "." + GenericKey
+	PerconaKey          = ResourceSingularPercona + "." + GenericKey
 	MongoDBKey          = ResourceSingularMongoDB + "." + GenericKey
 	RedisKey            = ResourceSingularRedis + "." + GenericKey
 	MemcachedKey        = ResourceSingularMemcached + "." + GenericKey
@@ -48,6 +49,23 @@ const (
 	// And the maximum group size is 9. So MySQLMaxBaseServerID is the maximum safe value
 	// for BaseServerID calculated as max MySQL server_id value - max Replication Group size.
 	MySQLMaxBaseServerID = uint(4294967295 - 9)
+
+	PerconaXtraDBClusterRecommendedVersion = "5.7"
+	PerconaMaxClusterNameLength            = 32
+	PerconaStandaloneReplicas              = 1
+	PerconaDefaultClusterSize              = 3
+	PerconaDataMountPath                   = "/var/lib/mysql"
+	PerconaInitDBMountPath                 = "/docker-entrypoint-initdb.d"
+	PerconaCustomConfigMountPath           = "/etc/mysql/conf.d"
+	PerconaClusterLabelKey                 = PerconaKey + "/cluster"
+	PerconaProxysqlLabelKey                = PerconaKey + "/proxysql"
+
+	ProxysqlUser          = "proxysqluser"
+	ProxysqlPassword      = "proxysqlpass"
+	ProxysqlMySQLNodePort = 6033
+	ProxysqlAdminPort     = 6032
+	ProxysqlAdminPortName = "proxyadm"
+	ProxysqlDataMountPath = "/var/lib/proxysql"
 
 	RedisShardKey   = RedisKey + "/shard"
 	RedisNodePort   = 6379

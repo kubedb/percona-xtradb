@@ -56,11 +56,7 @@ while test $# -gt 0; do
 done
 
 dbversions=(
-  #  5.7.25
   5.7
-  #  8.0.3
-  #  8.0.14
-  #  8.0
 )
 
 exporters=(
@@ -78,14 +74,6 @@ if [ "$DB_UPDATE" -eq 1 ]; then
     ${REPO_ROOT}/hack/docker/percona/${db}/make.sh push
   done
 fi
-
-#if [ "$TOOLS_UPDATE" -eq 1 ]; then
-#  cowsay -f tux "Processing database-tools images" || true
-#  for db in "${dbversions[@]}"; do
-#    ${REPO_ROOT}/hack/docker/mysql-tools/${db}/make.sh build
-#    ${REPO_ROOT}/hack/docker/mysql-tools/${db}/make.sh push
-#  done
-#fi
 
 if [ "$EXPORTER_UPDATE" -eq 1 ]; then
   cowsay -f tux "Processing database-exporter images" || true

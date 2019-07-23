@@ -95,7 +95,7 @@ func (c *Controller) EnsureCustomResourceDefinitions() error {
 		api.DormantDatabase{}.CustomResourceDefinition(),
 		api.Snapshot{}.CustomResourceDefinition(),
 		// TODO: need to be clear about this role crd and tasks related to this
-		//authorization.MySQLRole{}.CustomResourceDefinition(),
+		authorization.MySQLRole{}.CustomResourceDefinition(),
 		authorization.DatabaseAccessRequest{}.CustomResourceDefinition(),
 		appcat.AppBinding{}.CustomResourceDefinition(),
 	}

@@ -4,10 +4,11 @@ go 1.12
 
 require (
 	github.com/appscode/go v0.0.0-20190621064509-6b292c9166e3
+	github.com/aws/aws-sdk-go v1.20.21 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
 	github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27
 	github.com/coreos/bbolt v1.3.3 // indirect
-	github.com/coreos/prometheus-operator v0.30.0
+	github.com/coreos/prometheus-operator v0.30.1
 
 	github.com/emicklei/go-restful v2.9.6+incompatible // indirect
 	github.com/fatih/structs v1.1.0
@@ -51,7 +52,7 @@ require (
 	kmodules.xyz/objectstore-api v0.0.0-20190718002052-da668b440b0b
 	kmodules.xyz/offshoot-api v0.0.0-20190715115723-36c8fce142c1
 	kmodules.xyz/webhook-runtime v0.0.0-20190715115250-a84fbf77dd30
-	kubedb.dev/apimachinery v0.0.0-20190718012505-6973f90fefd0
+	kubedb.dev/apimachinery v0.0.0-20190722112343-6eb304369e66
 )
 
 replace (

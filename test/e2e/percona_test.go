@@ -16,8 +16,8 @@ import (
 	catalog "kubedb.dev/apimachinery/apis/catalog/v1alpha1"
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
-	"kubedb.dev/percona-xtradb/test/e2e/framework"
-	"kubedb.dev/percona-xtradb/test/e2e/matcher"
+	"kubedb.dev/percona/test/e2e/framework"
+	"kubedb.dev/percona/test/e2e/matcher"
 )
 
 const (

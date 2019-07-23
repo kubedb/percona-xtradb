@@ -42,7 +42,7 @@ github.com/appscode/go/net
 github.com/appscode/go/encoding/yaml
 # github.com/appscode/osm v0.12.0
 github.com/appscode/osm/context
-# github.com/aws/aws-sdk-go v1.20.20
+# github.com/aws/aws-sdk-go v1.20.21
 github.com/aws/aws-sdk-go/aws
 github.com/aws/aws-sdk-go/aws/credentials
 github.com/aws/aws-sdk-go/aws/credentials/stscreds
@@ -104,7 +104,7 @@ github.com/coreos/etcd/pkg/types
 github.com/coreos/etcd/pkg/tlsutil
 # github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e
 github.com/coreos/go-systemd/daemon
-# github.com/coreos/prometheus-operator v0.30.0
+# github.com/coreos/prometheus-operator v0.30.1
 github.com/coreos/prometheus-operator/pkg/client/versioned/typed/monitoring/v1
 github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1
 github.com/coreos/prometheus-operator/pkg/client/versioned/scheme
@@ -922,7 +922,7 @@ kmodules.xyz/offshoot-api/api/v1
 # kmodules.xyz/webhook-runtime v0.0.0-20190715115250-a84fbf77dd30
 kmodules.xyz/webhook-runtime/admission/v1beta1
 kmodules.xyz/webhook-runtime/registry/admissionreview/v1beta1
-# kubedb.dev/apimachinery v0.0.0-20190718012505-6973f90fefd0
+# kubedb.dev/apimachinery v0.0.0-20190722112343-6eb304369e66
 kubedb.dev/apimachinery/apis/kubedb/v1alpha1
 kubedb.dev/apimachinery/client/clientset/versioned
 kubedb.dev/apimachinery/pkg/validator
