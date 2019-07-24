@@ -57,8 +57,7 @@ require (
 
 replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest/autorest v0.5.0
-
-	github.com/go-xorm/core v0.6.3 => xorm.io/core v0.6.3
+    github.com/go-xorm/core v0.6.3 => xorm.io/core v0.6.3
 	github.com/graymeta/stow => github.com/appscode/stow v0.0.0-20190506085026-ca5baa008ea3
 	gopkg.in/robfig/cron.v2 => github.com/appscode/cron v0.0.0-20170717094345-ca60c6d796d4
 

@@ -11,8 +11,8 @@ import (
 	genericoptions "k8s.io/apiserver/pkg/server/options"
 	"kmodules.xyz/client-go/meta"
 	"kmodules.xyz/client-go/tools/clientcmd"
-	"kubedb.dev/percona-xtradb/pkg/controller"
-	"kubedb.dev/percona-xtradb/pkg/server"
+	"kubedb.dev/percona/pkg/controller"
+	"kubedb.dev/percona/pkg/server"
 )
 
 const defaultEtcdPathPrefix = "/registry/kubedb.com"

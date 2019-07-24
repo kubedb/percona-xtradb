@@ -20,7 +20,7 @@ import (
 	"kubedb.dev/apimachinery/pkg/eventer"
 )
 
-func (c *Controller) ensureAppBinding(db *api.Percona) (kutil.VerbType, error) {
+func (c *Controller) ensureAppBinding(db *api.PerconaXtraDB) (kutil.VerbType, error) {
 	appmeta := db.AppBindingMeta()
 
 	meta := metav1.ObjectMeta{

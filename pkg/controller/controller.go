@@ -31,6 +31,8 @@ import (
 	drmnc "kubedb.dev/apimachinery/pkg/controller/dormantdatabase"
 	snapc "kubedb.dev/apimachinery/pkg/controller/snapshot"
 	"kubedb.dev/apimachinery/pkg/eventer"
+	"github.com/kubedb/apimachinery/pkg/controller/restoresession"
+	scs "stash.appscode.dev/stash/client/clientset/versioned"
 )
 
 type Controller struct {
@@ -60,6 +62,7 @@ func New(
 	client kubernetes.Interface,
 	apiExtKubeClient crd_cs.ApiextensionsV1beta1Interface,
 	extClient cs.Interface,
+	stashClient scs.Interface,
 	dynamicClient dynamic.Interface,
 	appCatalogClient appcat_cs.AppcatalogV1alpha1Interface,
 	promClient pcm.MonitoringV1Interface,
@@ -72,6 +75,7 @@ func New(
 			ClientConfig:     clientConfig,
 			Client:           client,
 			ExtClient:        extClient,
+			StashClient:      stashClient,
 			ApiExtKubeClient: apiExtKubeClient,
 			DynamicClient:    dynamicClient,
 			AppCatalogClient: appCatalogClient,
@@ -107,6 +111,7 @@ func (c *Controller) Init() error {
 	c.initWatcher()
 	c.DrmnQueue = drmnc.NewController(c.Controller, c, c.Config, nil, c.recorder).AddEventHandlerFunc(c.selector)
 	//c.SnapQueue, c.JobQueue = snapc.NewController(c.Controller, c, c.Config, nil, c.recorder).AddEventHandlerFunc(c.selector)
+	c.RSQueue = restoresession.NewController(c.Controller, c, c.Config, nil, c.recorder).AddEventHandlerFunc(c.selector)
 
 	return nil
 }
@@ -119,6 +124,23 @@ func (c *Controller) RunControllers(stopCh <-chan struct{}) {
 	// Watch x  TPR objects
 	c.pxcQueue.Run(stopCh)
 	c.DrmnQueue.Run(stopCh)
+	go func() {
+		// start StashInformerFactory only if stash crds (ie, "restoreSession") are available.
+		if err := c.BlockOnStashOperator(stopCh); err != nil {
+			log.Errorln("error while waiting for restoreSession.", err)
+			return
+		}
+
+		// start informer factory
+		c.StashInformerFactory.Start(stopCh)
+		for t, v := range c.StashInformerFactory.WaitForCacheSync(stopCh) {
+			if !v {
+				log.Fatalf("%v timed out waiting for caches to sync", t)
+				return
+			}
+		}
+		c.RSQueue.Run(stopCh)
+	}()
 	//c.SnapQueue.Run(stopCh)
 	//c.JobQueue.Run(stopCh)
 }

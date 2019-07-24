@@ -15,6 +15,7 @@ import (
 	"kubedb.dev/apimachinery/pkg/controller/dormantdatabase"
 	snapc "kubedb.dev/apimachinery/pkg/controller/snapshot"
 	"kubedb.dev/apimachinery/pkg/eventer"
+	scs "stash.appscode.dev/stash/client/clientset/versioned"
 )
 
 const (
@@ -29,6 +30,7 @@ type OperatorConfig struct {
 	KubeClient       kubernetes.Interface
 	APIExtKubeClient crd_cs.ApiextensionsV1beta1Interface
 	DBClient         cs.Interface
+	StashClient      scs.Interface
 	DynamicClient    dynamic.Interface
 	AppCatalogClient appcat_cs.AppcatalogV1alpha1Interface
 	PromClient       pcm.MonitoringV1Interface
@@ -53,6 +55,7 @@ func (c *OperatorConfig) New() (*Controller, error) {
 		c.KubeClient,
 		c.APIExtKubeClient,
 		c.DBClient,
+		c.StashClient,
 		c.DynamicClient,
 		c.AppCatalogClient,
 		c.PromClient,
@@ -68,6 +71,7 @@ func (c *OperatorConfig) New() (*Controller, error) {
 	// Initialize Job and Snapshot Informer. Later EventHandler will be added to these informers.
 	ctrl.DrmnInformer = dormantdatabase.NewController(ctrl.Controller, ctrl, ctrl.Config, tweakListOptions, recorder).InitInformer()
 	//ctrl.SnapInformer, ctrl.JobInformer = snapc.NewController(ctrl.Controller, ctrl, ctrl.Config, tweakListOptions, recorder).InitInformer()
+	ctrl.RSInformer = restoresession.NewController(ctrl.Controller, ctrl, ctrl.Config, tweakListOptions, recorder).InitInformer()
 
 	if err := ctrl.EnsureCustomResourceDefinitions(); err != nil {
 		return nil, err

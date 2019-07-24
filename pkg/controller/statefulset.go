@@ -554,6 +554,7 @@ func upsertDataVolume(statefulSet *apps.StatefulSet, pxc *api.Percona) *apps.Sta
 						"volume.beta.kubernetes.io/storage-class": *pvcSpec.StorageClassName,
 					}
 				}
+				claim.Spec.VolumeName = "data"
 				statefulSet.Spec.VolumeClaimTemplates = core_util.UpsertVolumeClaim(statefulSet.Spec.VolumeClaimTemplates, claim)
 			}
 			break
