@@ -59,7 +59,7 @@ func (f *Framework) CleanWorkloadLeftOvers() {
 	// delete statefulset
 	if err := f.kubeClient.AppsV1().StatefulSets(f.namespace).DeleteCollection(deleteInForeground(), metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
-			api.LabelDatabaseKind: api.ResourceKindPercona,
+			api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
 		}).String(),
 	}); err != nil && !kerr.IsNotFound(err) {
 		fmt.Printf("error in deletion of Statefulset. Error: %v", err)
@@ -68,7 +68,7 @@ func (f *Framework) CleanWorkloadLeftOvers() {
 	// delete pvc
 	if err := f.kubeClient.CoreV1().PersistentVolumeClaims(f.namespace).DeleteCollection(deleteInForeground(), metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
-			api.LabelDatabaseKind: api.ResourceKindPercona,
+			api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
 		}).String(),
 	}); err != nil && !kerr.IsNotFound(err) {
 		fmt.Printf("error in deletion of PVC. Error: %v", err)
@@ -77,31 +77,31 @@ func (f *Framework) CleanWorkloadLeftOvers() {
 	// delete secret
 	if err := f.kubeClient.CoreV1().Secrets(f.namespace).DeleteCollection(deleteInForeground(), metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
-			api.LabelDatabaseKind: api.ResourceKindPercona,
+			api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
 		}).String(),
 	}); err != nil && !kerr.IsNotFound(err) {
 		fmt.Printf("error in deletion of Secret. Error: %v", err)
 	}
 }
 
-func (f *Framework) WaitUntilPodRunningBySelector(percona *api.Percona, proxysql bool) error {
+func (f *Framework) WaitUntilPodRunningBySelector(px *api.PerconaXtraDB, proxysql bool) error {
 	if !proxysql {
 		return core_util.WaitUntilPodRunningBySelector(
 			f.kubeClient,
-			percona.Namespace,
+			px.Namespace,
 			&metav1.LabelSelector{
-				MatchLabels: percona.ClusterSelectors(),
+				MatchLabels: px.ClusterSelectors(),
 			},
-			int(types.Int32(percona.Spec.Replicas)),
+			int(types.Int32(px.Spec.Replicas)),
 		)
 	} else {
 		return core_util.WaitUntilPodRunningBySelector(
 			f.kubeClient,
-			percona.Namespace,
+			px.Namespace,
 			&metav1.LabelSelector{
-				MatchLabels: percona.ProxysqlSelectors(),
+				MatchLabels: px.ProxysqlSelectors(),
 			},
-			int(types.Int32(percona.Spec.PXC.Proxysql.Replicas)),
+			int(types.Int32(px.Spec.PXC.Proxysql.Replicas)),
 		)
 	}
 

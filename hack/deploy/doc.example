@@ -1,8 +1,8 @@
-To deploy percona-operator in self-hosted:
+To deploy perconaxtradb-operator in self-hosted:
 
     $ ./hack/deploy/setup.sh --docker-registry=<docker-registry-name> (--selfhosted)
 
-To run percona-operator in local machine to connect minikube:
+To run perconaxtradb-operator in local machine to connect minikube:
 
     $ ./hack/deploy/setup.sh --minikube
 

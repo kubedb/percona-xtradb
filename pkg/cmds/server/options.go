@@ -18,7 +18,7 @@ import (
 	cs "kubedb.dev/apimachinery/client/clientset/versioned"
 	kubedbinformers "kubedb.dev/apimachinery/client/informers/externalversions"
 	snapc "kubedb.dev/apimachinery/pkg/controller/snapshot"
-	"kubedb.dev/percona/pkg/controller"
+	"kubedb.dev/percona-xtradb/pkg/controller"
 	scs "stash.appscode.dev/stash/client/clientset/versioned"
 	stashInformers "stash.appscode.dev/stash/client/informers/externalversions"
 )
@@ -77,7 +77,7 @@ func (s *ExtraOptions) AddGoFlags(fs *flag.FlagSet) {
 }
 
 func (s *ExtraOptions) AddFlags(fs *pflag.FlagSet) {
-	pfs := flag.NewFlagSet("percona-server", flag.ExitOnError)
+	pfs := flag.NewFlagSet("perconaxtradb-server", flag.ExitOnError)
 	s.AddGoFlags(pfs)
 	fs.AddGoFlagSet(pfs)
 }

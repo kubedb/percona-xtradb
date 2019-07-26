@@ -19,123 +19,119 @@ import (
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	"kubedb.dev/apimachinery/pkg/eventer"
-	validator "kubedb.dev/percona-xtradbpkg/admission"
+	validator "kubedb.dev/percona-xtradb/pkg/admission"
 )
 
-func (c *Controller) create(pxc *api.Percona) error {
-	if err := validator.ValidatePercona(c.Client, c.ExtClient, pxc, true); err != nil {
+func (c *Controller) create(px *api.PerconaXtraDB) error {
+	if err := validator.ValidatePerconaXtraDB(c.Client, c.ExtClient, px, true); err != nil {
 		c.recorder.Event(
-			pxc,
+			px,
 			core.EventTypeWarning,
 			eventer.EventReasonInvalid,
 			err.Error(),
 		)
 		log.Errorln(err)
 		// stop Scheduler in case there is any.
-		c.cronController.StopBackupScheduling(pxc.ObjectMeta)
+		c.cronController.StopBackupScheduling(px.ObjectMeta)
 		return nil
 	}
 
 	// Delete Matching DormantDatabase if exists any
-	if err := c.deleteMatchingDormantDatabase(pxc); err != nil {
-		return fmt.Errorf(`failed to delete dormant Database : "%v/%v". Reason: %v`, pxc.Namespace, pxc.Name, err)
+	if err := c.deleteMatchingDormantDatabase(px); err != nil {
+		return fmt.Errorf(`failed to delete dormant Database : "%v/%v". Reason: %v`, px.Namespace, px.Name, err)
 	}
 
-	if pxc.Status.Phase == "" {
-		per, err := util.UpdatePerconaStatus(c.ExtClient.KubedbV1alpha1(), pxc, func(in *api.PerconaStatus) *api.PerconaStatus {
+	if px.Status.Phase == "" {
+		perconaxtradb, err := util.UpdatePerconaXtraDBStatus(c.ExtClient.KubedbV1alpha1(), px, func(in *api.PerconaXtraDBStatus) *api.PerconaXtraDBStatus {
 			in.Phase = api.DatabasePhaseCreating
 			return in
 		}, apis.EnableStatusSubresource)
 		if err != nil {
 			return err
 		}
-		pxc.Status = per.Status
+		px.Status = perconaxtradb.Status
 	}
 
+	if _, err := meta_util.GetString(px.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
+		px.Spec.Init != nil && px.Spec.Init.StashRestoreSession != nil {
 
+		if px.Status.Phase == api.DatabasePhaseInitializing {
+			return nil
+		}
+
+		perconaxtradb, err := util.UpdatePerconaXtraDBStatus(c.ExtClient.KubedbV1alpha1(), px, func(in *api.PerconaXtraDBStatus) *api.PerconaXtraDBStatus {
+			in.Phase = api.DatabasePhaseInitializing
+			return in
+		}, apis.EnableStatusSubresource)
+		if err != nil {
+			return err
+		}
+		px.Status = perconaxtradb.Status
+
+		log.Debugf("PerconaXtraDB %v/%v is waiting for restoreSession to be succeeded", px.Namespace, px.Name)
+		return nil
+	}
 
 	// create Governing Service
-	governingService, err := c.createPerconaGoverningService(pxc)
+	governingService, err := c.createPerconaXtraDBGoverningService(px)
 	if err != nil {
-		return fmt.Errorf(`failed to create Service: "%v/%v". Reason: %v`, pxc.Namespace, governingService, err)
+		return fmt.Errorf(`failed to create Service: "%v/%v". Reason: %v`, px.Namespace, governingService, err)
 	}
 	c.GoverningService = governingService
 
 	if c.EnableRBAC {
 		// Ensure ClusterRoles for statefulsets
-		if err := c.ensureRBACStuff(pxc); err != nil {
+		if err := c.ensureRBACStuff(px); err != nil {
 			return err
 		}
 	}
 
 	// ensure database Service
-	vt1, err := c.ensureService(pxc)
+	vt1, err := c.ensureService(px)
 	if err != nil {
 		return err
 	}
 
-	if err := c.ensureDatabaseSecret(pxc); err != nil {
+	if err := c.ensureDatabaseSecret(px); err != nil {
 		return err
 	}
 
 	// ensure database StatefulSet
-	vt2, err := c.ensurePerconaXtraDBNode(pxc)
+	vt2, err := c.ensurePerconaXtraDBNode(px)
 	if err != nil {
 		return err
 	}
 
 	if vt1 == kutil.VerbCreated && vt2 == kutil.VerbCreated {
 		c.recorder.Event(
-			pxc,
+			px,
 			core.EventTypeNormal,
 			eventer.EventReasonSuccessful,
-			"Successfully created Percona",
+			"Successfully created PerconaXtraDB",
 		)
 	} else if vt1 == kutil.VerbPatched || vt2 == kutil.VerbPatched {
 		c.recorder.Event(
-			pxc,
+			px,
 			core.EventTypeNormal,
 			eventer.EventReasonSuccessful,
-			"Successfully patched Percona",
+			"Successfully patched PerconaXtraDB",
 		)
 	}
 
-	if _, err := meta_util.GetString(pxc.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
-		pxc.Spec.Init != nil && pxc.Spec.Init.SnapshotSource != nil {
-
-		snapshotSource := pxc.Spec.Init.SnapshotSource
-
-		if pxc.Status.Phase == api.DatabasePhaseInitializing {
-			return nil
-		}
-		jobName := fmt.Sprintf("%s-%s", api.DatabaseNamePrefix, snapshotSource.Name)
-		if _, err := c.Client.BatchV1().Jobs(snapshotSource.Namespace).Get(jobName, metav1.GetOptions{}); err != nil {
-			if !kerr.IsNotFound(err) {
-				return err
-			}
-		} else {
-			return nil
-		}
-		if err := c.initialize(pxc); err != nil {
-			return fmt.Errorf("failed to complete initialization for %v/%v. Reason: %v", pxc.Namespace, pxc.Name, err)
-		}
-		return nil
-	}
-
-	per, err := util.UpdatePerconaStatus(c.ExtClient.KubedbV1alpha1(), pxc, func(in *api.PerconaStatus) *api.PerconaStatus {
+	per, err := util.UpdatePerconaXtraDBStatus(c.ExtClient.KubedbV1alpha1(), px, func(in *api.PerconaXtraDBStatus) *api.PerconaXtraDBStatus {
 		in.Phase = api.DatabasePhaseRunning
-		in.ObservedGeneration = types.NewIntHash(pxc.Generation, meta_util.GenerationHash(pxc))
+		in.ObservedGeneration = types.NewIntHash(px.Generation, meta_util.GenerationHash(px))
 		return in
 	}, apis.EnableStatusSubresource)
 	if err != nil {
 		return err
 	}
-	pxc.Status = per.Status
+	px.Status = per.Status
 
 	// ensure StatsService for desired monitoring
-	if _, err := c.ensureStatsService(pxc); err != nil {
+	if _, err := c.ensureStatsService(px); err != nil {
 		c.recorder.Eventf(
-			pxc,
+			px,
 			core.EventTypeWarning,
 			eventer.EventReasonFailedToCreate,
 			"Failed to manage monitoring system. Reason: %v",
@@ -145,9 +141,9 @@ func (c *Controller) create(pxc *api.Percona) error {
 		return nil
 	}
 
-	if err := c.manageMonitor(pxc); err != nil {
+	if err := c.manageMonitor(px); err != nil {
 		c.recorder.Eventf(
-			pxc,
+			px,
 			core.EventTypeWarning,
 			eventer.EventReasonFailedToCreate,
 			"Failed to manage monitoring system. Reason: %v",
@@ -157,7 +153,7 @@ func (c *Controller) create(pxc *api.Percona) error {
 		return nil
 	}
 
-	_, err = c.ensureAppBinding(pxc)
+	_, err = c.ensureAppBinding(px)
 	if err != nil {
 		log.Errorln(err)
 		return err
@@ -166,54 +162,49 @@ func (c *Controller) create(pxc *api.Percona) error {
 	return nil
 }
 
-func (c *Controller) initialize(pxc *api.Percona) error {
-	// TODO: integrate stash
-	return nil
-}
-
-func (c *Controller) terminate(pxc *api.Percona) error {
-	ref, rerr := reference.GetReference(clientsetscheme.Scheme, pxc)
+func (c *Controller) terminate(px *api.PerconaXtraDB) error {
+	ref, rerr := reference.GetReference(clientsetscheme.Scheme, px)
 	if rerr != nil {
 		return rerr
 	}
 
 	// If TerminationPolicy is "pause", keep everything (ie, PVCs,Secrets,Snapshots) intact.
 	// In operator, create dormantdatabase
-	if pxc.Spec.TerminationPolicy == api.TerminationPolicyPause {
-		if err := c.removeOwnerReferenceFromOffshoots(pxc, ref); err != nil {
+	if px.Spec.TerminationPolicy == api.TerminationPolicyPause {
+		if err := c.removeOwnerReferenceFromOffshoots(px, ref); err != nil {
 			return err
 		}
 
-		if _, err := c.createDormantDatabase(pxc); err != nil {
+		if _, err := c.createDormantDatabase(px); err != nil {
 			if kerr.IsAlreadyExists(err) {
 				// if already exists, check if it is database of another Kind and return error in that case.
 				// If the Kind is same, we can safely assume that the DormantDB was not deleted in before,
 				// Probably because, User is more faster (create-delete-create-again-delete...) than operator!
 				// So reuse that DormantDB!
-				ddb, err := c.ExtClient.KubedbV1alpha1().DormantDatabases(pxc.Namespace).Get(pxc.Name, metav1.GetOptions{})
+				ddb, err := c.ExtClient.KubedbV1alpha1().DormantDatabases(px.Namespace).Get(px.Name, metav1.GetOptions{})
 				if err != nil {
 					return err
 				}
-				if val, _ := meta_util.GetStringValue(ddb.Labels, api.LabelDatabaseKind); val != api.ResourceKindPercona {
-					return fmt.Errorf(`DormantDatabase "%v" of kind %v already exists`, pxc.Name, val)
+				if val, _ := meta_util.GetStringValue(ddb.Labels, api.LabelDatabaseKind); val != api.ResourceKindPerconaXtraDB {
+					return fmt.Errorf(`DormantDatabase "%v" of kind %v already exists`, px.Name, val)
 				}
 			} else {
-				return fmt.Errorf(`failed to create DormantDatabase: "%v/%v". Reason: %v`, pxc.Namespace, pxc.Name, err)
+				return fmt.Errorf(`failed to create DormantDatabase: "%v/%v". Reason: %v`, px.Namespace, px.Name, err)
 			}
 		}
 	} else {
 		// If TerminationPolicy is "wipeOut", delete everything (ie, PVCs,Secrets,Snapshots).
 		// If TerminationPolicy is "delete", delete PVCs and keep snapshots,secrets intact.
 		// In both these cases, don't create dormantdatabase
-		if err := c.setOwnerReferenceToOffshoots(pxc, ref); err != nil {
+		if err := c.setOwnerReferenceToOffshoots(px, ref); err != nil {
 			return err
 		}
 	}
 
-	c.cronController.StopBackupScheduling(pxc.ObjectMeta)
+	c.cronController.StopBackupScheduling(px.ObjectMeta)
 
-	if pxc.Spec.Monitor != nil {
-		if _, err := c.deleteMonitor(pxc); err != nil {
+	if px.Spec.Monitor != nil {
+		if _, err := c.deleteMonitor(px); err != nil {
 			log.Errorln(err)
 			return nil
 		}
@@ -221,21 +212,21 @@ func (c *Controller) terminate(pxc *api.Percona) error {
 	return nil
 }
 
-func (c *Controller) setOwnerReferenceToOffshoots(pxc *api.Percona, ref *core.ObjectReference) error {
-	selector := labels.SelectorFromSet(pxc.OffshootSelectors())
+func (c *Controller) setOwnerReferenceToOffshoots(px *api.PerconaXtraDB, ref *core.ObjectReference) error {
+	selector := labels.SelectorFromSet(px.OffshootSelectors())
 
 	// If TerminationPolicy is "wipeOut", delete snapshots and secrets,
 	// else, keep it intact.
-	if pxc.Spec.TerminationPolicy == api.TerminationPolicyWipeOut {
+	if px.Spec.TerminationPolicy == api.TerminationPolicyWipeOut {
 		if err := dynamic_util.EnsureOwnerReferenceForSelector(
 			c.DynamicClient,
 			api.SchemeGroupVersion.WithResource(api.ResourcePluralSnapshot),
-			pxc.Namespace,
+			px.Namespace,
 			selector,
 			ref); err != nil {
 			return err
 		}
-		if err := c.wipeOutDatabase(pxc.ObjectMeta, pxc.Spec.GetSecrets(), ref); err != nil {
+		if err := c.wipeOutDatabase(px.ObjectMeta, px.Spec.GetSecrets(), ref); err != nil {
 			return errors.Wrap(err, "error in wiping out database.")
 		}
 	} else {
@@ -243,7 +234,7 @@ func (c *Controller) setOwnerReferenceToOffshoots(pxc *api.Percona, ref *core.Ob
 		if err := dynamic_util.RemoveOwnerReferenceForSelector(
 			c.DynamicClient,
 			api.SchemeGroupVersion.WithResource(api.ResourcePluralSnapshot),
-			pxc.Namespace,
+			px.Namespace,
 			selector,
 			ref); err != nil {
 			return err
@@ -251,8 +242,8 @@ func (c *Controller) setOwnerReferenceToOffshoots(pxc *api.Percona, ref *core.Ob
 		if err := dynamic_util.RemoveOwnerReferenceForItems(
 			c.DynamicClient,
 			core.SchemeGroupVersion.WithResource("secrets"),
-			pxc.Namespace,
-			pxc.Spec.GetSecrets(),
+			px.Namespace,
+			px.Spec.GetSecrets(),
 			ref); err != nil {
 			return err
 		}
@@ -261,19 +252,19 @@ func (c *Controller) setOwnerReferenceToOffshoots(pxc *api.Percona, ref *core.Ob
 	return dynamic_util.EnsureOwnerReferenceForSelector(
 		c.DynamicClient,
 		core.SchemeGroupVersion.WithResource("persistentvolumeclaims"),
-		pxc.Namespace,
+		px.Namespace,
 		selector,
 		ref)
 }
 
-func (c *Controller) removeOwnerReferenceFromOffshoots(pxc *api.Percona, ref *core.ObjectReference) error {
+func (c *Controller) removeOwnerReferenceFromOffshoots(px *api.PerconaXtraDB, ref *core.ObjectReference) error {
 	// First, Get LabelSelector for Other Components
-	labelSelector := labels.SelectorFromSet(pxc.OffshootSelectors())
+	labelSelector := labels.SelectorFromSet(px.OffshootSelectors())
 
 	if err := dynamic_util.RemoveOwnerReferenceForSelector(
 		c.DynamicClient,
 		api.SchemeGroupVersion.WithResource(api.ResourcePluralSnapshot),
-		pxc.Namespace,
+		px.Namespace,
 		labelSelector,
 		ref); err != nil {
 		return err
@@ -281,7 +272,7 @@ func (c *Controller) removeOwnerReferenceFromOffshoots(pxc *api.Percona, ref *co
 	if err := dynamic_util.RemoveOwnerReferenceForSelector(
 		c.DynamicClient,
 		core.SchemeGroupVersion.WithResource("persistentvolumeclaims"),
-		pxc.Namespace,
+		px.Namespace,
 		labelSelector,
 		ref); err != nil {
 		return err
@@ -289,8 +280,8 @@ func (c *Controller) removeOwnerReferenceFromOffshoots(pxc *api.Percona, ref *co
 	if err := dynamic_util.RemoveOwnerReferenceForItems(
 		c.DynamicClient,
 		core.SchemeGroupVersion.WithResource("secrets"),
-		pxc.Namespace,
-		pxc.Spec.GetSecrets(),
+		px.Namespace,
+		px.Spec.GetSecrets(),
 		ref); err != nil {
 		return err
 	}

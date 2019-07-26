@@ -14,21 +14,21 @@ import (
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 )
 
-func (c *Controller) newMonitorController(pxc *api.Percona) (mona.Agent, error) {
+func (c *Controller) newMonitorController(pxc *api.PerconaXtraDB) (mona.Agent, error) {
 	monitorSpec := pxc.Spec.Monitor
 
 	if monitorSpec == nil {
-		return nil, fmt.Errorf("MonitorSpec not found for Percona %v/%v in %v", pxc.Namespace, pxc.Name, pxc.Spec)
+		return nil, fmt.Errorf("MonitorSpec not found for PerconaXtraDB %v/%v in %v", pxc.Namespace, pxc.Name, pxc.Spec)
 	}
 
 	if monitorSpec.Prometheus != nil {
 		return agents.New(monitorSpec.Agent, c.Client, c.ApiExtKubeClient, c.promClient), nil
 	}
 
-	return nil, fmt.Errorf("monitoring controller not found for Percona %v/%v in %v", pxc.Namespace, pxc.Name, monitorSpec)
+	return nil, fmt.Errorf("monitoring controller not found for PerconaXtraDB %v/%v in %v", pxc.Namespace, pxc.Name, monitorSpec)
 }
 
-func (c *Controller) addOrUpdateMonitor(pxc *api.Percona) (kutil.VerbType, error) {
+func (c *Controller) addOrUpdateMonitor(pxc *api.PerconaXtraDB) (kutil.VerbType, error) {
 	agent, err := c.newMonitorController(pxc)
 	if err != nil {
 		return kutil.VerbUnchanged, err
@@ -36,7 +36,7 @@ func (c *Controller) addOrUpdateMonitor(pxc *api.Percona) (kutil.VerbType, error
 	return agent.CreateOrUpdate(pxc.StatsService(), pxc.Spec.Monitor)
 }
 
-func (c *Controller) deleteMonitor(pxc *api.Percona) (kutil.VerbType, error) {
+func (c *Controller) deleteMonitor(pxc *api.PerconaXtraDB) (kutil.VerbType, error) {
 	agent, err := c.newMonitorController(pxc)
 	if err != nil {
 		return kutil.VerbUnchanged, err
@@ -44,7 +44,7 @@ func (c *Controller) deleteMonitor(pxc *api.Percona) (kutil.VerbType, error) {
 	return agent.Delete(pxc.StatsService())
 }
 
-func (c *Controller) getOldAgent(pxc *api.Percona) mona.Agent {
+func (c *Controller) getOldAgent(pxc *api.PerconaXtraDB) mona.Agent {
 	service, err := c.Client.CoreV1().Services(pxc.Namespace).Get(pxc.StatsService().ServiceName(), metav1.GetOptions{})
 	if err != nil {
 		return nil
@@ -53,7 +53,7 @@ func (c *Controller) getOldAgent(pxc *api.Percona) mona.Agent {
 	return agents.New(mona.AgentType(oldAgentType), c.Client, c.ApiExtKubeClient, c.promClient)
 }
 
-func (c *Controller) setNewAgent(pxc *api.Percona) error {
+func (c *Controller) setNewAgent(pxc *api.PerconaXtraDB) error {
 	service, err := c.Client.CoreV1().Services(pxc.Namespace).Get(pxc.StatsService().ServiceName(), metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func (c *Controller) setNewAgent(pxc *api.Percona) error {
 	return err
 }
 
-func (c *Controller) manageMonitor(pxc *api.Percona) error {
+func (c *Controller) manageMonitor(pxc *api.PerconaXtraDB) error {
 	oldAgent := c.getOldAgent(pxc)
 	if pxc.Spec.Monitor != nil {
 		if oldAgent != nil &&

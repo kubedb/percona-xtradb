@@ -1,4 +1,4 @@
-## percona-operator version
+## perconaxtradb-operator version
 
 Prints binary version number.
 
@@ -7,7 +7,7 @@ Prints binary version number.
 Prints binary version number.
 
 ```
-percona-operator version [flags]
+perconaxtradb-operator version [flags]
 ```
 
 ### Options
@@ -35,5 +35,5 @@ percona-operator version [flags]
 
 ### SEE ALSO
 
-* [percona-operator](percona-operator.md)	 - 
+* [perconaxtradb-operator](perconaxtradb-operator.md)	 - 
 

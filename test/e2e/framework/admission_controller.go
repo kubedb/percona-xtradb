@@ -22,7 +22,7 @@ import (
 	discovery_util "kmodules.xyz/client-go/discovery"
 	meta_util "kmodules.xyz/client-go/meta"
 	"kubedb.dev/apimachinery/apis"
-	"kubedb.dev/percona/pkg/cmds/server"
+	"kubedb.dev/percona-xtradb/pkg/cmds/server"
 )
 
 func (f *Framework) isApiSvcReady(apiSvcName string) error {
@@ -91,7 +91,7 @@ func (f *Framework) RunOperatorAndServer(config *restclient.Config, kubeconfigPa
 	Expect(err).ShouldNot(HaveOccurred())
 
 	By("Starting Server and Operator")
-	serverOpt := server.NewPerconaServerOptions(os.Stdout, os.Stderr)
+	serverOpt := server.NewPerconaXtraDBServerOptions(os.Stdout, os.Stderr)
 
 	serverOpt.RecommendedOptions.CoreAPI.CoreAPIKubeconfigPath = kubeconfigPath
 	serverOpt.RecommendedOptions.SecureServing.BindPort = 8443

@@ -11,13 +11,13 @@ import (
 	genericoptions "k8s.io/apiserver/pkg/server/options"
 	"kmodules.xyz/client-go/meta"
 	"kmodules.xyz/client-go/tools/clientcmd"
-	"kubedb.dev/percona/pkg/controller"
-	"kubedb.dev/percona/pkg/server"
+	"kubedb.dev/percona-xtradb/pkg/controller"
+	"kubedb.dev/percona-xtradb/pkg/server"
 )
 
 const defaultEtcdPathPrefix = "/registry/kubedb.com"
 
-type PerconaServerOptions struct {
+type PerconaXtraDBServerOptions struct {
 	RecommendedOptions *genericoptions.RecommendedOptions
 	ExtraOptions       *ExtraOptions
 
@@ -25,13 +25,13 @@ type PerconaServerOptions struct {
 	StdErr io.Writer
 }
 
-func NewPerconaServerOptions(out, errOut io.Writer) *PerconaServerOptions {
-	o := &PerconaServerOptions{
+func NewPerconaXtraDBServerOptions(out, errOut io.Writer) *PerconaXtraDBServerOptions {
+	o := &PerconaXtraDBServerOptions{
 		// TODO we will nil out the etcd storage options.  This requires a later level of k8s.io/apiserver
 		RecommendedOptions: genericoptions.NewRecommendedOptions(
 			defaultEtcdPathPrefix,
 			server.Codecs.LegacyCodec(admissionv1beta1.SchemeGroupVersion),
-			genericoptions.NewProcessInfo("percona-operator", meta.Namespace()),
+			genericoptions.NewProcessInfo("perconaxtradb-operator", meta.Namespace()),
 		),
 		ExtraOptions: NewExtraOptions(),
 		StdOut:       out,
@@ -43,20 +43,20 @@ func NewPerconaServerOptions(out, errOut io.Writer) *PerconaServerOptions {
 	return o
 }
 
-func (o PerconaServerOptions) AddFlags(fs *pflag.FlagSet) {
+func (o PerconaXtraDBServerOptions) AddFlags(fs *pflag.FlagSet) {
 	o.RecommendedOptions.AddFlags(fs)
 	o.ExtraOptions.AddFlags(fs)
 }
 
-func (o PerconaServerOptions) Validate(args []string) error {
+func (o PerconaXtraDBServerOptions) Validate(args []string) error {
 	return nil
 }
 
-func (o *PerconaServerOptions) Complete() error {
+func (o *PerconaXtraDBServerOptions) Complete() error {
 	return nil
 }
 
-func (o PerconaServerOptions) Config() (*server.PerconaServerConfig, error) {
+func (o PerconaXtraDBServerOptions) Config() (*server.PerconaXtraDBServerConfig, error) {
 	// TODO have a "real" external address
 	if err := o.RecommendedOptions.SecureServing.MaybeDefaultWithSelfSignedCerts("localhost", nil, []net.IP{net.ParseIP("127.0.0.1")}); err != nil {
 		return nil, fmt.Errorf("error creating self-signed certificates: %v", err)
@@ -73,7 +73,7 @@ func (o PerconaServerOptions) Config() (*server.PerconaServerConfig, error) {
 		return nil, err
 	}
 
-	config := &server.PerconaServerConfig{
+	config := &server.PerconaXtraDBServerConfig{
 		GenericConfig:  serverConfig,
 		ExtraConfig:    server.ExtraConfig{},
 		OperatorConfig: controllerConfig,
@@ -81,7 +81,7 @@ func (o PerconaServerOptions) Config() (*server.PerconaServerConfig, error) {
 	return config, nil
 }
 
-func (o PerconaServerOptions) Run(stopCh <-chan struct{}) error {
+func (o PerconaXtraDBServerOptions) Run(stopCh <-chan struct{}) error {
 	config, err := o.Config()
 	if err != nil {
 		return err

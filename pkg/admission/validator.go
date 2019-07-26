@@ -22,15 +22,15 @@ import (
 	amv "kubedb.dev/apimachinery/pkg/validator"
 )
 
-// PerconaValidator implements the AdmissionHook interface to validate the Percona resources
-type PerconaValidator struct {
+// PerconaXtraDBValidator implements the AdmissionHook interface to validate the PerconaXtraDB resources
+type PerconaXtraDBValidator struct {
 	client      kubernetes.Interface
 	extClient   cs.Interface
 	lock        sync.RWMutex
 	initialized bool
 }
 
-var _ hookapi.AdmissionHook = &PerconaValidator{}
+var _ hookapi.AdmissionHook = &PerconaXtraDBValidator{}
 
 var forbiddenEnvVars = []string{
 	"MYSQL_ROOT_PASSWORD",
@@ -40,17 +40,17 @@ var forbiddenEnvVars = []string{
 }
 
 // Resource is the resource to use for hosting validating admission webhook.
-func (a *PerconaValidator) Resource() (plural schema.GroupVersionResource, singular string) {
+func (a *PerconaXtraDBValidator) Resource() (plural schema.GroupVersionResource, singular string) {
 	return schema.GroupVersionResource{
 			Group:    "validators.kubedb.com",
 			Version:  "v1alpha1",
-			Resource: "perconavalidators",
+			Resource: "perconaxtradbvalidators",
 		},
-		"perconavalidator"
+		"perconaxtradbvalidator"
 }
 
 // Initialize is called as a post-start hook
-func (a *PerconaValidator) Initialize(config *rest.Config, stopCh <-chan struct{}) error {
+func (a *PerconaXtraDBValidator) Initialize(config *rest.Config, stopCh <-chan struct{}) error {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 
@@ -67,13 +67,13 @@ func (a *PerconaValidator) Initialize(config *rest.Config, stopCh <-chan struct{
 }
 
 // Admit is called to decide whether to accept the admission request.
-func (a *PerconaValidator) Admit(req *admission.AdmissionRequest) *admission.AdmissionResponse {
+func (a *PerconaXtraDBValidator) Admit(req *admission.AdmissionRequest) *admission.AdmissionResponse {
 	status := &admission.AdmissionResponse{}
 
 	if (req.Operation != admission.Create && req.Operation != admission.Update && req.Operation != admission.Delete) ||
 		len(req.SubResource) != 0 ||
 		req.Kind.Group != api.SchemeGroupVersion.Group ||
-		req.Kind.Kind != api.ResourceKindPercona {
+		req.Kind.Kind != api.ResourceKindPerconaXtraDB {
 		status.Allowed = true
 		return status
 	}
@@ -88,11 +88,11 @@ func (a *PerconaValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 	case admission.Delete:
 		if req.Name != "" {
 			// req.Object.Raw = nil, so read from kubernetes
-			obj, err := a.extClient.KubedbV1alpha1().Perconas(req.Namespace).Get(req.Name, metav1.GetOptions{})
+			obj, err := a.extClient.KubedbV1alpha1().PerconaXtraDBs(req.Namespace).Get(req.Name, metav1.GetOptions{})
 			if err != nil && !kerr.IsNotFound(err) {
 				return hookapi.StatusInternalServerError(err)
 			} else if err == nil && obj.Spec.TerminationPolicy == api.TerminationPolicyDoNotTerminate {
-				return hookapi.StatusBadRequest(fmt.Errorf(`percona "%v/%v" can't be paused. To delete, change spec.terminationPolicy`, req.Namespace, req.Name))
+				return hookapi.StatusBadRequest(fmt.Errorf(`perconaxtradb "%v/%v" can't be paused. To delete, change spec.terminationPolicy`, req.Namespace, req.Name))
 			}
 		}
 	default:
@@ -107,20 +107,20 @@ func (a *PerconaValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 				return hookapi.StatusBadRequest(err)
 			}
 
-			pxc := obj.(*api.Percona).DeepCopy()
-			oldPXC := oldObject.(*api.Percona).DeepCopy()
+			px := obj.(*api.PerconaXtraDB).DeepCopy()
+			oldPXC := oldObject.(*api.PerconaXtraDB).DeepCopy()
 			oldPXC.SetDefaults()
 			// Allow changing Database Secret only if there was no secret have set up yet.
 			if oldPXC.Spec.DatabaseSecret == nil {
-				oldPXC.Spec.DatabaseSecret = pxc.Spec.DatabaseSecret
+				oldPXC.Spec.DatabaseSecret = px.Spec.DatabaseSecret
 			}
 
-			if err := validateUpdate(pxc, oldPXC, req.Kind.Kind); err != nil {
+			if err := validateUpdate(px, oldPXC, req.Kind.Kind); err != nil {
 				return hookapi.StatusBadRequest(fmt.Errorf("%v", err))
 			}
 		}
 		// validate database specs
-		if err = ValidatePercona(a.client, a.extClient, obj.(*api.Percona), false); err != nil {
+		if err = ValidatePerconaXtraDB(a.client, a.extClient, obj.(*api.PerconaXtraDB), false); err != nil {
 			return hookapi.StatusForbidden(err)
 		}
 	}
@@ -128,124 +128,124 @@ func (a *PerconaValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 	return status
 }
 
-// validatePXC checks whether the configurations for Percona XtraDB Cluster are ok
-func validatePXC(pxc *api.Percona) error {
-	if pxc.Spec.PXC != nil {
-		if len(pxc.Name) > api.PerconaMaxClusterNameLength {
-			return errors.Errorf(`'spec.pxc.clusterName' "%s" shouldn't have more than %d characters'`,
-				pxc.Name, api.PerconaMaxClusterNameLength)
+// validatePXC checks whether the configurations for PerconaXtraDB Cluster are ok
+func validatePXC(px *api.PerconaXtraDB) error {
+	if px.Spec.PXC != nil {
+		if len(px.Name) > api.PerconaXtraDBMaxClusterNameLength {
+			return errors.Errorf(`'spec.px.clusterName' "%s" shouldn't have more than %d characters'`,
+				px.Name, api.PerconaXtraDBMaxClusterNameLength)
 		}
-		if *pxc.Spec.PXC.Proxysql.Replicas != 1 {
-			return errors.Errorf(`'spec.pxc.proxysql.replicas' "%v" is invalid. Currently, supported replicas for proxysql is 1`,
-				pxc.Spec.PXC.Proxysql.Replicas)
+		if *px.Spec.PXC.Proxysql.Replicas != 1 {
+			return errors.Errorf(`'spec.px.proxysql.replicas' "%v" is invalid. Currently, supported replicas for proxysql is 1`,
+				px.Spec.PXC.Proxysql.Replicas)
 		}
 	}
 
 	return nil
 }
 
-// ValidatePercona checks if the object satisfies all the requirements.
+// ValidatePerconaXtraDB checks if the object satisfies all the requirements.
 // It is not method of Interface, because it is referenced from controller package too.
-func ValidatePercona(client kubernetes.Interface, extClient cs.Interface, pxc *api.Percona, strictValidation bool) error {
-	if pxc.Spec.Version == "" {
+func ValidatePerconaXtraDB(client kubernetes.Interface, extClient cs.Interface, px *api.PerconaXtraDB, strictValidation bool) error {
+	if px.Spec.Version == "" {
 		return errors.New(`'spec.version' is missing`)
 	}
-	if pxcVersion, err := extClient.CatalogV1alpha1().PerconaVersions().Get(string(pxc.Spec.Version), metav1.GetOptions{}); err != nil {
+	if pxVersion, err := extClient.CatalogV1alpha1().PerconaXtraDBVersions().Get(string(px.Spec.Version), metav1.GetOptions{}); err != nil {
 		return err
-	} else if pxc.Spec.PXC != nil && pxcVersion.Spec.Version != api.PerconaXtraDBClusterRecommendedVersion {
+	} else if px.Spec.PXC != nil && pxVersion.Spec.Version != api.PerconaXtraDBClusterRecommendedVersion {
 		return errors.Errorf("unsupported version for xtradb cluster, recommended version is %s",
 			api.PerconaXtraDBClusterRecommendedVersion)
 	}
 
-	if pxc.Spec.Replicas == nil {
-		return fmt.Errorf(`'spec.replicas' "%v" invalid. Value must be 1 for standalone percona server, but for percona xtradb cluster value must be greater than 0`,
-			pxc.Spec.Replicas)
+	if px.Spec.Replicas == nil {
+		return fmt.Errorf(`'spec.replicas' "%v" invalid. Value must be 1 for standalone perconaxtradb server, but for perconaxtradb cluster, value must be greater than 0`,
+			px.Spec.Replicas)
 	}
 
-	if pxc.Spec.PXC == nil && *pxc.Spec.Replicas > api.PerconaStandaloneReplicas {
-		return fmt.Errorf(`'spec.replicas' "%v" invalid. Value must be 1 for standalone percona server`,
-			pxc.Spec.Replicas)
+	if px.Spec.PXC == nil && *px.Spec.Replicas > api.PerconaXtraDBStandaloneReplicas {
+		return fmt.Errorf(`'spec.replicas' "%v" invalid. Value must be 1 for standalone perconaxtradb server`,
+			px.Spec.Replicas)
 	}
 
-	if pxc.Spec.PXC != nil && *pxc.Spec.Replicas < api.PerconaDefaultClusterSize {
+	if px.Spec.PXC != nil && *px.Spec.Replicas < api.PerconaXtraDBDefaultClusterSize {
 		return fmt.Errorf(`'spec.replicas' "%v" invalid. Value must be %d for xtradb cluster`,
-			pxc.Spec.Replicas, api.PerconaDefaultClusterSize)
+			px.Spec.Replicas, api.PerconaXtraDBDefaultClusterSize)
 	}
 
-	if err := validatePXC(pxc); err != nil {
+	if err := validatePXC(px); err != nil {
 		return err
 	}
 
-	if err := amv.ValidateEnvVar(pxc.Spec.PodTemplate.Spec.Env, forbiddenEnvVars, api.ResourceKindPercona); err != nil {
+	if err := amv.ValidateEnvVar(px.Spec.PodTemplate.Spec.Env, forbiddenEnvVars, api.ResourceKindPerconaXtraDB); err != nil {
 		return err
 	}
 
-	if pxc.Spec.StorageType == "" {
+	if px.Spec.StorageType == "" {
 		return fmt.Errorf(`'spec.storageType' is missing`)
 	}
-	if pxc.Spec.StorageType != api.StorageTypeDurable && pxc.Spec.StorageType != api.StorageTypeEphemeral {
-		return fmt.Errorf(`'spec.storageType' %s is invalid`, pxc.Spec.StorageType)
+	if px.Spec.StorageType != api.StorageTypeDurable && px.Spec.StorageType != api.StorageTypeEphemeral {
+		return fmt.Errorf(`'spec.storageType' %s is invalid`, px.Spec.StorageType)
 	}
-	if err := amv.ValidateStorage(client, pxc.Spec.StorageType, pxc.Spec.Storage); err != nil {
+	if err := amv.ValidateStorage(client, px.Spec.StorageType, px.Spec.Storage); err != nil {
 		return err
 	}
 
-	databaseSecret := pxc.Spec.DatabaseSecret
+	databaseSecret := px.Spec.DatabaseSecret
 
 	if strictValidation {
 		if databaseSecret != nil {
-			if _, err := client.CoreV1().Secrets(pxc.Namespace).Get(databaseSecret.SecretName, metav1.GetOptions{}); err != nil {
+			if _, err := client.CoreV1().Secrets(px.Namespace).Get(databaseSecret.SecretName, metav1.GetOptions{}); err != nil {
 				return err
 			}
 		}
 
-		// Check if perconaVersion is deprecated.
+		// Check if perconaxtradbVersion is deprecated.
 		// If deprecated, return error
-		pxcVersion, err := extClient.CatalogV1alpha1().PerconaVersions().Get(string(pxc.Spec.Version), metav1.GetOptions{})
+		pxVersion, err := extClient.CatalogV1alpha1().PerconaXtraDBVersions().Get(string(px.Spec.Version), metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 
-		if pxcVersion.Spec.Deprecated {
-			return fmt.Errorf("percona %s/%s is using deprecated version %v. Skipped processing", pxc.Namespace, pxc.Name, pxcVersion.Name)
+		if pxVersion.Spec.Deprecated {
+			return fmt.Errorf("perconaxtradb %s/%s is using deprecated version %v. Skipped processing", px.Namespace, px.Name, pxVersion.Name)
 		}
 	}
 
-	if pxc.Spec.Init != nil &&
-		pxc.Spec.Init.SnapshotSource != nil &&
+	if px.Spec.Init != nil &&
+		px.Spec.Init.SnapshotSource != nil &&
 		databaseSecret == nil {
 		return fmt.Errorf("for Snapshot init, 'spec.databaseSecret.secretName' of %v/%v needs to be similar to older database of snapshot %v/%v",
-			pxc.Namespace, pxc.Name, pxc.Spec.Init.SnapshotSource.Namespace, pxc.Spec.Init.SnapshotSource.Name)
+			px.Namespace, px.Name, px.Spec.Init.SnapshotSource.Namespace, px.Spec.Init.SnapshotSource.Name)
 	}
 
-	if pxc.Spec.UpdateStrategy.Type == "" {
+	if px.Spec.UpdateStrategy.Type == "" {
 		return fmt.Errorf(`'spec.updateStrategy.type' is missing`)
 	}
 
-	if pxc.Spec.TerminationPolicy == "" {
+	if px.Spec.TerminationPolicy == "" {
 		return fmt.Errorf(`'spec.terminationPolicy' is missing`)
 	}
 
-	if pxc.Spec.StorageType == api.StorageTypeEphemeral && pxc.Spec.TerminationPolicy == api.TerminationPolicyPause {
+	if px.Spec.StorageType == api.StorageTypeEphemeral && px.Spec.TerminationPolicy == api.TerminationPolicyPause {
 		return fmt.Errorf(`'spec.terminationPolicy: Pause' can not be used for 'Ephemeral' storage`)
 	}
 
-	monitorSpec := pxc.Spec.Monitor
+	monitorSpec := px.Spec.Monitor
 	if monitorSpec != nil {
 		if err := amv.ValidateMonitorSpec(monitorSpec); err != nil {
 			return err
 		}
 	}
 
-	if err := matchWithDormantDatabase(extClient, pxc); err != nil {
+	if err := matchWithDormantDatabase(extClient, px); err != nil {
 		return err
 	}
 	return nil
 }
 
-func matchWithDormantDatabase(extClient cs.Interface, pxc *api.Percona) error {
+func matchWithDormantDatabase(extClient cs.Interface, px *api.PerconaXtraDB) error {
 	// Check if DormantDatabase exists or not
-	dormantDb, err := extClient.KubedbV1alpha1().DormantDatabases(pxc.Namespace).Get(pxc.Name, metav1.GetOptions{})
+	dormantDb, err := extClient.KubedbV1alpha1().DormantDatabases(px.Namespace).Get(px.Name, metav1.GetOptions{})
 	if err != nil {
 		if !kerr.IsNotFound(err) {
 			return err
@@ -254,14 +254,14 @@ func matchWithDormantDatabase(extClient cs.Interface, pxc *api.Percona) error {
 	}
 
 	// Check DatabaseKind
-	if value, _ := meta_util.GetStringValue(dormantDb.Labels, api.LabelDatabaseKind); value != api.ResourceKindPercona {
-		return errors.New(fmt.Sprintf(`invalid Percona: "%v/%v". Exists DormantDatabase "%v/%v" of different Kind`, pxc.Namespace, pxc.Name, dormantDb.Namespace, dormantDb.Name))
+	if value, _ := meta_util.GetStringValue(dormantDb.Labels, api.LabelDatabaseKind); value != api.ResourceKindPerconaXtraDB {
+		return errors.New(fmt.Sprintf(`invalid PerconaXtraDB: "%v/%v". Exists DormantDatabase "%v/%v" of different Kind`, px.Namespace, px.Name, dormantDb.Namespace, dormantDb.Name))
 	}
 
 	// Check Origin Spec
-	drmnOriginSpec := dormantDb.Spec.Origin.Spec.Percona
+	drmnOriginSpec := dormantDb.Spec.Origin.Spec.PerconaXtraDB
 	drmnOriginSpec.SetDefaults()
-	originalSpec := pxc.Spec
+	originalSpec := px.Spec
 
 	// Skip checking UpdateStrategy
 	drmnOriginSpec.UpdateStrategy = originalSpec.UpdateStrategy
@@ -274,8 +274,8 @@ func matchWithDormantDatabase(extClient cs.Interface, pxc *api.Percona) error {
 
 	if !meta_util.Equal(drmnOriginSpec, &originalSpec) {
 		diff := meta_util.Diff(drmnOriginSpec, &originalSpec)
-		log.Errorf("percona spec mismatches with OriginSpec in DormantDatabases. Diff: %v", diff)
-		return errors.New(fmt.Sprintf("percona spec mismatches with OriginSpec in DormantDatabases. Diff: %v", diff))
+		log.Errorf("perconaxtradb spec mismatches with OriginSpec in DormantDatabases. Diff: %v", diff)
+		return errors.New(fmt.Sprintf("perconaxtradb spec mismatches with OriginSpec in DormantDatabases. Diff: %v", diff))
 	}
 
 	return nil

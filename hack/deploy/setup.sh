@@ -124,21 +124,21 @@ env | sort | grep -e KUBEDB* -e APPSCODE*
 echo ""
 
 if [ "$SELF_HOSTED" -eq 1 ]; then
-  echo "${KUBEDB_SCRIPT}deploy/kubedb.sh | bash -s -- --operator-name=percona-operator $ARGS"
-  ${KUBEDB_SCRIPT}deploy/kubedb.sh | bash -s -- --operator-name=percona-operator ${ARGS}
+  echo "${KUBEDB_SCRIPT}deploy/kubedb.sh | bash -s -- --operator-name=perconaxtradb-operator $ARGS"
+  ${KUBEDB_SCRIPT}deploy/kubedb.sh | bash -s -- --operator-name=perconaxtradb-operator ${ARGS}
 fi
 
 if [ "$MINIKUBE" -eq 1 ]; then
   cat $INSTALLER_ROOT/deploy/validating-webhook.yaml | $ONESSL envsubst | kubectl apply -f -
   cat $INSTALLER_ROOT/deploy/mutating-webhook.yaml | $ONESSL envsubst | kubectl apply -f -
   cat $REPO_ROOT/hack/dev/apiregistration.yaml | $ONESSL envsubst | kubectl apply -f -
-#  cat $INSTALLER_ROOT/deploy/psp/percona.yaml | $ONESSL envsubst | kubectl apply -f -
+#  cat $INSTALLER_ROOT/deploy/psp/perconaxtradb.yaml | $ONESSL envsubst | kubectl apply -f -
   # Following line may give error if DBVersions CRD already not created
   cat $INSTALLER_ROOT/deploy/kubedb-catalog/percona.yaml | $ONESSL envsubst | kubectl apply -f - || true
 
   if [ "$MINIKUBE_RUN" -eq 1 ]; then
     $REPO_ROOT/hack/make.py
-    percona-operator run --v=4 \
+    perconaxtradb-operator run --v=4 \
       --secure-port=8443 \
       --enable-status-subresource=true \
       --enable-mutating-webhook=true \

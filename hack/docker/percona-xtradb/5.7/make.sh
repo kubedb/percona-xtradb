@@ -15,7 +15,7 @@ DB_VERSION="5.7"
 TAG="$DB_VERSION"
 
 build() {
-  pushd "$REPO_ROOT/hack/docker/percona/$DB_VERSION"
+  pushd "$REPO_ROOT/hack/docker/percona-xtradb/$DB_VERSION"
 
   # Download Peer-finder
   # ref: peer-finder: https://github.com/kmodules/peer-finder/releases/download/v1.0.1-ac/peer-finder

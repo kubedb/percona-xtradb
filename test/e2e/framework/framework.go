@@ -44,8 +44,8 @@ func New(
 		extClient:        extClient,
 		kaClient:         kaClient,
 		appCatalogClient: appCatalogClient,
-		name:             "percona-operator",
-		namespace:        rand.WithUniqSuffix(api.ResourceSingularPercona),
+		name:             "perconaxtradb-operator",
+		namespace:        rand.WithUniqSuffix(api.ResourceSingularPerconaXtraDB),
 		StorageClass:     storageClass,
 	}
 }
@@ -53,7 +53,7 @@ func New(
 func (f *Framework) Invoke() *Invocation {
 	return &Invocation{
 		Framework: f,
-		app:       rand.WithUniqSuffix("percona-e2e"),
+		app:       rand.WithUniqSuffix("perconaxtradb-e2e"),
 	}
 }
 

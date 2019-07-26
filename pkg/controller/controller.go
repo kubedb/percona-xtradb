@@ -29,9 +29,9 @@ import (
 	api_listers "kubedb.dev/apimachinery/client/listers/kubedb/v1alpha1"
 	amc "kubedb.dev/apimachinery/pkg/controller"
 	drmnc "kubedb.dev/apimachinery/pkg/controller/dormantdatabase"
+	"kubedb.dev/apimachinery/pkg/controller/restoresession"
 	snapc "kubedb.dev/apimachinery/pkg/controller/snapshot"
 	"kubedb.dev/apimachinery/pkg/eventer"
-	"github.com/kubedb/apimachinery/pkg/controller/restoresession"
 	scs "stash.appscode.dev/stash/client/clientset/versioned"
 )
 
@@ -48,10 +48,10 @@ type Controller struct {
 	// labelselector for event-handler of Snapshot, Dormant and Job
 	selector labels.Selector
 
-	// Percona
-	pxcQueue    *queue.Worker
-	pxcInformer cache.SharedIndexInformer
-	pxcLister   api_listers.PerconaLister
+	// PerconaXtraDB
+	pxQueue    *queue.Worker
+	pxInformer cache.SharedIndexInformer
+	pxLister   api_listers.PerconaXtraDBLister
 }
 
 //var _ amc.Snapshotter = &Controller{}
@@ -85,7 +85,7 @@ func New(
 		cronController: cronController,
 		recorder:       recorder,
 		selector: labels.SelectorFromSet(map[string]string{
-			api.LabelDatabaseKind: api.ResourceKindPercona,
+			api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
 		}),
 	}
 }
@@ -94,8 +94,8 @@ func New(
 func (c *Controller) EnsureCustomResourceDefinitions() error {
 	log.Infoln("Ensuring CustomResourceDefinition...")
 	crds := []*crd_api.CustomResourceDefinition{
-		api.Percona{}.CustomResourceDefinition(),
-		catalog.PerconaVersion{}.CustomResourceDefinition(),
+		api.PerconaXtraDB{}.CustomResourceDefinition(),
+		catalog.PerconaXtraDBVersion{}.CustomResourceDefinition(),
 		api.DormantDatabase{}.CustomResourceDefinition(),
 		api.Snapshot{}.CustomResourceDefinition(),
 		// TODO: need to be clear about this role crd and tasks related to this
@@ -106,7 +106,7 @@ func (c *Controller) EnsureCustomResourceDefinitions() error {
 	return apiext_util.RegisterCRDs(c.ApiExtKubeClient, crds)
 }
 
-// Init initializes percona, DormantDB amd Snapshot watcher
+// Init initializes perconaxtradb, DormantDB amd Snapshot watcher
 func (c *Controller) Init() error {
 	c.initWatcher()
 	c.DrmnQueue = drmnc.NewController(c.Controller, c, c.Config, nil, c.recorder).AddEventHandlerFunc(c.selector)
@@ -122,25 +122,8 @@ func (c *Controller) RunControllers(stopCh <-chan struct{}) {
 	c.cronController.StartCron()
 
 	// Watch x  TPR objects
-	c.pxcQueue.Run(stopCh)
+	c.pxQueue.Run(stopCh)
 	c.DrmnQueue.Run(stopCh)
-	go func() {
-		// start StashInformerFactory only if stash crds (ie, "restoreSession") are available.
-		if err := c.BlockOnStashOperator(stopCh); err != nil {
-			log.Errorln("error while waiting for restoreSession.", err)
-			return
-		}
-
-		// start informer factory
-		c.StashInformerFactory.Start(stopCh)
-		for t, v := range c.StashInformerFactory.WaitForCacheSync(stopCh) {
-			if !v {
-				log.Fatalf("%v timed out waiting for caches to sync", t)
-				return
-			}
-		}
-		c.RSQueue.Run(stopCh)
-	}()
 	//c.SnapQueue.Run(stopCh)
 	//c.JobQueue.Run(stopCh)
 }
@@ -170,6 +153,24 @@ func (c *Controller) StartAndRunControllers(stopCh <-chan struct{}) {
 	c.KubeInformerFactory.Start(stopCh)
 	c.KubedbInformerFactory.Start(stopCh)
 
+	go func() {
+		// start StashInformerFactory only if stash crds (ie, "restoreSession") are available.
+		if err := c.BlockOnStashOperator(stopCh); err != nil {
+			log.Errorln("error while waiting for restoreSession.", err)
+			return
+		}
+
+		// start informer factory
+		c.StashInformerFactory.Start(stopCh)
+		for t, v := range c.StashInformerFactory.WaitForCacheSync(stopCh) {
+			if !v {
+				log.Fatalf("%v timed out waiting for caches to sync", t)
+				return
+			}
+		}
+		c.RSQueue.Run(stopCh)
+	}()
+
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	for t, v := range c.KubeInformerFactory.WaitForCacheSync(stopCh) {
 		if !v {
@@ -190,30 +191,30 @@ func (c *Controller) StartAndRunControllers(stopCh <-chan struct{}) {
 	log.Infoln("Stopping KubeDB controller")
 }
 
-func (c *Controller) pushFailureEvent(pxc *api.Percona, reason string) {
+func (c *Controller) pushFailureEvent(px *api.PerconaXtraDB, reason string) {
 	c.recorder.Eventf(
-		pxc,
+		px,
 		core.EventTypeWarning,
 		eventer.EventReasonFailedToStart,
-		`Fail to be ready Percona: "%v". Reason: %v`,
-		pxc.Name,
+		`Fail to be ready PerconaXtraDB: "%v". Reason: %v`,
+		px.Name,
 		reason,
 	)
 
-	per, err := util.UpdatePerconaStatus(c.ExtClient.KubedbV1alpha1(), pxc, func(in *api.PerconaStatus) *api.PerconaStatus {
+	perconaXtraDB, err := util.UpdatePerconaXtraDBStatus(c.ExtClient.KubedbV1alpha1(), px, func(in *api.PerconaXtraDBStatus) *api.PerconaXtraDBStatus {
 		in.Phase = api.DatabasePhaseFailed
 		in.Reason = reason
-		in.ObservedGeneration = types.NewIntHash(pxc.Generation, meta_util.GenerationHash(pxc))
+		in.ObservedGeneration = types.NewIntHash(px.Generation, meta_util.GenerationHash(px))
 		return in
 	}, apis.EnableStatusSubresource)
 
 	if err != nil {
 		c.recorder.Eventf(
-			pxc,
+			px,
 			core.EventTypeWarning,
 			eventer.EventReasonFailedToUpdate,
 			err.Error(),
 		)
 	}
-	pxc.Status = per.Status
+	px.Status = perconaXtraDB.Status
 }

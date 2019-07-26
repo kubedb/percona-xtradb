@@ -18,7 +18,7 @@ import (
 
 // WaitUntilPaused is an Interface of *amc.Controller
 func (c *Controller) WaitUntilPaused(drmn *api.DormantDatabase) error {
-	db := &api.Percona{
+	db := &api.PerconaXtraDB{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      drmn.OffshootName(),
 			Namespace: drmn.Namespace,
@@ -40,16 +40,16 @@ func (c *Controller) WaitUntilPaused(drmn *api.DormantDatabase) error {
 	return nil
 }
 
-func (c *Controller) waitUntilRBACStuffDeleted(pxc *api.Percona) error {
+func (c *Controller) waitUntilRBACStuffDeleted(px *api.PerconaXtraDB) error {
 	// Delete ServiceAccount
-	if err := core_util.WaitUntillServiceAccountDeleted(c.Client, pxc.ObjectMeta); err != nil {
+	if err := core_util.WaitUntillServiceAccountDeleted(c.Client, px.ObjectMeta); err != nil {
 		return err
 	}
 
 	//// Delete Snapshot ServiceAccount
 	//snapSAMeta := metav1.ObjectMeta{
-	//	Name:      pxc.SnapshotSAName(),
-	//	Namespace: pxc.Namespace,
+	//	Name:      px.SnapshotSAName(),
+	//	Namespace: px.Namespace,
 	//}
 	//if err := core_util.WaitUntillServiceAccountDeleted(c.Client, snapSAMeta); err != nil {
 	//	return err
@@ -71,7 +71,7 @@ func (c *Controller) WipeOutDatabase(drmn *api.DormantDatabase) error {
 	return nil
 }
 
-// wipeOutDatabase is a generic function to call from WipeOutDatabase and percona pause method.
+// wipeOutDatabase is a generic function to call from WipeOutDatabase and perconaxtradb pause method.
 func (c *Controller) wipeOutDatabase(meta metav1.ObjectMeta, secrets []string, ref *core.ObjectReference) error {
 	secretUsed, err := c.secretsUsedByPeers(meta)
 	if err != nil {
@@ -86,9 +86,9 @@ func (c *Controller) wipeOutDatabase(meta metav1.ObjectMeta, secrets []string, r
 		ref)
 }
 
-func (c *Controller) deleteMatchingDormantDatabase(pxc *api.Percona) error {
+func (c *Controller) deleteMatchingDormantDatabase(px *api.PerconaXtraDB) error {
 	// Check if DormantDatabase exists or not
-	ddb, err := c.ExtClient.KubedbV1alpha1().DormantDatabases(pxc.Namespace).Get(pxc.Name, metav1.GetOptions{})
+	ddb, err := c.ExtClient.KubedbV1alpha1().DormantDatabases(px.Namespace).Get(px.Name, metav1.GetOptions{})
 	if err != nil {
 		if !kerr.IsNotFound(err) {
 			return err
@@ -105,7 +105,7 @@ func (c *Controller) deleteMatchingDormantDatabase(pxc *api.Percona) error {
 	}
 
 	// Delete  Matching dormantDatabase
-	if err := c.ExtClient.KubedbV1alpha1().DormantDatabases(pxc.Namespace).Delete(pxc.Name,
+	if err := c.ExtClient.KubedbV1alpha1().DormantDatabases(px.Namespace).Delete(px.Name,
 		meta_util.DeleteInBackground()); err != nil && !kerr.IsNotFound(err) {
 		return err
 	}
@@ -113,26 +113,26 @@ func (c *Controller) deleteMatchingDormantDatabase(pxc *api.Percona) error {
 	return nil
 }
 
-func (c *Controller) createDormantDatabase(pxc *api.Percona) (*api.DormantDatabase, error) {
+func (c *Controller) createDormantDatabase(px *api.PerconaXtraDB) (*api.DormantDatabase, error) {
 	dormantDb := &api.DormantDatabase{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      pxc.Name,
-			Namespace: pxc.Namespace,
+			Name:      px.Name,
+			Namespace: px.Namespace,
 			Labels: map[string]string{
-				api.LabelDatabaseKind: api.ResourceKindPercona,
+				api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
 			},
 		},
 		Spec: api.DormantDatabaseSpec{
 			Origin: api.Origin{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:              pxc.Name,
-					Namespace:         pxc.Namespace,
-					Labels:            pxc.Labels,
-					Annotations:       pxc.Annotations,
-					CreationTimestamp: pxc.CreationTimestamp,
+					Name:              px.Name,
+					Namespace:         px.Namespace,
+					Labels:            px.Labels,
+					Annotations:       px.Annotations,
+					CreationTimestamp: px.CreationTimestamp,
 				},
 				Spec: api.OriginSpec{
-					Percona: &pxc.Spec,
+					PerconaXtraDB: &px.Spec,
 				},
 			},
 		},
@@ -146,17 +146,17 @@ func (c *Controller) createDormantDatabase(pxc *api.Percona) (*api.DormantDataba
 func (c *Controller) secretsUsedByPeers(meta metav1.ObjectMeta) (sets.String, error) {
 	secretUsed := sets.NewString()
 
-	dbList, err := c.pxcLister.Perconas(meta.Namespace).List(labels.Everything())
+	dbList, err := c.pxLister.PerconaXtraDBs(meta.Namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
 	}
-	for _, pxc := range dbList {
-		if pxc.Name != meta.Name {
-			secretUsed.Insert(pxc.Spec.GetSecrets()...)
+	for _, px := range dbList {
+		if px.Name != meta.Name {
+			secretUsed.Insert(px.Spec.GetSecrets()...)
 		}
 	}
 	labelMap := map[string]string{
-		api.LabelDatabaseKind: api.ResourceKindPercona,
+		api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
 	}
 	drmnList, err := c.ExtClient.KubedbV1alpha1().DormantDatabases(meta.Namespace).List(
 		metav1.ListOptions{

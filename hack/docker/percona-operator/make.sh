@@ -14,7 +14,7 @@ source "$REPO_ROOT/hack/libbuild/common/kubedb_image.sh"
 
 APPSCODE_ENV=${APPSCODE_ENV:-dev}
 DOCKER_REGISTRY=${DOCKER_REGISTRY:-kubedb}
-IMG=percona-operator
+IMG=perconaxtradb-operator
 
 DIST=$GOPATH/src/kubedb.dev/percona-xtradb/dist
 mkdir -p $DIST
@@ -23,23 +23,23 @@ if [ -f "$DIST/.tag" ]; then
 fi
 
 clean() {
-  pushd $REPO_ROOT/hack/docker/percona-operator
-  rm -f percona-operator Dockerfile
+  pushd $REPO_ROOT/hack/docker/perconaxtradb-operator
+  rm -f perconaxtradb-operator Dockerfile
   popd
 }
 
 build_binary() {
   pushd $REPO_ROOT
   ./hack/builddeps.sh
-  ./hack/make.py build percona-operator
+  ./hack/make.py build perconaxtradb-operator
   detect_tag $DIST/.tag
   popd
 }
 
 build_docker() {
-  pushd $REPO_ROOT/hack/docker/percona-operator
-  cp $DIST/percona-operator/percona-operator-alpine-amd64 percona-operator
-  chmod 755 percona-operator
+  pushd $REPO_ROOT/hack/docker/perconaxtradb-operator
+  cp $DIST/perconaxtradb-operator/perconaxtradb-operator-alpine-amd64 perconaxtradb-operator
+  chmod 755 perconaxtradb-operator
 
   cat >Dockerfile <<EOL
 FROM alpine:3.8
@@ -47,15 +47,15 @@ FROM alpine:3.8
 RUN set -x \
   && apk add --update --no-cache ca-certificates
 
-COPY percona-operator /usr/bin/percona-operator
+COPY perconaxtradb-operator /usr/bin/perconaxtradb-operator
 
 USER nobody:nobody
-ENTRYPOINT ["percona-operator"]
+ENTRYPOINT ["perconaxtradb-operator"]
 EOL
   local cmd="docker build --pull -t $DOCKER_REGISTRY/$IMG:$TAG ."
   echo $cmd; $cmd
 
-  rm percona-operator Dockerfile
+  rm perconaxtradb-operator Dockerfile
   popd
 }
 

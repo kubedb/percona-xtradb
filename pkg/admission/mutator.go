@@ -22,28 +22,28 @@ import (
 	cs "kubedb.dev/apimachinery/client/clientset/versioned"
 )
 
-// PerconaMutator implements the AdmissionHook interface to mutate the Percona resources
-type PerconaMutator struct {
+// PerconaXtraDBMutator implements the AdmissionHook interface to mutate the PerconaXtraDB resources
+type PerconaXtraDBMutator struct {
 	client      kubernetes.Interface
 	extClient   cs.Interface
 	lock        sync.RWMutex
 	initialized bool
 }
 
-var _ hookapi.AdmissionHook = &PerconaMutator{}
+var _ hookapi.AdmissionHook = &PerconaXtraDBMutator{}
 
 // Resource is the resource to use for hosting mutating admission webhook.
-func (a *PerconaMutator) Resource() (plural schema.GroupVersionResource, singular string) {
+func (a *PerconaXtraDBMutator) Resource() (plural schema.GroupVersionResource, singular string) {
 	return schema.GroupVersionResource{
 			Group:    "mutators.kubedb.com",
 			Version:  "v1alpha1",
-			Resource: "perconamutators",
+			Resource: "perconaxtradbmutators",
 		},
-		"perconamutator"
+		"perconaxtradbmutator"
 }
 
 // Initialize is called as a post-start hook
-func (a *PerconaMutator) Initialize(config *rest.Config, stopCh <-chan struct{}) error {
+func (a *PerconaXtraDBMutator) Initialize(config *rest.Config, stopCh <-chan struct{}) error {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 
@@ -61,14 +61,14 @@ func (a *PerconaMutator) Initialize(config *rest.Config, stopCh <-chan struct{})
 
 // Admit is called to decide whether to accept the admission request.
 // The returned response may use the Patch field to mutate the object.
-func (a *PerconaMutator) Admit(req *admission.AdmissionRequest) *admission.AdmissionResponse {
+func (a *PerconaXtraDBMutator) Admit(req *admission.AdmissionRequest) *admission.AdmissionResponse {
 	status := &admission.AdmissionResponse{}
 
 	// N.B.: No Mutating for delete
 	if (req.Operation != admission.Create && req.Operation != admission.Update) ||
 		len(req.SubResource) != 0 ||
 		req.Kind.Group != api.SchemeGroupVersion.Group ||
-		req.Kind.Kind != api.ResourceKindPercona {
+		req.Kind.Kind != api.ResourceKindPerconaXtraDB {
 		status.Allowed = true
 		return status
 	}
@@ -82,11 +82,11 @@ func (a *PerconaMutator) Admit(req *admission.AdmissionRequest) *admission.Admis
 	if err != nil {
 		return hookapi.StatusBadRequest(err)
 	}
-	perconaMod, err := setDefaultValues(a.client, a.extClient, obj.(*api.Percona).DeepCopy())
+	perconaxtradbMod, err := setDefaultValues(a.client, a.extClient, obj.(*api.PerconaXtraDB).DeepCopy())
 	if err != nil {
 		return hookapi.StatusForbidden(err)
-	} else if perconaMod != nil {
-		patch, err := meta_util.CreateJSONPatch(req.Object.Raw, perconaMod)
+	} else if perconaxtradbMod != nil {
+		patch, err := meta_util.CreateJSONPatch(req.Object.Raw, perconaxtradbMod)
 		if err != nil {
 			return hookapi.StatusInternalServerError(err)
 		}
@@ -100,28 +100,28 @@ func (a *PerconaMutator) Admit(req *admission.AdmissionRequest) *admission.Admis
 }
 
 // setDefaultValues provides the defaulting that is performed in mutating stage of creating/updating a MySQL database
-func setDefaultValues(client kubernetes.Interface, extClient cs.Interface, pxc *api.Percona) (runtime.Object, error) {
-	if pxc.Spec.Version == "" {
+func setDefaultValues(client kubernetes.Interface, extClient cs.Interface, px *api.PerconaXtraDB) (runtime.Object, error) {
+	if px.Spec.Version == "" {
 		return nil, errors.New(`'spec.version' is missing`)
 	}
 
-	pxc.SetDefaults()
+	px.SetDefaults()
 
-	if err := setDefaultsFromDormantDB(extClient, pxc); err != nil {
+	if err := setDefaultsFromDormantDB(extClient, px); err != nil {
 		return nil, err
 	}
 
 	// If monitoring spec is given without port,
 	// set default Listening port
-	setMonitoringPort(pxc)
+	setMonitoringPort(px)
 
-	return pxc, nil
+	return px, nil
 }
 
 // setDefaultsFromDormantDB takes values from Similar Dormant Database
-func setDefaultsFromDormantDB(extClient cs.Interface, pxc *api.Percona) error {
+func setDefaultsFromDormantDB(extClient cs.Interface, px *api.PerconaXtraDB) error {
 	// Check if DormantDatabase exists or not
-	dormantDb, err := extClient.KubedbV1alpha1().DormantDatabases(pxc.Namespace).Get(pxc.Name, metav1.GetOptions{})
+	dormantDb, err := extClient.KubedbV1alpha1().DormantDatabases(px.Namespace).Get(px.Name, metav1.GetOptions{})
 	if err != nil {
 		if !kerr.IsNotFound(err) {
 			return err
@@ -130,44 +130,44 @@ func setDefaultsFromDormantDB(extClient cs.Interface, pxc *api.Percona) error {
 	}
 
 	// Check DatabaseKind
-	if value, _ := meta_util.GetStringValue(dormantDb.Labels, api.LabelDatabaseKind); value != api.ResourceKindPercona {
-		return errors.New(fmt.Sprintf(`invalid Percona: "%v/%v". Exists DormantDatabase "%v/%v" of different Kind`, pxc.Namespace, pxc.Name, dormantDb.Namespace, dormantDb.Name))
+	if value, _ := meta_util.GetStringValue(dormantDb.Labels, api.LabelDatabaseKind); value != api.ResourceKindPerconaXtraDB {
+		return errors.New(fmt.Sprintf(`invalid PerconaXtraDB: "%v/%v". Exists DormantDatabase "%v/%v" of different Kind`, px.Namespace, px.Name, dormantDb.Namespace, dormantDb.Name))
 	}
 
 	// Check Origin Spec
-	ddbOriginSpec := dormantDb.Spec.Origin.Spec.Percona
+	ddbOriginSpec := dormantDb.Spec.Origin.Spec.PerconaXtraDB
 	ddbOriginSpec.SetDefaults()
 
 	// If DatabaseSecret of new object is not given,
 	// Take dormantDatabaseSecretName
-	if pxc.Spec.DatabaseSecret == nil {
-		pxc.Spec.DatabaseSecret = ddbOriginSpec.DatabaseSecret
+	if px.Spec.DatabaseSecret == nil {
+		px.Spec.DatabaseSecret = ddbOriginSpec.DatabaseSecret
 	}
 
 	// If Monitoring Spec of new object is not given,
 	// Take Monitoring Settings from Dormant
-	if pxc.Spec.Monitor == nil {
-		pxc.Spec.Monitor = ddbOriginSpec.Monitor
+	if px.Spec.Monitor == nil {
+		px.Spec.Monitor = ddbOriginSpec.Monitor
 	} else {
-		ddbOriginSpec.Monitor = pxc.Spec.Monitor
+		ddbOriginSpec.Monitor = px.Spec.Monitor
 	}
 
 	// Skip checking UpdateStrategy
-	ddbOriginSpec.UpdateStrategy = pxc.Spec.UpdateStrategy
+	ddbOriginSpec.UpdateStrategy = px.Spec.UpdateStrategy
 
 	// Skip checking TerminationPolicy
-	ddbOriginSpec.TerminationPolicy = pxc.Spec.TerminationPolicy
+	ddbOriginSpec.TerminationPolicy = px.Spec.TerminationPolicy
 
-	if !meta_util.Equal(ddbOriginSpec, &pxc.Spec) {
-		diff := meta_util.Diff(ddbOriginSpec, &pxc.Spec)
-		log.Errorf("percona spec mismatches with OriginSpec in DormantDatabases. Diff: %v", diff)
-		return errors.New(fmt.Sprintf("percona spec mismatches with OriginSpec in DormantDatabases. Diff: %v", diff))
+	if !meta_util.Equal(ddbOriginSpec, &px.Spec) {
+		diff := meta_util.Diff(ddbOriginSpec, &px.Spec)
+		log.Errorf("perconaxtradb spec mismatches with OriginSpec in DormantDatabases. Diff: %v", diff)
+		return errors.New(fmt.Sprintf("perconaxtradb spec mismatches with OriginSpec in DormantDatabases. Diff: %v", diff))
 	}
 
-	if _, err := meta_util.GetString(pxc.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
-		pxc.Spec.Init != nil &&
-		(pxc.Spec.Init.SnapshotSource != nil || pxc.Spec.Init.StashRestoreSession != nil) {
-		pxc.Annotations = core_util.UpsertMap(pxc.Annotations, map[string]string{
+	if _, err := meta_util.GetString(px.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
+		px.Spec.Init != nil &&
+		(px.Spec.Init.SnapshotSource != nil || px.Spec.Init.StashRestoreSession != nil) {
+		px.Annotations = core_util.UpsertMap(px.Annotations, map[string]string{
 			api.AnnotationInitialized: "",
 		})
 	}
@@ -179,14 +179,14 @@ func setDefaultsFromDormantDB(extClient cs.Interface, pxc *api.Percona) error {
 
 // Assign Default Monitoring Port if MonitoringSpec Exists
 // and the AgentVendor is Prometheus.
-func setMonitoringPort(pxc *api.Percona) {
-	if pxc.Spec.Monitor != nil &&
-		pxc.GetMonitoringVendor() == mona.VendorPrometheus {
-		if pxc.Spec.Monitor.Prometheus == nil {
-			pxc.Spec.Monitor.Prometheus = &mona.PrometheusSpec{}
+func setMonitoringPort(px *api.PerconaXtraDB) {
+	if px.Spec.Monitor != nil &&
+		px.GetMonitoringVendor() == mona.VendorPrometheus {
+		if px.Spec.Monitor.Prometheus == nil {
+			px.Spec.Monitor.Prometheus = &mona.PrometheusSpec{}
 		}
-		if pxc.Spec.Monitor.Prometheus.Port == 0 {
-			pxc.Spec.Monitor.Prometheus.Port = api.PrometheusExporterPortNumber
+		if px.Spec.Monitor.Prometheus.Port == 0 {
+			px.Spec.Monitor.Prometheus.Port = api.PrometheusExporterPortNumber
 		}
 	}
 }

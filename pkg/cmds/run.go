@@ -11,17 +11,17 @@ import (
 )
 
 func NewCmdRun(version string, out, errOut io.Writer, stopCh <-chan struct{}) *cobra.Command {
-	o := server.NewPerconaServerOptions(out, errOut)
+	o := server.NewPerconaXtraDBServerOptions(out, errOut)
 
 	cmd := &cobra.Command{
 		Use:               "run",
-		Short:             "Launch Percona server",
+		Short:             "Launch PerconaXtraDB server",
 		DisableAutoGenTag: true,
 		PreRun: func(c *cobra.Command, args []string) {
 			cli.SendPeriodicAnalytics(c, version)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			log.Infoln("Starting percona-server...")
+			log.Infoln("Starting perconaxtradb-server...")
 
 			if err := o.Complete(); err != nil {
 				return err

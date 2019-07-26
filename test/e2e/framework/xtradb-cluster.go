@@ -10,13 +10,13 @@ import (
 )
 
 func (f *Framework) EventuallyCheckCluster(
-	perconaMeta metav1.ObjectMeta, proxysql bool,
+	pxMeta metav1.ObjectMeta, proxysql bool,
 	dbName string, podIndex int,
 	clusterStats map[string]string) GomegaAsyncAssertion {
 
 	return Eventually(
 		func() bool {
-			tunnel, en, err := f.GetEngine(perconaMeta, proxysql, dbName, podIndex)
+			tunnel, en, err := f.GetEngine(pxMeta, proxysql, dbName, podIndex)
 			if err != nil {
 				return false
 			}

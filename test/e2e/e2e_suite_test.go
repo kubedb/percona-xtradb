@@ -21,8 +21,8 @@ import (
 	appcat_cs "kmodules.xyz/custom-resources/client/clientset/versioned/typed/appcatalog/v1alpha1"
 	cs "kubedb.dev/apimachinery/client/clientset/versioned"
 	"kubedb.dev/apimachinery/client/clientset/versioned/scheme"
-	"kubedb.dev/percona/pkg/controller"
-	"kubedb.dev/percona/test/e2e/framework"
+	"kubedb.dev/percona-xtradb/pkg/controller"
+	"kubedb.dev/percona-xtradb/test/e2e/framework"
 )
 
 var (
@@ -33,7 +33,7 @@ func init() {
 	scheme.AddToScheme(clientSetScheme.Scheme)
 
 	flag.StringVar(&storageClass, "storageclass", storageClass, "Kubernetes StorageClass name")
-	flag.StringVar(&framework.DBVersion, "db-version", framework.DBVersion, "Percona version")
+	flag.StringVar(&framework.DBVersion, "db-version", framework.DBVersion, "PerconaXtraDB version")
 	flag.StringVar(&framework.DockerRegistry, "docker-registry", framework.DockerRegistry, "User provided docker repository")
 	flag.StringVar(&framework.ExporterTag, "exporter-tag", framework.ExporterTag, "Tag of official exporter image")
 	flag.BoolVar(&framework.SelfHostedOperator, "selfhosted-operator", framework.SelfHostedOperator, "Enable this for provided controller")
@@ -104,8 +104,8 @@ var _ = AfterSuite(func() {
 		By("Delete Admission Controller Configs")
 		root.CleanAdmissionConfigs()
 	}
-	By("Delete left over Percona objects")
-	root.CleanPercona()
+	By("Delete left over PerconaXtraDB objects")
+	root.CleanPerconaXtraDB()
 	By("Delete left over Dormant Database objects")
 	root.CleanDormantDatabase()
 	By("Delete left over Snapshot objects")

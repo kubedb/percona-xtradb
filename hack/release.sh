@@ -10,8 +10,8 @@ pushd $REPO_ROOT
 
 rm -rf dist
 
-./hack/docker/percona-operator/make.sh
-./hack/docker/percona-operator/make.sh release
+./hack/docker/perconaxtradb-operator/make.sh
+./hack/docker/perconaxtradb-operator/make.sh release
 
 rm dist/.tag
 

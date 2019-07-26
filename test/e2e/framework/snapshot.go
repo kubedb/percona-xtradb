@@ -24,7 +24,7 @@ func (f *Invocation) Snapshot() *api.Snapshot {
 			Namespace: f.namespace,
 			Labels: map[string]string{
 				"app":                 f.app,
-				api.LabelDatabaseKind: api.ResourceKindPercona,
+				api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
 			},
 		},
 	}
@@ -87,7 +87,7 @@ func (f *Framework) EventuallySnapshotDataFound(snapshot *api.Snapshot) GomegaAs
 
 func (f *Framework) GetSnapshotList(meta metav1.ObjectMeta) (*api.SnapshotList, error) {
 	labelMap := map[string]string{
-		api.LabelDatabaseKind: api.ResourceKindPercona,
+		api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
 		api.LabelDatabaseName: meta.Name,
 	}
 	return f.extClient.KubedbV1alpha1().Snapshots(meta.Namespace).List(metav1.ListOptions{
@@ -110,7 +110,7 @@ func (f *Framework) EventuallySnapshotCount(meta metav1.ObjectMeta) GomegaAsyncA
 
 func (f *Framework) EventuallyMultipleSnapshotFinishedProcessing(meta metav1.ObjectMeta) GomegaAsyncAssertion {
 	labelMap := map[string]string{
-		api.LabelDatabaseKind: api.ResourceKindPercona,
+		api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
 		api.LabelDatabaseName: meta.Name,
 	}
 	return Eventually(

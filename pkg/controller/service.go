@@ -25,7 +25,7 @@ var defaultDBPort = core.ServicePort{
 	TargetPort: intstr.FromString("db"),
 }
 
-func (c *Controller) ensureService(pxc *api.Percona) (kutil.VerbType, error) {
+func (c *Controller) ensureService(pxc *api.PerconaXtraDB) (kutil.VerbType, error) {
 	// Check if service name exists
 	if err := c.checkService(pxc, pxc.ServiceName()); err != nil {
 		return kutil.VerbUnchanged, err
@@ -47,7 +47,7 @@ func (c *Controller) ensureService(pxc *api.Percona) (kutil.VerbType, error) {
 	return vt, nil
 }
 
-func (c *Controller) checkService(pxc *api.Percona, serviceName string) error {
+func (c *Controller) checkService(pxc *api.PerconaXtraDB, serviceName string) error {
 	service, err := c.Client.CoreV1().Services(pxc.Namespace).Get(serviceName, metav1.GetOptions{})
 	if err != nil {
 		if kerr.IsNotFound(err) {
@@ -56,7 +56,7 @@ func (c *Controller) checkService(pxc *api.Percona, serviceName string) error {
 		return err
 	}
 
-	if service.Labels[api.LabelDatabaseKind] != api.ResourceKindPercona ||
+	if service.Labels[api.LabelDatabaseKind] != api.ResourceKindPerconaXtraDB ||
 		service.Labels[api.LabelDatabaseName] != pxc.Name {
 		return fmt.Errorf(`intended service "%v/%v" already exists`, pxc.Namespace, serviceName)
 	}
@@ -64,7 +64,7 @@ func (c *Controller) checkService(pxc *api.Percona, serviceName string) error {
 	return nil
 }
 
-func (c *Controller) createService(pxc *api.Percona) (kutil.VerbType, error) {
+func (c *Controller) createService(pxc *api.PerconaXtraDB) (kutil.VerbType, error) {
 	meta := metav1.ObjectMeta{
 		Name:      pxc.OffshootName(),
 		Namespace: pxc.Namespace,
@@ -104,7 +104,7 @@ func (c *Controller) createService(pxc *api.Percona) (kutil.VerbType, error) {
 	return ok, err
 }
 
-func (c *Controller) ensureStatsService(pxc *api.Percona) (kutil.VerbType, error) {
+func (c *Controller) ensureStatsService(pxc *api.PerconaXtraDB) (kutil.VerbType, error) {
 	// return if monitoring is not prometheus
 	if pxc.GetMonitoringVendor() != mona.VendorPrometheus {
 		log.Infoln("spec.monitor.agent is not coreos-operator or builtin.")
@@ -154,7 +154,7 @@ func (c *Controller) ensureStatsService(pxc *api.Percona) (kutil.VerbType, error
 	return vt, nil
 }
 
-func (c *Controller) createPerconaGoverningService(pxc *api.Percona) (string, error) {
+func (c *Controller) createPerconaXtraDBGoverningService(pxc *api.PerconaXtraDB) (string, error) {
 	ref, rerr := reference.GetReference(clientsetscheme.Scheme, pxc)
 	if rerr != nil {
 		return "", rerr
@@ -194,7 +194,7 @@ func (c *Controller) createPerconaGoverningService(pxc *api.Percona) (string, er
 	return service.Name, nil
 }
 
-func (c *Controller) createProxysqlService(pxc *api.Percona) (string, error) {
+func (c *Controller) createProxysqlService(pxc *api.PerconaXtraDB) (string, error) {
 	ref, rerr := reference.GetReference(clientsetscheme.Scheme, pxc)
 	if rerr != nil {
 		return "", rerr

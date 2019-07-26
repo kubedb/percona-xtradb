@@ -31,37 +31,37 @@ func init() {
 var requestKind = metaV1.GroupVersionKind{
 	Group:   api.SchemeGroupVersion.Group,
 	Version: api.SchemeGroupVersion.Version,
-	Kind:    api.ResourceKindPercona,
+	Kind:    api.ResourceKindPerconaXtraDB,
 }
 
-func TestPerconaValidator_Admit(t *testing.T) {
+func TestPerconaXtraDBValidator_Admit(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.testName, func(t *testing.T) {
-			validator := PerconaValidator{}
+			validator := PerconaXtraDBValidator{}
 
 			validator.initialized = true
 			validator.extClient = extFake.NewSimpleClientset(
-				&catalog.PerconaVersion{
+				&catalog.PerconaXtraDBVersion{
 					ObjectMeta: metaV1.ObjectMeta{
 						Name: "5.7",
 					},
-					Spec: catalog.PerconaVersionSpec{
+					Spec: catalog.PerconaXtraDBVersionSpec{
 						Version: "5.7",
 					},
 				},
-				&catalog.PerconaVersion{
+				&catalog.PerconaXtraDBVersion{
 					ObjectMeta: metaV1.ObjectMeta{
 						Name: "5.6",
 					},
-					Spec: catalog.PerconaVersionSpec{
+					Spec: catalog.PerconaXtraDBVersionSpec{
 						Version: "5.6",
 					},
 				},
-				&catalog.PerconaVersion{
+				&catalog.PerconaXtraDBVersion{
 					ObjectMeta: metaV1.ObjectMeta{
 						Name: "5.7.25",
 					},
-					Spec: catalog.PerconaVersionSpec{
+					Spec: catalog.PerconaXtraDBVersionSpec{
 						Version: "5.7.25",
 					},
 				},
@@ -100,7 +100,7 @@ func TestPerconaValidator_Admit(t *testing.T) {
 			req.OldObject.Raw = oldObjJS
 
 			if c.heatUp {
-				if _, err := validator.extClient.KubedbV1alpha1().Perconas(c.namespace).Create(&c.object); err != nil && !kerr.IsAlreadyExists(err) {
+				if _, err := validator.extClient.KubedbV1alpha1().PerconaXtraDBs(c.namespace).Create(&c.object); err != nil && !kerr.IsAlreadyExists(err) {
 					t.Errorf(err.Error())
 				}
 			}
@@ -132,58 +132,58 @@ var cases = []struct {
 	objectName string
 	namespace  string
 	operation  admission.Operation
-	object     api.Percona
-	oldObject  api.Percona
+	object     api.PerconaXtraDB
+	oldObject  api.PerconaXtraDB
 	heatUp     bool
 	result     bool
 }{
-	{"Create Valid Percona",
+	{"Create Valid PerconaXtraDB",
 		requestKind,
 		"foo",
 		"default",
 		admission.Create,
-		samplePercona(),
-		api.Percona{},
+		samplePerconaXtraDB(),
+		api.PerconaXtraDB{},
 		false,
 		true,
 	},
-	{"Create Percona without single node replicas",
+	{"Create PerconaXtraDB without single node replicas",
 		requestKind,
 		"foo",
 		"default",
 		admission.Create,
-		perconaWithoutSingleReplica(),
-		api.Percona{},
+		perconaxtradbWithoutSingleReplica(),
+		api.PerconaXtraDB{},
 		false,
 		false,
 	},
-	{"Create Invalid Percona",
+	{"Create Invalid perconaxtradb",
 		requestKind,
 		"foo",
 		"default",
 		admission.Create,
-		getAwkwardPercona(),
-		api.Percona{},
+		getAwkwardPerconaXtraDB(),
+		api.PerconaXtraDB{},
 		false,
 		false,
 	},
-	{"Edit Percona Spec.DatabaseSecret with Existing Secret",
+	{"Edit PerconaXtraDB Spec.DatabaseSecret with Existing Secret",
 		requestKind,
 		"foo",
 		"default",
 		admission.Update,
-		editExistingSecret(samplePercona()),
-		samplePercona(),
+		editExistingSecret(samplePerconaXtraDB()),
+		samplePerconaXtraDB(),
 		false,
 		true,
 	},
-	{"Edit Percona Spec.DatabaseSecret with non Existing Secret",
+	{"Edit PerconaXtraDB Spec.DatabaseSecret with non Existing Secret",
 		requestKind,
 		"foo",
 		"default",
 		admission.Update,
-		editNonExistingSecret(samplePercona()),
-		samplePercona(),
+		editNonExistingSecret(samplePerconaXtraDB()),
+		samplePerconaXtraDB(),
 		false,
 		true,
 	},
@@ -192,8 +192,8 @@ var cases = []struct {
 		"foo",
 		"default",
 		admission.Update,
-		editStatus(samplePercona()),
-		samplePercona(),
+		editStatus(samplePerconaXtraDB()),
+		samplePerconaXtraDB(),
 		false,
 		true,
 	},
@@ -202,8 +202,8 @@ var cases = []struct {
 		"foo",
 		"default",
 		admission.Update,
-		editSpecMonitor(samplePercona()),
-		samplePercona(),
+		editSpecMonitor(samplePerconaXtraDB()),
+		samplePerconaXtraDB(),
 		false,
 		true,
 	},
@@ -212,8 +212,8 @@ var cases = []struct {
 		"foo",
 		"default",
 		admission.Update,
-		editSpecInvalidMonitor(samplePercona()),
-		samplePercona(),
+		editSpecInvalidMonitor(samplePerconaXtraDB()),
+		samplePerconaXtraDB(),
 		false,
 		false,
 	},
@@ -222,119 +222,119 @@ var cases = []struct {
 		"foo",
 		"default",
 		admission.Update,
-		pauseDatabase(samplePercona()),
-		samplePercona(),
+		pauseDatabase(samplePerconaXtraDB()),
+		samplePerconaXtraDB(),
 		false,
 		true,
 	},
-	{"Delete Percona when Spec.TerminationPolicy=DoNotTerminate",
+	{"Delete PerconaXtraDB when Spec.TerminationPolicy=DoNotTerminate",
 		requestKind,
 		"foo",
 		"default",
 		admission.Delete,
-		samplePercona(),
-		api.Percona{},
+		samplePerconaXtraDB(),
+		api.PerconaXtraDB{},
 		true,
 		false,
 	},
-	{"Delete Percona when Spec.TerminationPolicy=Pause",
+	{"Delete PerconaXtraDB when Spec.TerminationPolicy=Pause",
 		requestKind,
 		"foo",
 		"default",
 		admission.Delete,
-		pauseDatabase(samplePercona()),
-		api.Percona{},
+		pauseDatabase(samplePerconaXtraDB()),
+		api.PerconaXtraDB{},
 		true,
 		true,
 	},
-	{"Delete Non Existing Percona",
+	{"Delete Non Existing PerconaXtraDB",
 		requestKind,
 		"foo",
 		"default",
 		admission.Delete,
-		api.Percona{},
-		api.Percona{},
+		api.PerconaXtraDB{},
+		api.PerconaXtraDB{},
 		false,
 		true,
 	},
 
 	// XtraDB Cluster
-	{"Create a valid Percona XtraDB Cluster",
+	{"Create a valid PerconaXtraDB Cluster",
 		requestKind,
 		"foo",
 		"default",
 		admission.Create,
 		sampleXtraDBCluster(),
-		api.Percona{},
+		api.PerconaXtraDB{},
 		false,
 		true,
 	},
-	{"Create Percona XtraDB Cluster with insufficient node replicas",
+	{"Create PerconaXtraDB Cluster with insufficient node replicas",
 		requestKind,
 		"foo",
 		"default",
 		admission.Create,
 		insufficientNodeReplicas(),
-		api.Percona{},
+		api.PerconaXtraDB{},
 		false,
 		false,
 	},
-	{"Create Percona XtraDB Cluster with empty cluster name",
+	{"Create PerconaXtraDB Cluster with empty cluster name",
 		requestKind,
 		"foo",
 		"default",
 		admission.Create,
 		emptyClusterName(),
-		api.Percona{},
+		api.PerconaXtraDB{},
 		false,
 		false,
 	},
-	{"Create Percona XtraDB Cluster with larger cluster name than recommended",
+	{"Create PerconaXtraDB Cluster with larger cluster name than recommended",
 		requestKind,
 		"foo",
 		"default",
 		admission.Create,
 		largerClusterNameThanRecommended(),
-		api.Percona{},
+		api.PerconaXtraDB{},
 		false,
 		false,
 	},
-	{"Create Percona XtraDB Cluster without single proxysql replicas",
+	{"Create PerconaXtraDB Cluster without single proxysql replicas",
 		requestKind,
 		"foo",
 		"default",
 		admission.Create,
 		withoutSingleProxysqlReplicas(),
-		api.Percona{},
+		api.PerconaXtraDB{},
 		false,
 		false,
 	},
-	{"Create Percona XtraDB Cluster with 0 proxysql replicas",
+	{"Create PerconaXtraDB Cluster with 0 proxysql replicas",
 		requestKind,
 		"foo",
 		"default",
 		admission.Create,
 		withZeroProxysqlReplicas(),
-		api.Percona{},
+		api.PerconaXtraDB{},
 		false,
 		false,
 	},
 }
 
-func samplePercona() api.Percona {
-	return api.Percona{
+func samplePerconaXtraDB() api.PerconaXtraDB {
+	return api.PerconaXtraDB{
 		TypeMeta: metaV1.TypeMeta{
-			Kind:       api.ResourceKindPercona,
+			Kind:       api.ResourceKindPerconaXtraDB,
 			APIVersion: api.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metaV1.ObjectMeta{
 			Name:      "foo",
 			Namespace: "default",
 			Labels: map[string]string{
-				api.LabelDatabaseKind: api.ResourceKindPercona,
+				api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
 			},
 		},
-		Spec: api.PerconaSpec{
+		Spec: api.PerconaXtraDBSpec{
 			Version:     "5.7",
 			Replicas:    types.Int32P(1),
 			StorageType: api.StorageTypeDurable,
@@ -364,40 +364,40 @@ func samplePercona() api.Percona {
 	}
 }
 
-func getAwkwardPercona() api.Percona {
-	pxc := samplePercona()
-	pxc.Spec.Version = "3.0"
-	return pxc
+func getAwkwardPerconaXtraDB() api.PerconaXtraDB {
+	px := samplePerconaXtraDB()
+	px.Spec.Version = "3.0"
+	return px
 }
 
-func perconaWithoutSingleReplica() api.Percona {
-	pxc := samplePercona()
-	pxc.Spec.Replicas = types.Int32P(3)
-	return pxc
+func perconaxtradbWithoutSingleReplica() api.PerconaXtraDB {
+	px := samplePerconaXtraDB()
+	px.Spec.Replicas = types.Int32P(3)
+	return px
 }
 
-func editExistingSecret(old api.Percona) api.Percona {
+func editExistingSecret(old api.PerconaXtraDB) api.PerconaXtraDB {
 	old.Spec.DatabaseSecret = &core.SecretVolumeSource{
 		SecretName: "foo-auth",
 	}
 	return old
 }
 
-func editNonExistingSecret(old api.Percona) api.Percona {
+func editNonExistingSecret(old api.PerconaXtraDB) api.PerconaXtraDB {
 	old.Spec.DatabaseSecret = &core.SecretVolumeSource{
 		SecretName: "foo-auth-fused",
 	}
 	return old
 }
 
-func editStatus(old api.Percona) api.Percona {
-	old.Status = api.PerconaStatus{
+func editStatus(old api.PerconaXtraDB) api.PerconaXtraDB {
+	old.Status = api.PerconaXtraDBStatus{
 		Phase: api.DatabasePhaseCreating,
 	}
 	return old
 }
 
-func editSpecMonitor(old api.Percona) api.Percona {
+func editSpecMonitor(old api.PerconaXtraDB) api.PerconaXtraDB {
 	old.Spec.Monitor = &mona.AgentSpec{
 		Agent: mona.AgentPrometheusBuiltin,
 		Prometheus: &mona.PrometheusSpec{
@@ -408,62 +408,62 @@ func editSpecMonitor(old api.Percona) api.Percona {
 }
 
 // should be failed because more fields required for COreOS Monitoring
-func editSpecInvalidMonitor(old api.Percona) api.Percona {
+func editSpecInvalidMonitor(old api.PerconaXtraDB) api.PerconaXtraDB {
 	old.Spec.Monitor = &mona.AgentSpec{
 		Agent: mona.AgentCoreOSPrometheus,
 	}
 	return old
 }
 
-func pauseDatabase(old api.Percona) api.Percona {
+func pauseDatabase(old api.PerconaXtraDB) api.PerconaXtraDB {
 	old.Spec.TerminationPolicy = api.TerminationPolicyPause
 	return old
 }
 
-func sampleXtraDBCluster() api.Percona {
-	percona := samplePercona()
-	percona.Spec.Replicas = types.Int32P(3)
-	percona.Spec.PXC = &api.PXCSpec{
+func sampleXtraDBCluster() api.PerconaXtraDB {
+	perconaxtradb := samplePerconaXtraDB()
+	perconaxtradb.Spec.Replicas = types.Int32P(3)
+	perconaxtradb.Spec.PXC = &api.PXCSpec{
 		ClusterName: "foo-xtradb-cluster",
 		Proxysql: api.ProxysqlSpec{
 			Replicas: types.Int32P(1),
 		},
 	}
 
-	return percona
+	return perconaxtradb
 }
 
-func insufficientNodeReplicas() api.Percona {
-	percona := sampleXtraDBCluster()
-	percona.Spec.Replicas = types.Int32P(1)
+func insufficientNodeReplicas() api.PerconaXtraDB {
+	perconaxtradb := sampleXtraDBCluster()
+	perconaxtradb.Spec.Replicas = types.Int32P(1)
 
-	return percona
+	return perconaxtradb
 }
 
-func emptyClusterName() api.Percona {
-	percona := sampleXtraDBCluster()
-	percona.Spec.PXC.ClusterName = ""
+func emptyClusterName() api.PerconaXtraDB {
+	perconaxtradb := sampleXtraDBCluster()
+	perconaxtradb.Spec.PXC.ClusterName = ""
 
-	return percona
+	return perconaxtradb
 }
 
-func largerClusterNameThanRecommended() api.Percona {
-	percona := sampleXtraDBCluster()
-	percona.Spec.PXC.ClusterName = "aaaaa-aaaaa-aaaaa-aaaaa-aaaaa-aaaaa"
+func largerClusterNameThanRecommended() api.PerconaXtraDB {
+	perconaxtradb := sampleXtraDBCluster()
+	perconaxtradb.Spec.PXC.ClusterName = "aaaaa-aaaaa-aaaaa-aaaaa-aaaaa-aaaaa"
 
-	return percona
+	return perconaxtradb
 }
 
-func withoutSingleProxysqlReplicas() api.Percona {
-	percona := sampleXtraDBCluster()
-	percona.Spec.PXC.Proxysql.Replicas = types.Int32P(3)
+func withoutSingleProxysqlReplicas() api.PerconaXtraDB {
+	perconaxtradb := sampleXtraDBCluster()
+	perconaxtradb.Spec.PXC.Proxysql.Replicas = types.Int32P(3)
 
-	return percona
+	return perconaxtradb
 }
 
-func withZeroProxysqlReplicas() api.Percona {
-	percona := sampleXtraDBCluster()
-	percona.Spec.PXC.Proxysql.Replicas = types.Int32P(0)
+func withZeroProxysqlReplicas() api.PerconaXtraDB {
+	perconaxtradb := sampleXtraDBCluster()
+	perconaxtradb.Spec.PXC.Proxysql.Replicas = types.Int32P(0)
 
-	return percona
+	return perconaxtradb
 }

@@ -23,7 +23,7 @@ import (
 	"kubedb.dev/apimachinery/pkg/admission/dormantdatabase"
 	"kubedb.dev/apimachinery/pkg/admission/namespace"
 	"kubedb.dev/apimachinery/pkg/eventer"
-	pxcAdmsn "kubedb.dev/percona-xtradb/pkg/admission"
+	pxAdmsn "kubedb.dev/percona-xtradb/pkg/admission"
 	"kubedb.dev/percona-xtradb/pkg/controller"
 )
 
@@ -54,7 +54,7 @@ func init() {
 	)
 }
 
-type PerconaServerConfig struct {
+type PerconaXtraDBServerConfig struct {
 	GenericConfig  *genericapiserver.RecommendedConfig
 	ExtraConfig    ExtraConfig
 	OperatorConfig *controller.OperatorConfig
@@ -64,13 +64,13 @@ type ExtraConfig struct {
 	AdmissionHooks []hooks.AdmissionHook
 }
 
-// PerconaServer contains state for a Kubernetes cluster master/api server.
-type PerconaServer struct {
+// PerconaXtraDBServer contains state for a Kubernetes cluster master/api server.
+type PerconaXtraDBServer struct {
 	GenericAPIServer *genericapiserver.GenericAPIServer
 	Operator         *controller.Controller
 }
 
-func (op *PerconaServer) Run(stopCh <-chan struct{}) error {
+func (op *PerconaXtraDBServer) Run(stopCh <-chan struct{}) error {
 	go op.Operator.Run(stopCh)
 	return op.GenericAPIServer.PrepareRun().Run(stopCh)
 }
@@ -87,7 +87,7 @@ type CompletedConfig struct {
 }
 
 // Complete fills in any fields not set that are required to have valid data. It's mutating the receiver.
-func (c *PerconaServerConfig) Complete() CompletedConfig {
+func (c *PerconaXtraDBServerConfig) Complete() CompletedConfig {
 	completedCfg := completedConfig{
 		c.GenericConfig.Complete(),
 		c.ExtraConfig,
@@ -102,8 +102,8 @@ func (c *PerconaServerConfig) Complete() CompletedConfig {
 	return CompletedConfig{&completedCfg}
 }
 
-// New returns a new instance of PerconaServer from the given config.
-func (c completedConfig) New() (*PerconaServer, error) {
+// New returns a new instance of PerconaXtraDBServer from the given config.
+func (c completedConfig) New() (*PerconaXtraDBServer, error) {
 	genericServer, err := c.GenericConfig.New("kubedb-server", genericapiserver.NewEmptyDelegate()) // completion is done in Complete, no need for a second time
 	if err != nil {
 		return nil, err
@@ -111,16 +111,16 @@ func (c completedConfig) New() (*PerconaServer, error) {
 
 	if c.OperatorConfig.EnableMutatingWebhook {
 		c.ExtraConfig.AdmissionHooks = []hooks.AdmissionHook{
-			&pxcAdmsn.PerconaMutator{},
+			&pxAdmsn.PerconaXtraDBMutator{},
 		}
 	}
 	if c.OperatorConfig.EnableValidatingWebhook {
 		c.ExtraConfig.AdmissionHooks = append(c.ExtraConfig.AdmissionHooks,
-			&pxcAdmsn.PerconaValidator{},
+			&pxAdmsn.PerconaXtraDBValidator{},
 			//&snapshot.SnapshotValidator{},
 			&dormantdatabase.DormantDatabaseValidator{},
 			&namespace.NamespaceValidator{
-				Resources: []string{api.ResourcePluralPercona},
+				Resources: []string{api.ResourcePluralPerconaXtraDB},
 			},
 		)
 	}
@@ -130,7 +130,7 @@ func (c completedConfig) New() (*PerconaServer, error) {
 		return nil, err
 	}
 
-	s := &PerconaServer{
+	s := &PerconaXtraDBServer{
 		GenericAPIServer: genericServer,
 		Operator:         ctrl,
 	}
@@ -188,16 +188,16 @@ func (c completedConfig) New() (*PerconaServer, error) {
 		s.GenericAPIServer.AddPostStartHookOrDie("validating-webhook-xray",
 			func(context genericapiserver.PostStartHookContext) error {
 				go func() {
-					xray := reg_util.NewCreateValidatingWebhookXray(c.OperatorConfig.ClientConfig, apiserviceName, &api.Percona{
+					xray := reg_util.NewCreateValidatingWebhookXray(c.OperatorConfig.ClientConfig, apiserviceName, &api.PerconaXtraDB{
 						TypeMeta: metav1.TypeMeta{
 							APIVersion: api.SchemeGroupVersion.String(),
-							Kind:       api.ResourceKindPercona,
+							Kind:       api.ResourceKindPerconaXtraDB,
 						},
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      "test-percona-for-webhook-xray",
+							Name:      "test-perconaxtradb-for-webhook-xray",
 							Namespace: "default",
 						},
-						Spec: api.PerconaSpec{
+						Spec: api.PerconaXtraDBSpec{
 							StorageType: api.StorageType("Invalid"),
 						},
 					}, context.StopCh)
@@ -210,7 +210,7 @@ func (c completedConfig) New() (*PerconaServer, error) {
 						if e2 == nil {
 							eventer.CreateEventWithLog(
 								kubernetes.NewForConfigOrDie(c.OperatorConfig.ClientConfig),
-								"percona-operator",
+								"perconaxtradb-operator",
 								w,
 								core.EventTypeWarning,
 								eventer.EventReasonAdmissionWebhookNotActivated,

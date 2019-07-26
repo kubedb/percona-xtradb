@@ -15,60 +15,60 @@ import (
 const (
 	mysqlUser = "root"
 
-	KeyPerconaUser     = "username"
-	KeyPerconaPassword = "password"
+	KeyPerconaXtraDBUser     = "username"
+	KeyPerconaXtraDBPassword = "password"
 )
 
-func (c *Controller) ensureDatabaseSecret(pxc *api.Percona) error {
-	if pxc.Spec.DatabaseSecret == nil {
-		secretVolumeSource, err := c.createDatabaseSecret(pxc)
+func (c *Controller) ensureDatabaseSecret(px *api.PerconaXtraDB) error {
+	if px.Spec.DatabaseSecret == nil {
+		secretVolumeSource, err := c.createDatabaseSecret(px)
 		if err != nil {
 			return err
 		}
 
-		per, _, err := util.PatchPercona(c.ExtClient.KubedbV1alpha1(), pxc, func(in *api.Percona) *api.Percona {
+		per, _, err := util.PatchPerconaXtraDB(c.ExtClient.KubedbV1alpha1(), px, func(in *api.PerconaXtraDB) *api.PerconaXtraDB {
 			in.Spec.DatabaseSecret = secretVolumeSource
 			return in
 		})
 		if err != nil {
 			return err
 		}
-		pxc.Spec.DatabaseSecret = per.Spec.DatabaseSecret
+		px.Spec.DatabaseSecret = per.Spec.DatabaseSecret
 		return nil
 	}
-	return c.upgradeDatabaseSecret(pxc)
+	return c.upgradeDatabaseSecret(px)
 }
 
-func (c *Controller) createDatabaseSecret(pxc *api.Percona) (*core.SecretVolumeSource, error) {
-	authSecretName := pxc.Name + "-auth"
+func (c *Controller) createDatabaseSecret(px *api.PerconaXtraDB) (*core.SecretVolumeSource, error) {
+	authSecretName := px.Name + "-auth"
 
-	sc, err := c.checkSecret(authSecretName, pxc)
+	sc, err := c.checkSecret(authSecretName, px)
 	if err != nil {
 		return nil, err
 	}
 	if sc == nil {
 		randPassword := ""
 
-		// if the password starts with "-", it will cause error in bash scripts (in percona-tools)
+		// if the password starts with "-", it will cause error in bash scripts (in perconaxtradb-tools)
 		for randPassword = rand.GeneratePassword(); randPassword[0] == '-'; {
 		}
 
 		secret := &core.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   authSecretName,
-				Labels: pxc.OffshootSelectors(),
+				Labels: px.OffshootSelectors(),
 			},
 			Type: core.SecretTypeOpaque,
 			StringData: map[string]string{
-				KeyPerconaUser:     mysqlUser,
-				KeyPerconaPassword: randPassword,
+				KeyPerconaXtraDBUser:     mysqlUser,
+				KeyPerconaXtraDBPassword: randPassword,
 			},
 		}
 
-		if pxc.Spec.PXC != nil {
+		if px.Spec.PXC != nil {
 			randProxysqlPassword := ""
 
-			// if the password starts with "-", it will cause error in bash scripts (in percona-tools)
+			// if the password starts with "-", it will cause error in bash scripts (in perconaxtradb-tools)
 			for randProxysqlPassword = rand.GeneratePassword(); randProxysqlPassword[0] == '-'; {
 			}
 
@@ -76,7 +76,7 @@ func (c *Controller) createDatabaseSecret(pxc *api.Percona) (*core.SecretVolumeS
 			secret.StringData[api.ProxysqlPassword] = randProxysqlPassword
 		}
 
-		if _, err := c.Client.CoreV1().Secrets(pxc.Namespace).Create(secret); err != nil {
+		if _, err := c.Client.CoreV1().Secrets(px.Namespace).Create(secret); err != nil {
 			return nil, err
 		}
 	}
@@ -87,16 +87,16 @@ func (c *Controller) createDatabaseSecret(pxc *api.Percona) (*core.SecretVolumeS
 
 // This is done to fix 0.8.0 -> 0.9.0 upgrade due to
 // https://github.com/kubedb/percona-xtradb/pull/115/files#diff-10ddaf307bbebafda149db10a28b9c24R17 commit
-func (c *Controller) upgradeDatabaseSecret(pxc *api.Percona) error {
+func (c *Controller) upgradeDatabaseSecret(px *api.PerconaXtraDB) error {
 	meta := metav1.ObjectMeta{
-		Name:      pxc.Spec.DatabaseSecret.SecretName,
-		Namespace: pxc.Namespace,
+		Name:      px.Spec.DatabaseSecret.SecretName,
+		Namespace: px.Namespace,
 	}
 
 	_, _, err := core_util.CreateOrPatchSecret(c.Client, meta, func(in *core.Secret) *core.Secret {
-		if _, ok := in.Data[KeyPerconaUser]; !ok {
+		if _, ok := in.Data[KeyPerconaXtraDBUser]; !ok {
 			if val, ok2 := in.Data["user"]; ok2 {
-				in.StringData = map[string]string{KeyPerconaUser: string(val)}
+				in.StringData = map[string]string{KeyPerconaXtraDBUser: string(val)}
 			}
 		}
 		return in
@@ -104,8 +104,8 @@ func (c *Controller) upgradeDatabaseSecret(pxc *api.Percona) error {
 	return err
 }
 
-func (c *Controller) checkSecret(secretName string, pxc *api.Percona) (*core.Secret, error) {
-	secret, err := c.Client.CoreV1().Secrets(pxc.Namespace).Get(secretName, metav1.GetOptions{})
+func (c *Controller) checkSecret(secretName string, px *api.PerconaXtraDB) (*core.Secret, error) {
+	secret, err := c.Client.CoreV1().Secrets(px.Namespace).Get(secretName, metav1.GetOptions{})
 	if err != nil {
 		if kerr.IsNotFound(err) {
 			return nil, nil
@@ -113,9 +113,9 @@ func (c *Controller) checkSecret(secretName string, pxc *api.Percona) (*core.Sec
 		return nil, err
 	}
 
-	if secret.Labels[api.LabelDatabaseKind] != api.ResourceKindPercona ||
-		secret.Labels[api.LabelDatabaseName] != pxc.Name {
-		return nil, fmt.Errorf(`intended secret "%v/%v" already exists`, pxc.Namespace, secretName)
+	if secret.Labels[api.LabelDatabaseKind] != api.ResourceKindPerconaXtraDB ||
+		secret.Labels[api.LabelDatabaseName] != px.Name {
+		return nil, fmt.Errorf(`intended secret "%v/%v" already exists`, px.Namespace, secretName)
 	}
 	return secret, nil
 }

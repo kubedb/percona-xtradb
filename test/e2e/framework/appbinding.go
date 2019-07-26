@@ -27,21 +27,21 @@ func (f *Framework) EventuallyAppBinding(meta metav1.ObjectMeta) GomegaAsyncAsse
 }
 
 func (f *Framework) CheckAppBindingSpec(meta metav1.ObjectMeta) error {
-	percona, err := f.GetPercona(meta)
+	px, err := f.GetPerconaXtraDB(meta)
 	Expect(err).NotTo(HaveOccurred())
 
-	appBinding, err := f.appCatalogClient.AppBindings(percona.Namespace).Get(percona.Name, metav1.GetOptions{})
+	appBinding, err := f.appCatalogClient.AppBindings(px.Namespace).Get(px.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
 	if appBinding.Spec.ClientConfig.Service == nil ||
-		appBinding.Spec.ClientConfig.Service.Name != percona.ServiceName() ||
+		appBinding.Spec.ClientConfig.Service.Name != px.ServiceName() ||
 		appBinding.Spec.ClientConfig.Service.Port != 3306 {
 		return fmt.Errorf("appbinding %v/%v contains invalid data", appBinding.Namespace, appBinding.Name)
 	}
 	if appBinding.Spec.Secret == nil ||
-		appBinding.Spec.Secret.Name != percona.Spec.DatabaseSecret.SecretName {
+		appBinding.Spec.Secret.Name != px.Spec.DatabaseSecret.SecretName {
 		return fmt.Errorf("appbinding %v/%v contains invalid data", appBinding.Namespace, appBinding.Name)
 	}
 	return nil

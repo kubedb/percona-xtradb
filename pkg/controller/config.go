@@ -13,6 +13,7 @@ import (
 	cs "kubedb.dev/apimachinery/client/clientset/versioned"
 	amc "kubedb.dev/apimachinery/pkg/controller"
 	"kubedb.dev/apimachinery/pkg/controller/dormantdatabase"
+	"kubedb.dev/apimachinery/pkg/controller/restoresession"
 	snapc "kubedb.dev/apimachinery/pkg/controller/snapshot"
 	"kubedb.dev/apimachinery/pkg/eventer"
 	scs "stash.appscode.dev/stash/client/clientset/versioned"
@@ -48,7 +49,7 @@ func (c *OperatorConfig) New() (*Controller, error) {
 		return nil, err
 	}
 
-	recorder := eventer.NewEventRecorder(c.KubeClient, "Percona operator")
+	recorder := eventer.NewEventRecorder(c.KubeClient, "PerconaXtraDB operator")
 
 	ctrl := New(
 		c.ClientConfig,

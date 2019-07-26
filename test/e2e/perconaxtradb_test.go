@@ -16,8 +16,8 @@ import (
 	catalog "kubedb.dev/apimachinery/apis/catalog/v1alpha1"
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
-	"kubedb.dev/percona/test/e2e/framework"
-	"kubedb.dev/percona/test/e2e/matcher"
+	"kubedb.dev/percona-xtradb/test/e2e/framework"
+	"kubedb.dev/percona-xtradb/test/e2e/matcher"
 )
 
 const (
@@ -31,22 +31,22 @@ const (
 
 var _ = Describe("Percona", func() {
 	var (
-		err              error
-		f                *framework.Invocation
-		percona          *api.Percona
-		garbagePercona   *api.PerconaList
-		perconaVersion   *catalog.PerconaVersion
-		snapshot         *api.Snapshot
-		secret           *core.Secret
-		skipMessage      string
-		skipDataChecking bool
-		dbName           string
+		err                  error
+		f                    *framework.Invocation
+		perconaxtradb        *api.Percona
+		garbagePerconaXtraDB *api.PerconaList
+		perconaVersion       *catalog.PerconaVersion
+		snapshot             *api.Snapshot
+		secret               *core.Secret
+		skipMessage          string
+		skipDataChecking     bool
+		dbName               string
 	)
 
 	BeforeEach(func() {
 		f = root.Invoke()
-		percona = f.Percona()
-		garbagePercona = new(api.PerconaList)
+		perconaxtradb = f.PerconaXtraDB()
+		garbagePerconaXtraDB = new(api.PerconaList)
 		perconaVersion = f.PerconaVersion()
 		snapshot = f.Snapshot()
 		skipMessage = ""
@@ -59,22 +59,22 @@ var _ = Describe("Percona", func() {
 		err = f.CreatePerconaVersion(perconaVersion)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Create Percona: " + percona.Name)
-		err = f.CreatePercona(percona)
+		By("Create Percona: " + perconaxtradb.Name)
+		err = f.CreatePerconaXtraDB(perconaxtradb)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Wait for Running percona")
-		f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
+		f.EventuallyPerconaRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 		By("Wait for AppBinding to create")
-		f.EventuallyAppBinding(percona.ObjectMeta).Should(BeTrue())
+		f.EventuallyAppBinding(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 		By("Check valid AppBinding Specs")
-		err := f.CheckAppBindingSpec(percona.ObjectMeta)
+		err := f.CheckAppBindingSpec(perconaxtradb.ObjectMeta)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for database to be ready")
-		f.EventuallyDatabaseReady(percona.ObjectMeta, false, dbName, 0).Should(BeTrue())
+		f.EventuallyDatabaseReady(perconaxtradb.ObjectMeta, false, dbName, 0).Should(BeTrue())
 	}
 
 	var testGeneralBehaviour = func() {
@@ -85,34 +85,34 @@ var _ = Describe("Percona", func() {
 		createAndWaitForRunning()
 
 		By("Creating Table")
-		f.EventuallyCreateTable(percona.ObjectMeta, false, dbName, 0).Should(BeTrue())
+		f.EventuallyCreateTable(perconaxtradb.ObjectMeta, false, dbName, 0).Should(BeTrue())
 
 		By("Inserting Rows")
-		f.EventuallyInsertRow(percona.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
+		f.EventuallyInsertRow(perconaxtradb.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
 
 		By("Checking Row Count of Table")
-		f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
+		f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
 		By("Delete percona")
-		err = f.DeletePercona(percona.ObjectMeta)
+		err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Wait for percona to be paused")
-		f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
+		By("Wait for perconaxtradb to be paused")
+		f.EventuallyDormantDatabaseStatus(perconaxtradb.ObjectMeta).Should(matcher.HavePaused())
 
-		// Create Percona object again to resume it
-		By("Create Percona: " + percona.Name)
-		err = f.CreatePercona(percona)
+		// Create PerconaXtraDB object again to resume it
+		By("Create Percona: " + perconaxtradb.Name)
+		err = f.CreatePerconaXtraDB(perconaxtradb)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Wait for DormantDatabase to be deleted")
-		f.EventuallyDormantDatabase(percona.ObjectMeta).Should(BeFalse())
+		f.EventuallyDormantDatabase(perconaxtradb.ObjectMeta).Should(BeFalse())
 
 		By("Wait for Running percona")
-		f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
+		f.EventuallyPerconaRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 		By("Checking Row Count of Table")
-		f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
+		f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
 	}
 
@@ -142,13 +142,13 @@ var _ = Describe("Percona", func() {
 		createAndWaitForRunning()
 
 		By("Creating Table")
-		f.EventuallyCreateTable(percona.ObjectMeta, false, dbName, 0).Should(BeTrue())
+		f.EventuallyCreateTable(perconaxtradb.ObjectMeta, false, dbName, 0).Should(BeTrue())
 
 		By("Inserting Row")
-		f.EventuallyInsertRow(percona.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
+		f.EventuallyInsertRow(perconaxtradb.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
 
 		By("Checking Row Count of Table")
-		f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
+		f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
 		By("Create Secret")
 		err := f.CreateSecret(secret)
@@ -168,49 +168,49 @@ var _ = Describe("Percona", func() {
 	}
 
 	var deleteTestResource = func() {
-		if percona == nil {
-			log.Infoln("Skipping cleanup. Reason: percona is nil")
+		if perconaxtradb == nil {
+			log.Infoln("Skipping cleanup. Reason: perconaxtradb is nil")
 			return
 		}
 
-		By("Check if percona " + percona.Name + " exists.")
-		pc, err := f.GetPercona(percona.ObjectMeta)
+		By("Check if perconaxtradb " + perconaxtradb.Name + " exists.")
+		pc, err := f.GetPerconaXtraDB(perconaxtradb.ObjectMeta)
 		if err != nil {
 			if kerr.IsNotFound(err) {
-				// Percona was not created. Hence, rest of cleanup is not necessary.
+				// PerconaXtraDB was not created. Hence, rest of cleanup is not necessary.
 				return
 			}
 			Expect(err).NotTo(HaveOccurred())
 		}
 
 		By("Delete percona")
-		err = f.DeletePercona(percona.ObjectMeta)
+		err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 		if err != nil {
 			if kerr.IsNotFound(err) {
-				log.Infoln("Skipping rest of the cleanup. Reason: Percona does not exist.")
+				log.Infoln("Skipping rest of the cleanup. Reason: PerconaXtraDB does not exist.")
 				return
 			}
 			Expect(err).NotTo(HaveOccurred())
 		}
 
 		if pc.Spec.TerminationPolicy == api.TerminationPolicyPause {
-			By("Wait for percona to be paused")
-			f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
+			By("Wait for perconaxtradb to be paused")
+			f.EventuallyDormantDatabaseStatus(perconaxtradb.ObjectMeta).Should(matcher.HavePaused())
 
 			By("WipeOut percona")
-			_, err := f.PatchDormantDatabase(percona.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
+			_, err := f.PatchDormantDatabase(perconaxtradb.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
 				in.Spec.WipeOut = true
 				return in
 			})
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Delete Dormant Database")
-			err = f.DeleteDormantDatabase(percona.ObjectMeta)
+			err = f.DeleteDormantDatabase(perconaxtradb.ObjectMeta)
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-		By("Wait for percona resources to be wipedOut")
-		f.EventuallyWipedOut(percona.ObjectMeta).Should(Succeed())
+		By("Wait for perconaxtradb resources to be wipedOut")
+		f.EventuallyWipedOut(perconaxtradb.ObjectMeta).Should(Succeed())
 	}
 
 	var deleteSnapshot = func() {
@@ -239,9 +239,9 @@ var _ = Describe("Percona", func() {
 		// delete resources for current Percona
 		deleteTestResource()
 
-		// old Percona are in garbagePercona list. delete their resources.
+		// old PerconaXtraDB are in garbagePerconaXtraDB list. delete their resources.
 		for _, pc := range garbagePercona.Items {
-			*percona = pc
+			*perconaxtradb = pc
 			deleteTestResource()
 		}
 
@@ -268,7 +268,7 @@ var _ = Describe("Percona", func() {
 
 			BeforeEach(func() {
 				skipDataChecking = false
-				snapshot.Spec.DatabaseName = percona.Name
+				snapshot.Spec.DatabaseName = perconaxtradb.Name
 			})
 
 			AfterEach(func() {
@@ -378,7 +378,7 @@ var _ = Describe("Percona", func() {
 
 				Context("Delete One Snapshot keeping others", func() {
 					BeforeEach(func() {
-						percona.Spec.Init = &api.InitSpec{
+						perconaxtradb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
@@ -391,7 +391,7 @@ var _ = Describe("Percona", func() {
 					})
 
 					It("Delete One Snapshot keeping others", func() {
-						// Create Percona and take Snapshot
+						// Create PerconaXtraDB and take Snapshot
 						shouldTakeSnapshot()
 
 						oldSnapshot := snapshot.DeepCopy()
@@ -451,7 +451,7 @@ var _ = Describe("Percona", func() {
 
 				Context("With Init", func() {
 					BeforeEach(func() {
-						percona.Spec.Init = &api.InitSpec{
+						perconaxtradb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
@@ -468,7 +468,7 @@ var _ = Describe("Percona", func() {
 
 				Context("Delete One Snapshot keeping others", func() {
 					BeforeEach(func() {
-						percona.Spec.Init = &api.InitSpec{
+						perconaxtradb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
@@ -481,7 +481,7 @@ var _ = Describe("Percona", func() {
 					})
 
 					It("Delete One Snapshot keeping others", func() {
-						// Create Percona and take Snapshot
+						// Create PerconaXtraDB and take Snapshot
 						shouldTakeSnapshot()
 
 						oldSnapshot := snapshot.DeepCopy()
@@ -540,7 +540,7 @@ var _ = Describe("Percona", func() {
 
 				Context("Delete One Snapshot keeping others", func() {
 					BeforeEach(func() {
-						percona.Spec.Init = &api.InitSpec{
+						perconaxtradb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
@@ -553,7 +553,7 @@ var _ = Describe("Percona", func() {
 					})
 
 					It("Delete One Snapshot keeping others", func() {
-						// Create Percona and take Snapshot
+						// Create PerconaXtraDB and take Snapshot
 						shouldTakeSnapshot()
 
 						oldSnapshot := snapshot.DeepCopy()
@@ -625,9 +625,9 @@ var _ = Describe("Percona", func() {
 					createAndWaitForRunning()
 
 					By("Get Percona")
-					es, err := f.GetPercona(percona.ObjectMeta)
+					es, err := f.GetPerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
-					percona.Spec = es.Spec
+					perconaxtradb.Spec = es.Spec
 
 					By("Create Secret")
 					err = f.CreateSecret(secret)
@@ -637,11 +637,11 @@ var _ = Describe("Percona", func() {
 					// start
 					pvcSpec := snapshot.Spec.PodVolumeClaimSpec
 					if pvcSpec == nil {
-						pvcSpec = percona.Spec.Storage
+						pvcSpec = perconaxtradb.Spec.Storage
 					}
 					st := snapshot.Spec.StorageType
 					if st == nil {
-						st = &percona.Spec.StorageType
+						st = &perconaxtradb.Spec.StorageType
 					}
 					Expect(st).NotTo(BeNil())
 					// end
@@ -692,8 +692,8 @@ var _ = Describe("Percona", func() {
 				var dbStorageTypeScenarios = func() {
 					Context("DBStorageType - Durable", func() {
 						BeforeEach(func() {
-							percona.Spec.StorageType = api.StorageTypeDurable
-							percona.Spec.Storage = &core.PersistentVolumeClaimSpec{
+							perconaxtradb.Spec.StorageType = api.StorageTypeDurable
+							perconaxtradb.Spec.Storage = &core.PersistentVolumeClaimSpec{
 								Resources: core.ResourceRequirements{
 									Requests: core.ResourceList{
 										core.ResourceStorage: resource.MustParse(framework.DBPvcStorageSize),
@@ -709,13 +709,13 @@ var _ = Describe("Percona", func() {
 
 					Context("DBStorageType - Ephemeral", func() {
 						BeforeEach(func() {
-							percona.Spec.StorageType = api.StorageTypeEphemeral
-							percona.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
+							perconaxtradb.Spec.StorageType = api.StorageTypeEphemeral
+							perconaxtradb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
 						})
 
 						Context("DBPvcSpec is nil", func() {
 							BeforeEach(func() {
-								percona.Spec.Storage = nil
+								perconaxtradb.Spec.Storage = nil
 							})
 
 							It("should Handle Job Volume Successfully", shouldHandleJobVolumeSuccessfully)
@@ -723,7 +723,7 @@ var _ = Describe("Percona", func() {
 
 						Context("DBPvcSpec is given [not nil]", func() {
 							BeforeEach(func() {
-								percona.Spec.Storage = &core.PersistentVolumeClaimSpec{
+								perconaxtradb.Spec.Storage = &core.PersistentVolumeClaimSpec{
 									Resources: core.ResourceRequirements{
 										Requests: core.ResourceList{
 											core.ResourceStorage: resource.MustParse(framework.DBPvcStorageSize),
@@ -799,7 +799,7 @@ var _ = Describe("Percona", func() {
 
 			Context("With Script", func() {
 				BeforeEach(func() {
-					percona.Spec.Init = &api.InitSpec{
+					perconaxtradb.Spec.Init = &api.InitSpec{
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
@@ -816,7 +816,7 @@ var _ = Describe("Percona", func() {
 					createAndWaitForRunning()
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
 				})
 			})
 
@@ -834,35 +834,35 @@ var _ = Describe("Percona", func() {
 				})
 
 				var shouldInitializeFromSnapshot = func() {
-					// Create Percona and take Snapshot
+					// Create PerconaXtraDB and take Snapshot
 					shouldInsertDataAndTakeSnapshot()
 
-					oldPercona, err := f.GetPercona(percona.ObjectMeta)
+					oldPercona, err := f.GetPerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 					garbagePercona.Items = append(garbagePercona.Items, *oldPercona)
 
-					By("Create percona from snapshot")
-					percona = f.Percona()
-					percona.Spec.Init = &api.InitSpec{
+					By("Create perconaxtradb from snapshot")
+					perconaxtradb = f.PerconaXtraDB()
+					perconaxtradb.Spec.Init = &api.InitSpec{
 						SnapshotSource: &api.SnapshotSourceSpec{
 							Namespace: snapshot.Namespace,
 							Name:      snapshot.Name,
 						},
 					}
 
-					By("Creating init Snapshot Mysql without secret name" + percona.Name)
-					err = f.CreatePercona(percona)
+					By("Creating init Snapshot Mysql without secret name" + perconaxtradb.Name)
+					err = f.CreatePerconaXtraDB(perconaxtradb)
 					Expect(err).Should(HaveOccurred())
 
 					// for snapshot init, user have to use older secret,
 					// because the username & password  will be replaced to
-					percona.Spec.DatabaseSecret = oldPercona.Spec.DatabaseSecret
+					perconaxtradb.Spec.DatabaseSecret = oldPercona.Spec.DatabaseSecret
 
 					// Create and wait for running Percona
 					createAndWaitForRunning()
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
 				}
 
 				Context("From Local backend", func() {
@@ -876,7 +876,7 @@ var _ = Describe("Percona", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						secret = f.SecretForLocalBackend()
-						snapshot.Spec.DatabaseName = percona.Name
+						snapshot.Spec.DatabaseName = perconaxtradb.Name
 						snapshot.Spec.StorageSecretName = secret.Name
 
 						snapshot.Spec.Local = &store.LocalSpec{
@@ -904,7 +904,7 @@ var _ = Describe("Percona", func() {
 						skipDataChecking = false
 						secret = f.SecretForGCSBackend()
 						snapshot.Spec.StorageSecretName = secret.Name
-						snapshot.Spec.DatabaseName = percona.Name
+						snapshot.Spec.DatabaseName = perconaxtradb.Name
 
 						snapshot.Spec.GCS = &store.GCSSpec{
 							Bucket: os.Getenv(GCS_BUCKET_NAME),
@@ -924,47 +924,47 @@ var _ = Describe("Percona", func() {
 					createAndWaitForRunning()
 
 					By("Creating Table")
-					f.EventuallyCreateTable(percona.ObjectMeta, false, dbName, 0).Should(BeTrue())
+					f.EventuallyCreateTable(perconaxtradb.ObjectMeta, false, dbName, 0).Should(BeTrue())
 
 					By("Inserting Row")
-					f.EventuallyInsertRow(percona.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
+					f.EventuallyInsertRow(perconaxtradb.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
 					By("Delete percona")
-					err = f.DeletePercona(percona.ObjectMeta)
+					err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Wait for percona to be paused")
-					f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
+					By("Wait for perconaxtradb to be paused")
+					f.EventuallyDormantDatabaseStatus(perconaxtradb.ObjectMeta).Should(matcher.HavePaused())
 
-					// Create Percona object again to resume it
-					By("Create Percona: " + percona.Name)
-					err = f.CreatePercona(percona)
+					// Create PerconaXtraDB object again to resume it
+					By("Create Percona: " + perconaxtradb.Name)
+					err = f.CreatePerconaXtraDB(perconaxtradb)
 					Expect(err).NotTo(HaveOccurred())
 
 					// Delete without caring if DB is resumed
 					By("Delete percona")
-					err = f.DeletePercona(percona.ObjectMeta)
+					err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Wait for Percona to be deleted")
-					f.EventuallyPercona(percona.ObjectMeta).Should(BeFalse())
+					By("Wait for PerconaXtraDB to be deleted")
+					f.EventuallyPerconaXtraDB(perconaxtradb.ObjectMeta).Should(BeFalse())
 
-					// Create Percona object again to resume it
-					By("Create Percona: " + percona.Name)
-					err = f.CreatePercona(percona)
+					// Create PerconaXtraDB object again to resume it
+					By("Create Percona: " + perconaxtradb.Name)
+					err = f.CreatePerconaXtraDB(perconaxtradb)
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for DormantDatabase to be deleted")
-					f.EventuallyDormantDatabase(percona.ObjectMeta).Should(BeFalse())
+					f.EventuallyDormantDatabase(perconaxtradb.ObjectMeta).Should(BeFalse())
 
 					By("Wait for Running percona")
-					f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
+					f.EventuallyPerconaRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
 				})
 			})
 
@@ -974,40 +974,40 @@ var _ = Describe("Percona", func() {
 					createAndWaitForRunning()
 
 					By("Creating Table")
-					f.EventuallyCreateTable(percona.ObjectMeta, false, dbName, 0).Should(BeTrue())
+					f.EventuallyCreateTable(perconaxtradb.ObjectMeta, false, dbName, 0).Should(BeTrue())
 
 					By("Inserting Row")
-					f.EventuallyInsertRow(percona.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
+					f.EventuallyInsertRow(perconaxtradb.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
 					By("Delete percona")
-					err = f.DeletePercona(percona.ObjectMeta)
+					err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Wait for percona to be paused")
-					f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
+					By("Wait for perconaxtradb to be paused")
+					f.EventuallyDormantDatabaseStatus(perconaxtradb.ObjectMeta).Should(matcher.HavePaused())
 
-					// Create Percona object again to resume it
-					By("Create Percona: " + percona.Name)
-					err = f.CreatePercona(percona)
+					// Create PerconaXtraDB object again to resume it
+					By("Create Percona: " + perconaxtradb.Name)
+					err = f.CreatePerconaXtraDB(perconaxtradb)
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for DormantDatabase to be deleted")
-					f.EventuallyDormantDatabase(percona.ObjectMeta).Should(BeFalse())
+					f.EventuallyDormantDatabase(perconaxtradb.ObjectMeta).Should(BeFalse())
 
 					By("Wait for Running percona")
-					f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
+					f.EventuallyPerconaRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
 				})
 			})
 
 			Context("with init Script", func() {
 				BeforeEach(func() {
-					percona.Spec.Init = &api.InitSpec{
+					perconaxtradb.Spec.Init = &api.InitSpec{
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
@@ -1024,35 +1024,35 @@ var _ = Describe("Percona", func() {
 					createAndWaitForRunning()
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
 					By("Delete percona")
-					err = f.DeletePercona(percona.ObjectMeta)
+					err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Wait for percona to be paused")
-					f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
+					By("Wait for perconaxtradb to be paused")
+					f.EventuallyDormantDatabaseStatus(perconaxtradb.ObjectMeta).Should(matcher.HavePaused())
 
-					// Create Percona object again to resume it
-					By("Create Percona: " + percona.Name)
-					err = f.CreatePercona(percona)
+					// Create PerconaXtraDB object again to resume it
+					By("Create Percona: " + perconaxtradb.Name)
+					err = f.CreatePerconaXtraDB(perconaxtradb)
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for DormantDatabase to be deleted")
-					f.EventuallyDormantDatabase(percona.ObjectMeta).Should(BeFalse())
+					f.EventuallyDormantDatabase(perconaxtradb.ObjectMeta).Should(BeFalse())
 
 					By("Wait for Running percona")
-					f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
+					f.EventuallyPerconaRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
-					percona, err := f.GetPercona(percona.ObjectMeta)
+					percona, err := f.GetPerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(percona.Spec.Init).NotTo(BeNil())
+					Expect(perconaxtradb.Spec.Init).NotTo(BeNil())
 
-					By("Checking Percona crd does not have kubedb.com/initialized annotation")
-					_, err = meta_util.GetString(percona.Annotations, api.AnnotationInitialized)
+					By("Checking PerconaXtraDB crd does not have kubedb.com/initialized annotation")
+					_, err = meta_util.GetString(perconaxtradb.Annotations, api.AnnotationInitialized)
 					Expect(err).To(HaveOccurred())
 				})
 			})
@@ -1077,51 +1077,51 @@ var _ = Describe("Percona", func() {
 					snapshot.Spec.GCS = &store.GCSSpec{
 						Bucket: os.Getenv(GCS_BUCKET_NAME),
 					}
-					snapshot.Spec.DatabaseName = percona.Name
+					snapshot.Spec.DatabaseName = perconaxtradb.Name
 				})
 
 				It("should resume successfully", func() {
-					// Create Percona and take Snapshot
+					// Create PerconaXtraDB and take Snapshot
 					shouldInsertDataAndTakeSnapshot()
 
-					oldPercona, err := f.GetPercona(percona.ObjectMeta)
+					oldPercona, err := f.GetPerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
 					garbagePercona.Items = append(garbagePercona.Items, *oldPercona)
 
-					By("Create percona from snapshot")
-					percona = f.Percona()
-					percona.Spec.Init = &api.InitSpec{
+					By("Create perconaxtradb from snapshot")
+					perconaxtradb = f.PerconaXtraDB()
+					perconaxtradb.Spec.Init = &api.InitSpec{
 						SnapshotSource: &api.SnapshotSourceSpec{
 							Namespace: snapshot.Namespace,
 							Name:      snapshot.Name,
 						},
 					}
 
-					By("Creating Percona without secret name to init from Snapshot: " + percona.Name)
-					err = f.CreatePercona(percona)
+					By("Creating PerconaXtraDB without secret name to init from Snapshot: " + perconaxtradb.Name)
+					err = f.CreatePerconaXtraDB(perconaxtradb)
 					Expect(err).Should(HaveOccurred())
 
 					// for snapshot init, user have to use older secret,
 					// because the username & password  will be replaced to
-					percona.Spec.DatabaseSecret = oldPercona.Spec.DatabaseSecret
+					perconaxtradb.Spec.DatabaseSecret = oldPercona.Spec.DatabaseSecret
 
 					// Create and wait for running Percona
 					createAndWaitForRunning()
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
 					By("Delete percona")
-					err = f.DeletePercona(percona.ObjectMeta)
+					err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Wait for percona to be paused")
-					f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
+					By("Wait for perconaxtradb to be paused")
+					f.EventuallyDormantDatabaseStatus(perconaxtradb.ObjectMeta).Should(matcher.HavePaused())
 
-					// Create Percona object again to resume it
-					By("Create Percona: " + percona.Name)
-					err = f.CreatePercona(percona)
+					// Create PerconaXtraDB object again to resume it
+					By("Create Percona: " + perconaxtradb.Name)
+					err = f.CreatePerconaXtraDB(perconaxtradb)
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for DormantDatabase to be deleted")
@@ -1133,11 +1133,11 @@ var _ = Describe("Percona", func() {
 					By("Checking Row Count of Table")
 					f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
-					percona, err = f.GetPercona(percona.ObjectMeta)
+					percona, err = f.GetPerconaXtraDB(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(percona.Spec.Init).ShouldNot(BeNil())
 
-					By("Checking Percona has kubedb.com/initialized annotation")
+					By("Checking PerconaXtraDB has kubedb.com/initialized annotation")
 					_, err = meta_util.GetString(percona.Annotations, api.AnnotationInitialized)
 					Expect(err).NotTo(HaveOccurred())
 				})
@@ -1169,15 +1169,15 @@ var _ = Describe("Percona", func() {
 						By(fmt.Sprintf("%v-th", i+1) + " time running.")
 
 						By("Delete percona")
-						err = f.DeletePercona(percona.ObjectMeta)
+						err = f.DeletePerconaXtraDB(percona.ObjectMeta)
 						Expect(err).NotTo(HaveOccurred())
 
-						By("Wait for percona to be paused")
+						By("Wait for perconaxtradb to be paused")
 						f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
 
-						// Create Percona object again to resume it
+						// Create PerconaXtraDB object again to resume it
 						By("Create Percona: " + percona.Name)
-						err = f.CreatePercona(percona)
+						err = f.CreatePerconaXtraDB(perconaxtradb)
 						Expect(err).NotTo(HaveOccurred())
 
 						By("Wait for DormantDatabase to be deleted")
@@ -1189,11 +1189,11 @@ var _ = Describe("Percona", func() {
 						By("Checking Row Count of Table")
 						f.EventuallyCountRow(percona.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
-						percona, err := f.GetPercona(percona.ObjectMeta)
+						percona, err := f.GetPerconaXtraDB(percona.ObjectMeta)
 						Expect(err).NotTo(HaveOccurred())
 						Expect(percona.Spec.Init).ShouldNot(BeNil())
 
-						By("Checking Percona crd does not have kubedb.com/initialized annotation")
+						By("Checking PerconaXtraDB crd does not have kubedb.com/initialized annotation")
 						_, err = meta_util.GetString(percona.Annotations, api.AnnotationInitialized)
 						Expect(err).To(HaveOccurred())
 					}
@@ -1239,7 +1239,7 @@ var _ = Describe("Percona", func() {
 		//			f.EventuallySnapshotCount(percona.ObjectMeta).Should(matcher.MoreThan(3))
 		//
 		//			By("Remove Backup Scheduler from Percona")
-		//			_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
+		//			_, err = f.PatchPerconaXtraDB(percona.ObjectMeta, func(in *api.Percona) *api.PerconaXtraDB{
 		//				in.Spec.BackupSchedule = nil
 		//				return in
 		//			})
@@ -1304,7 +1304,7 @@ var _ = Describe("Percona", func() {
 		//			Expect(err).NotTo(HaveOccurred())
 		//
 		//			By("Update percona")
-		//			_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
+		//			_, err = f.PatchPerconaXtraDB(percona.ObjectMeta, func(in *api.Percona) *api.PerconaXtraDB{
 		//				in.Spec.BackupSchedule = &api.BackupScheduleSpec{
 		//					CronExpression: "@every 20s",
 		//					Backend: store.Backend{
@@ -1325,7 +1325,7 @@ var _ = Describe("Percona", func() {
 		//			f.EventuallySnapshotCount(percona.ObjectMeta).Should(matcher.MoreThan(3))
 		//
 		//			By("Remove Backup Scheduler from Percona")
-		//			_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
+		//			_, err = f.PatchPerconaXtraDB(percona.ObjectMeta, func(in *api.Percona) *api.PerconaXtraDB{
 		//				in.Spec.BackupSchedule = nil
 		//				return in
 		//			})
@@ -1352,7 +1352,7 @@ var _ = Describe("Percona", func() {
 		//			Expect(err).NotTo(HaveOccurred())
 		//
 		//			By("Update percona")
-		//			_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
+		//			_, err = f.PatchPerconaXtraDB(percona.ObjectMeta, func(in *api.Percona) *api.PerconaXtraDB{
 		//				in.Spec.BackupSchedule = &api.BackupScheduleSpec{
 		//					CronExpression: "@every 20s",
 		//					Backend: store.Backend{
@@ -1385,15 +1385,15 @@ var _ = Describe("Percona", func() {
 		//			f.EventuallyMultipleSnapshotFinishedProcessing(percona.ObjectMeta).Should(Succeed())
 		//
 		//			By("Delete percona")
-		//			err = f.DeletePercona(percona.ObjectMeta)
+		//			err = f.DeletePerconaXtraDB(percona.ObjectMeta)
 		//			Expect(err).NotTo(HaveOccurred())
 		//
-		//			By("Wait for percona to be paused")
+		//			By("Wait for perconaxtradb to be paused")
 		//			f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
 		//
-		//			// Create Percona object again to resume it
+		//			// Create PerconaXtraDB object again to resume it
 		//			By("Create Percona: " + percona.Name)
-		//			err = f.CreatePercona(percona)
+		//			err = f.CreatePerconaXtraDB(perconaxtradb)
 		//			Expect(err).NotTo(HaveOccurred())
 		//
 		//			By("Wait for DormantDatabase to be deleted")
@@ -1409,7 +1409,7 @@ var _ = Describe("Percona", func() {
 		//			f.EventuallySnapshotCount(percona.ObjectMeta).Should(matcher.MoreThan(5))
 		//
 		//			By("Remove Backup Scheduler from Percona")
-		//			_, err = f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
+		//			_, err = f.PatchPerconaXtraDB(percona.ObjectMeta, func(in *api.Percona) *api.PerconaXtraDB{
 		//				in.Spec.BackupSchedule = nil
 		//				return in
 		//			})
@@ -1444,17 +1444,17 @@ var _ = Describe("Percona", func() {
 					createAndWaitForRunning()
 
 					By("Delete percona")
-					err = f.DeletePercona(percona.ObjectMeta)
+					err = f.DeletePerconaXtraDB(percona.ObjectMeta)
 					Expect(err).Should(HaveOccurred())
 
-					By("Percona is not paused. Check for percona")
-					f.EventuallyPercona(percona.ObjectMeta).Should(BeTrue())
+					By("PerconaXtraDB is not paused. Check for percona")
+					f.EventuallyPerconaXtraDB(percona.ObjectMeta).Should(BeTrue())
 
 					By("Check for Running percona")
 					f.EventuallyPerconaRunning(percona.ObjectMeta).Should(BeTrue())
 
-					By("Update percona to set spec.terminationPolicy = Pause")
-					_, err := f.PatchPercona(percona.ObjectMeta, func(in *api.Percona) *api.Percona {
+					By("Update perconaxtradb to set spec.terminationPolicy = Pause")
+					_, err := f.PatchPerconaXtraDB(percona.ObjectMeta, func(in *api.Percona) *api.PerconaXtraDB {
 						in.Spec.TerminationPolicy = api.TerminationPolicyPause
 						return in
 					})
@@ -1476,15 +1476,15 @@ var _ = Describe("Percona", func() {
 				})
 
 				It("should create DormantDatabase and resume from it", func() {
-					// Run Percona and take snapshot
+					// Run PerconaXtraDB and take snapshot
 					shouldInsertDataAndTakeSnapshot()
 
-					By("Deleting Percona crd")
-					err = f.DeletePercona(percona.ObjectMeta)
+					By("Deleting PerconaXtraDB crd")
+					err = f.DeletePerconaXtraDB(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					// DormantDatabase.Status= paused, means percona object is deleted
-					By("Waiting for percona to be paused")
+					// DormantDatabase.Status= paused, means perconaxtradb object is deleted
+					By("Waiting for perconaxtradb to be paused")
 					f.EventuallyDormantDatabaseStatus(percona.ObjectMeta).Should(matcher.HavePaused())
 
 					By("Checking PVC hasn't been deleted")
@@ -1501,9 +1501,9 @@ var _ = Describe("Percona", func() {
 						f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
 					}
 
-					// Create Percona object again to resume it
+					// Create PerconaXtraDB object again to resume it
 					By("Create (resume) Percona: " + percona.Name)
-					err = f.CreatePercona(percona)
+					err = f.CreatePerconaXtraDB(perconaxtradb)
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for DormantDatabase to be deleted")
@@ -1535,15 +1535,15 @@ var _ = Describe("Percona", func() {
 				})
 
 				It("should not create DormantDatabase and should not delete secret and snapshot", func() {
-					// Run Percona and take snapshot
+					// Run PerconaXtraDB and take snapshot
 					shouldInsertDataAndTakeSnapshot()
 
 					By("Delete percona")
-					err = f.DeletePercona(percona.ObjectMeta)
+					err = f.DeletePerconaXtraDB(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("wait until percona is deleted")
-					f.EventuallyPercona(percona.ObjectMeta).Should(BeFalse())
+					By("wait until perconaxtradb is deleted")
+					f.EventuallyPerconaXtraDB(percona.ObjectMeta).Should(BeFalse())
 
 					By("Checking DormantDatabase is not created")
 					f.EventuallyDormantDatabase(percona.ObjectMeta).Should(BeFalse())
@@ -1571,15 +1571,15 @@ var _ = Describe("Percona", func() {
 				})
 
 				It("should not create DormantDatabase and should wipeOut all", func() {
-					// Run Percona and take snapshot
+					// Run PerconaXtraDB and take snapshot
 					shouldInsertDataAndTakeSnapshot()
 
 					By("Delete percona")
-					err = f.DeletePercona(percona.ObjectMeta)
+					err = f.DeletePerconaXtraDB(percona.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("wait until percona is deleted")
-					f.EventuallyPercona(percona.ObjectMeta).Should(BeFalse())
+					By("wait until perconaxtradb is deleted")
+					f.EventuallyPerconaXtraDB(percona.ObjectMeta).Should(BeFalse())
 
 					By("Checking DormantDatabase is not created")
 					f.EventuallyDormantDatabase(percona.ObjectMeta).Should(BeFalse())
@@ -1619,7 +1619,7 @@ var _ = Describe("Percona", func() {
 
 			Context("Root Password as EnvVar", func() {
 
-				It("should reject to create Percona CRD", func() {
+				It("should reject to create PerconaXtraDB CRD", func() {
 					if skipMessage != "" {
 						Skip(skipMessage)
 					}
@@ -1631,7 +1631,7 @@ var _ = Describe("Percona", func() {
 						},
 					}
 					By("Create Percona: " + percona.Name)
-					err = f.CreatePercona(percona)
+					err = f.CreatePerconaXtraDB(perconaxtradb)
 					Expect(err).To(HaveOccurred())
 				})
 			})
@@ -1654,7 +1654,7 @@ var _ = Describe("Percona", func() {
 					testGeneralBehaviour()
 
 					By("Patching EnvVar")
-					_, _, err = util.PatchPercona(f.ExtClient().KubedbV1alpha1(), percona, func(in *api.Percona) *api.Percona {
+					_, _, err = util.PatchPerconaXtraDB(f.ExtClient().KubedbV1alpha1(), percona, func(in *api.Percona) *api.PerconaXtraDB {
 						in.Spec.PodTemplate.Spec.Env = []core.EnvVar{
 							{
 								Name:  MYSQL_DATABASE,
@@ -1709,7 +1709,7 @@ var _ = Describe("Percona", func() {
 					// Create Percona
 					createAndWaitForRunning()
 
-					By("Checking percona configured from provided custom configuration")
+					By("Checking perconaxtradb configured from provided custom configuration")
 					for _, cfg := range customConfigs {
 						f.EventuallyPerconaVariable(percona.ObjectMeta, false, dbName, 0, cfg).Should(matcher.UseCustomConfig(cfg))
 					}
@@ -1759,10 +1759,10 @@ var _ = Describe("Percona", func() {
 						percona.Spec.TerminationPolicy = api.TerminationPolicyPause
 					})
 
-					It("should reject to create Percona object", func() {
+					It("should reject to create PerconaXtraDB object", func() {
 
 						By("Creating Percona: " + percona.Name)
-						err := f.CreatePercona(percona)
+						err := f.CreatePerconaXtraDB(perconaxtradb)
 						Expect(err).To(HaveOccurred())
 					})
 				})

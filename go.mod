@@ -16,10 +16,11 @@ require (
 	github.com/go-openapi/swag v0.19.4 // indirect
 	github.com/go-sql-driver/mysql v1.4.1
 
-	github.com/go-xorm/xorm v0.7.4
+	github.com/go-xorm/xorm v0.7.5
 
 	// github.com/go-xorm/xorm v0.7.4
 	github.com/golang/protobuf v1.3.2 // indirect
+	github.com/json-iterator/go v1.1.7 // indirect
 	github.com/kubedb/apimachinery v0.0.0-20190717091715-4259a9bd2d11
 
 	github.com/lib/pq v1.1.1 // indirect
@@ -52,12 +53,13 @@ require (
 	kmodules.xyz/objectstore-api v0.0.0-20190718002052-da668b440b0b
 	kmodules.xyz/offshoot-api v0.0.0-20190715115723-36c8fce142c1
 	kmodules.xyz/webhook-runtime v0.0.0-20190715115250-a84fbf77dd30
-	kubedb.dev/apimachinery v0.0.0-20190722112343-6eb304369e66
+	kubedb.dev/apimachinery v0.0.0-20190725064317-38d61431595b
+	stash.appscode.dev/stash v0.0.0-20190717091949-1c51a7c58f08
 )
 
 replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest/autorest v0.5.0
-    github.com/go-xorm/core v0.6.3 => xorm.io/core v0.6.3
+	github.com/go-xorm/core v0.6.3 => xorm.io/core v0.6.3
 	github.com/graymeta/stow => github.com/appscode/stow v0.0.0-20190506085026-ca5baa008ea3
 	gopkg.in/robfig/cron.v2 => github.com/appscode/cron v0.0.0-20170717094345-ca60c6d796d4
 

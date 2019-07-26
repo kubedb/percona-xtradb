@@ -13,7 +13,7 @@ import (
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 )
 
-func (c *Controller) createServiceAccount(db *api.Percona, saName string) error {
+func (c *Controller) createServiceAccount(db *api.PerconaXtraDB, saName string) error {
 	ref, rerr := reference.GetReference(clientsetscheme.Scheme, db)
 	if rerr != nil {
 		return rerr
@@ -34,7 +34,7 @@ func (c *Controller) createServiceAccount(db *api.Percona, saName string) error 
 	return err
 }
 
-func (c *Controller) ensureRole(db *api.Percona, name string, pspName string) error {
+func (c *Controller) ensureRole(db *api.PerconaXtraDB, name string, pspName string) error {
 	ref, rerr := reference.GetReference(clientsetscheme.Scheme, db)
 	if rerr != nil {
 		return rerr
@@ -66,7 +66,7 @@ func (c *Controller) ensureRole(db *api.Percona, name string, pspName string) er
 	return err
 }
 
-func (c *Controller) createRoleBinding(db *api.Percona, name string) error {
+func (c *Controller) createRoleBinding(db *api.PerconaXtraDB, name string) error {
 	ref, rerr := reference.GetReference(clientsetscheme.Scheme, db)
 	if rerr != nil {
 		return rerr
@@ -99,8 +99,8 @@ func (c *Controller) createRoleBinding(db *api.Percona, name string) error {
 	return err
 }
 
-func (c *Controller) getPolicyNames(db *api.Percona) (string, error) {
-	dbVersion, err := c.ExtClient.CatalogV1alpha1().PerconaVersions().Get(string(db.Spec.Version), metav1.GetOptions{})
+func (c *Controller) getPolicyNames(db *api.PerconaXtraDB) (string, error) {
+	dbVersion, err := c.ExtClient.CatalogV1alpha1().PerconaXtraDBVersions().Get(string(db.Spec.Version), metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -109,26 +109,26 @@ func (c *Controller) getPolicyNames(db *api.Percona) (string, error) {
 	return dbPolicyName, nil
 }
 
-func (c *Controller) ensureRBACStuff(pxc *api.Percona) error {
-	dbPolicyName, err := c.getPolicyNames(pxc)
+func (c *Controller) ensureRBACStuff(px *api.PerconaXtraDB) error {
+	dbPolicyName, err := c.getPolicyNames(px)
 	if err != nil {
 		return err
 	}
 
 	// Create New ServiceAccount
-	if err := c.createServiceAccount(pxc, pxc.OffshootName()); err != nil {
+	if err := c.createServiceAccount(px, px.OffshootName()); err != nil {
 		if !kerr.IsAlreadyExists(err) {
 			return err
 		}
 	}
 
 	// Create New Role
-	if err := c.ensureRole(pxc, pxc.OffshootName(), dbPolicyName); err != nil {
+	if err := c.ensureRole(px, px.OffshootName(), dbPolicyName); err != nil {
 		return err
 	}
 
 	// Create New RoleBinding
-	if err := c.createRoleBinding(pxc, pxc.OffshootName()); err != nil {
+	if err := c.createRoleBinding(px, px.OffshootName()); err != nil {
 		return err
 	}
 

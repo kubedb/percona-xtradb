@@ -139,17 +139,17 @@ func (f *Framework) UpdateSecret(meta metav1.ObjectMeta, transformer func(core.S
 	return fmt.Errorf("Failed to update Secret %s@%s after %d attempts.", meta.Name, meta.Namespace, attempt)
 }
 
-func (f *Framework) GetMySQLRootPassword(percona *api.Percona) (string, error) {
-	secret, err := f.kubeClient.CoreV1().Secrets(percona.Namespace).Get(percona.Spec.DatabaseSecret.SecretName, metav1.GetOptions{})
+func (f *Framework) GetMySQLRootPassword(px *api.PerconaXtraDB) (string, error) {
+	secret, err := f.kubeClient.CoreV1().Secrets(px.Namespace).Get(px.Spec.DatabaseSecret.SecretName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
-	password := string(secret.Data[controller.KeyPerconaPassword])
+	password := string(secret.Data[controller.KeyPerconaXtraDBPassword])
 	return password, nil
 }
 
-func (f *Framework) GetMySQLCred(percona *api.Percona, key string) (string, error) {
-	secret, err := f.kubeClient.CoreV1().Secrets(percona.Namespace).Get(percona.Spec.DatabaseSecret.SecretName, metav1.GetOptions{})
+func (f *Framework) GetMySQLCred(px *api.PerconaXtraDB, key string) (string, error) {
+	secret, err := f.kubeClient.CoreV1().Secrets(px.Namespace).Get(px.Spec.DatabaseSecret.SecretName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -167,7 +167,7 @@ func (f *Framework) DeleteSecret(meta metav1.ObjectMeta) error {
 
 func (f *Framework) EventuallyDBSecretCount(meta metav1.ObjectMeta) GomegaAsyncAssertion {
 	labelMap := map[string]string{
-		api.LabelDatabaseKind: api.ResourceKindPercona,
+		api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
 		api.LabelDatabaseName: meta.Name,
 	}
 	labelSelector := labels.SelectorFromSet(labelMap)
