@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 
 	"github.com/appscode/go/log"
@@ -9,12 +10,16 @@ import (
 	"github.com/appscode/go/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	store "kmodules.xyz/objectstore-api/api/v1"
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/percona-xtradb/test/e2e/framework"
 	"kubedb.dev/percona-xtradb/test/e2e/matcher"
+	stashV1alpha1 "stash.appscode.dev/stash/apis/stash/v1alpha1"
+	stashV1beta1 "stash.appscode.dev/stash/apis/stash/v1beta1"
 )
 
 var _ = Describe("PerconaXtraDB cluster Tests", func() {
@@ -24,9 +29,11 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		px                   *api.PerconaXtraDB
 		garbagePerconaXtraDB *api.PerconaXtraDBList
 		//skipMessage string
-		dbName         string
-		dbNameKubedb   string
-		wsClusterStats map[string]string
+		dbName           string
+		dbNameKubedb     string
+		wsClusterStats   map[string]string
+		skipDataChecking bool
+		secret           *corev1.Secret
 	)
 
 	var createAndWaitForRunning = func() {
@@ -344,5 +351,142 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				replicationCheck(int(*px.Spec.PXC.Proxysql.Replicas), true)
 			})
 		})
+	})
+
+	Context("Initialize", func() {
+		// To run this test,
+		// 1st: Deploy stash latest operator
+		// 2nd: create mysql related tasks and functions either
+		//	 or	from helm chart in `stash.appscode.dev/percona-xtradb/chart/stash-percona-xtradb`
+		Context("With Stash/Restic", func() {
+			var bc *stashV1beta1.BackupConfiguration
+			var bs *stashV1beta1.BackupSession
+			var rs *stashV1beta1.RestoreSession
+			var repo *stashV1alpha1.Repository
+
+			BeforeEach(func() {
+				skipDataChecking = true
+				if !f.FoundStashCRDs() {
+					Skip("Skipping tests for stash integration. reason: stash operator is not running.")
+				}
+			})
+
+			AfterEach(func() {
+				By("Deleting BackupConfiguration")
+				err := f.DeleteBackupConfiguration(bc.ObjectMeta)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Deleting RestoreSession")
+				err = f.DeleteRestoreSession(rs.ObjectMeta)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Deleting Repository")
+				err = f.DeleteRepository(repo.ObjectMeta)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			var createAndWaitForInitializing = func() {
+				By("Creating MySQL: " + px.Name)
+				err = f.CreatePerconaXtraDB(px)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Wait for Initializing mysql")
+				f.EventuallyPerconaXtraDBPhase(px.ObjectMeta).Should(Equal(api.DatabasePhaseInitializing))
+
+				By("Wait for AppBinding to create")
+				f.EventuallyAppBinding(px.ObjectMeta).Should(BeTrue())
+
+				By("Check valid AppBinding Specs")
+				err = f.CheckAppBindingSpec(px.ObjectMeta)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Waiting for database to be ready")
+				f.EventuallyDatabaseReady(px.ObjectMeta, false, dbName, 0).Should(BeTrue())
+			}
+
+			var shouldInitializeFromStash = func() {
+				// Create and wait for running MySQL
+				createAndWaitForRunning()
+
+				By("Creating Table")
+				f.EventuallyCreateTable(px.ObjectMeta, false, dbName, 0).Should(BeTrue())
+
+				By("Inserting Rows")
+				f.EventuallyInsertRow(px.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
+
+				By("Checking Row Count of Table")
+				f.EventuallyCountRow(px.ObjectMeta, false, dbName, 0).Should(Equal(3))
+
+				By("Create Secret")
+				err = f.CreateSecret(secret)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Create Repositories")
+				err = f.CreateRepository(repo)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Create BackupConfiguration")
+				err = f.CreateBackupConfiguration(bc)
+				Expect(err).NotTo(HaveOccurred())
+
+				// eventually backupsession succeeded
+				By("Check for Succeeded backupsession")
+				f.EventuallyBackupSessionPhase(bs.ObjectMeta).Should(Equal(stashV1beta1.BackupSessionSucceeded))
+
+				oldPerconaXtraDB, err := f.GetPerconaXtraDB(px.ObjectMeta)
+				Expect(err).NotTo(HaveOccurred())
+
+				garbagePerconaXtraDB.Items = append(garbagePerconaXtraDB.Items, *oldPerconaXtraDB)
+
+				By("Create mysql from stash")
+				*px = *f.PerconaXtraDBCluster()
+				rs = f.RestoreSession(px.ObjectMeta, oldPerconaXtraDB.ObjectMeta)
+				px.Spec.DatabaseSecret = oldPerconaXtraDB.Spec.DatabaseSecret
+				px.Spec.Init = &api.InitSpec{
+					StashRestoreSession: &corev1.LocalObjectReference{
+						Name: rs.Name,
+					},
+				}
+
+				// Create and wait for running MySQL
+				createAndWaitForInitializing()
+
+				By("Create RestoreSession")
+				err = f.CreateRestoreSession(rs)
+				Expect(err).NotTo(HaveOccurred())
+
+				// eventually backupsession succeeded
+				By("Check for Succeeded restoreSession")
+				f.EventuallyRestoreSessionPhase(rs.ObjectMeta).Should(Equal(stashV1beta1.RestoreSessionSucceeded))
+
+				By("Wait for Running mysql")
+				f.EventuallyPerconaXtraDBRunning(px.ObjectMeta).Should(BeTrue())
+
+				By("Checking Row Count of Table")
+				f.EventuallyCountRow(px.ObjectMeta, false, dbName, 0).Should(Equal(3))
+			}
+
+			Context("From GCS backend", func() {
+
+				BeforeEach(func() {
+					secret = f.SecretForGCSBackend()
+					secret = f.PatchSecretForRestic(secret)
+					bc = f.BackupConfiguration(px.ObjectMeta)
+					repo = f.Repository(px.ObjectMeta, secret.Name)
+
+					repo.Spec.Backend = store.Backend{
+						GCS: &store.GCSSpec{
+							Bucket: os.Getenv("GCS_BUCKET_NAME"),
+							Prefix: fmt.Sprintf("stash/%v/%v", px.Namespace, px.Name),
+						},
+						StorageSecretName: secret.Name,
+					}
+				})
+
+				It("should run successfully", shouldInitializeFromStash)
+			})
+
+		})
+
 	})
 })

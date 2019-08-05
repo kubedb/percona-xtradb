@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
+	kext_cs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/client-go/kubernetes"
 	clientSetScheme "k8s.io/client-go/kubernetes/scheme"
@@ -23,6 +24,7 @@ import (
 	"kubedb.dev/apimachinery/client/clientset/versioned/scheme"
 	"kubedb.dev/percona-xtradb/pkg/controller"
 	"kubedb.dev/percona-xtradb/test/e2e/framework"
+	scs "stash.appscode.dev/stash/client/clientset/versioned"
 )
 
 var (
@@ -72,15 +74,18 @@ var _ = BeforeSuite(func() {
 
 	// Clients
 	kubeClient := kubernetes.NewForConfigOrDie(config)
-	extClient := cs.NewForConfigOrDie(config)
+	apiExtKubeClient := kext_cs.NewForConfigOrDie(config)
+	dbClient := cs.NewForConfigOrDie(config)
 	kaClient := ka.NewForConfigOrDie(config)
 	appCatalogClient, err := appcat_cs.NewForConfig(config)
+	stashClient := scs.NewForConfigOrDie(config)
+
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	// Framework
-	root = framework.New(config, kubeClient, extClient, kaClient, appCatalogClient, storageClass)
+	root = framework.New(config, kubeClient, apiExtKubeClient, dbClient, kaClient, appCatalogClient, stashClient, storageClass)
 
 	// Create namespace
 	By("Using namespace " + root.Namespace())

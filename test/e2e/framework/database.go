@@ -82,7 +82,6 @@ func (f *Framework) EventuallyDatabaseReady(pxMeta metav1.ObjectMeta, proxysql b
 		time.Minute*10,
 		time.Second*20,
 	)
-	return nil
 }
 
 func (f *Framework) GetEngine(

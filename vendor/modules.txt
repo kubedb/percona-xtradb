@@ -42,6 +42,8 @@ github.com/appscode/go/net
 github.com/appscode/go/encoding/yaml
 # github.com/appscode/osm v0.12.0
 github.com/appscode/osm/context
+# github.com/armon/circbuf v0.0.0-20190214190532-5111143e8da2
+github.com/armon/circbuf
 # github.com/aws/aws-sdk-go v1.20.21
 github.com/aws/aws-sdk-go/aws
 github.com/aws/aws-sdk-go/aws/credentials
@@ -274,6 +276,7 @@ github.com/peterbourgon/diskv
 github.com/pkg/errors
 # github.com/prometheus/client_golang v0.9.4
 github.com/prometheus/client_golang/prometheus
+github.com/prometheus/client_golang/prometheus/push
 github.com/prometheus/client_golang/prometheus/internal
 # github.com/prometheus/client_model v0.0.0-20190129233127-fd36f4220a90
 github.com/prometheus/client_model/go
@@ -457,6 +460,7 @@ gopkg.in/yaml.v2
 k8s.io/api/admission/v1beta1
 k8s.io/api/core/v1
 k8s.io/api/apps/v1
+k8s.io/api/batch/v1
 k8s.io/api/policy/v1beta1
 k8s.io/api/rbac/v1beta1
 k8s.io/api/authentication/v1
@@ -471,7 +475,6 @@ k8s.io/api/authorization/v1beta1
 k8s.io/api/autoscaling/v1
 k8s.io/api/autoscaling/v2beta1
 k8s.io/api/autoscaling/v2beta2
-k8s.io/api/batch/v1
 k8s.io/api/batch/v1beta1
 k8s.io/api/batch/v2alpha1
 k8s.io/api/certificates/v1beta1
@@ -998,19 +1001,20 @@ sigs.k8s.io/yaml
 # stash.appscode.dev/stash v0.0.0-20190717091949-1c51a7c58f08
 stash.appscode.dev/stash/client/clientset/versioned
 stash.appscode.dev/stash/client/informers/externalversions
+stash.appscode.dev/stash/apis/stash/v1alpha1
+stash.appscode.dev/stash/apis/stash/v1beta1
+stash.appscode.dev/stash/pkg/restic
 stash.appscode.dev/stash/client/clientset/versioned/typed/repositories/v1alpha1
 stash.appscode.dev/stash/client/clientset/versioned/typed/stash/v1alpha1
 stash.appscode.dev/stash/client/clientset/versioned/typed/stash/v1beta1
-stash.appscode.dev/stash/apis/stash/v1alpha1
-stash.appscode.dev/stash/apis/stash/v1beta1
 stash.appscode.dev/stash/client/informers/externalversions/internalinterfaces
 stash.appscode.dev/stash/client/informers/externalversions/stash
 stash.appscode.dev/stash/client/informers/externalversions/stash/v1beta1
 stash.appscode.dev/stash/client/listers/stash/v1beta1
-stash.appscode.dev/stash/apis/repositories/v1alpha1
-stash.appscode.dev/stash/client/clientset/versioned/scheme
 stash.appscode.dev/stash/apis
 stash.appscode.dev/stash/apis/stash
+stash.appscode.dev/stash/apis/repositories/v1alpha1
+stash.appscode.dev/stash/client/clientset/versioned/scheme
 stash.appscode.dev/stash/client/informers/externalversions/stash/v1alpha1
 stash.appscode.dev/stash/apis/repositories
 stash.appscode.dev/stash/client/listers/stash/v1alpha1

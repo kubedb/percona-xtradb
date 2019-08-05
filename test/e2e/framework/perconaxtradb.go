@@ -62,31 +62,31 @@ func (f *Invocation) PerconaXtraDBCluster() *api.PerconaXtraDB {
 }
 
 func (f *Framework) CreatePerconaXtraDB(obj *api.PerconaXtraDB) error {
-	_, err := f.extClient.KubedbV1alpha1().PerconaXtraDBs(obj.Namespace).Create(obj)
+	_, err := f.dbClient.KubedbV1alpha1().PerconaXtraDBs(obj.Namespace).Create(obj)
 	return err
 }
 
 func (f *Framework) GetPerconaXtraDB(meta metav1.ObjectMeta) (*api.PerconaXtraDB, error) {
-	return f.extClient.KubedbV1alpha1().PerconaXtraDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+	return f.dbClient.KubedbV1alpha1().PerconaXtraDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
 }
 
 func (f *Framework) PatchPerconaXtraDB(meta metav1.ObjectMeta, transform func(*api.PerconaXtraDB) *api.PerconaXtraDB) (*api.PerconaXtraDB, error) {
-	px, err := f.extClient.KubedbV1alpha1().PerconaXtraDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+	px, err := f.dbClient.KubedbV1alpha1().PerconaXtraDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	px, _, err = util.PatchPerconaXtraDB(f.extClient.KubedbV1alpha1(), px, transform)
+	px, _, err = util.PatchPerconaXtraDB(f.dbClient.KubedbV1alpha1(), px, transform)
 	return px, err
 }
 
 func (f *Framework) DeletePerconaXtraDB(meta metav1.ObjectMeta) error {
-	return f.extClient.KubedbV1alpha1().PerconaXtraDBs(meta.Namespace).Delete(meta.Name, &metav1.DeleteOptions{})
+	return f.dbClient.KubedbV1alpha1().PerconaXtraDBs(meta.Namespace).Delete(meta.Name, &metav1.DeleteOptions{})
 }
 
 func (f *Framework) EventuallyPerconaXtraDB(meta metav1.ObjectMeta) GomegaAsyncAssertion {
 	return Eventually(
 		func() bool {
-			_, err := f.extClient.KubedbV1alpha1().PerconaXtraDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+			_, err := f.dbClient.KubedbV1alpha1().PerconaXtraDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
 			if err != nil {
 				if kerr.IsNotFound(err) {
 					return false
@@ -100,10 +100,22 @@ func (f *Framework) EventuallyPerconaXtraDB(meta metav1.ObjectMeta) GomegaAsyncA
 	)
 }
 
+func (f *Framework) EventuallyPerconaXtraDBPhase(meta metav1.ObjectMeta) GomegaAsyncAssertion {
+	return Eventually(
+		func() api.DatabasePhase {
+			db, err := f.dbClient.KubedbV1alpha1().PerconaXtraDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			return db.Status.Phase
+		},
+		time.Minute*5,
+		time.Second*5,
+	)
+}
+
 func (f *Framework) EventuallyPerconaXtraDBRunning(meta metav1.ObjectMeta) GomegaAsyncAssertion {
 	return Eventually(
 		func() bool {
-			px, err := f.extClient.KubedbV1alpha1().PerconaXtraDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+			px, err := f.dbClient.KubedbV1alpha1().PerconaXtraDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			return px.Status.Phase == api.DatabasePhaseRunning
 		},
@@ -113,12 +125,12 @@ func (f *Framework) EventuallyPerconaXtraDBRunning(meta metav1.ObjectMeta) Gomeg
 }
 
 func (f *Framework) CleanPerconaXtraDB() {
-	pxList, err := f.extClient.KubedbV1alpha1().PerconaXtraDBs(f.namespace).List(metav1.ListOptions{})
+	pxList, err := f.dbClient.KubedbV1alpha1().PerconaXtraDBs(f.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return
 	}
 	for _, px := range pxList.Items {
-		if _, _, err := util.PatchPerconaXtraDB(f.extClient.KubedbV1alpha1(), &px, func(in *api.PerconaXtraDB) *api.PerconaXtraDB {
+		if _, _, err := util.PatchPerconaXtraDB(f.dbClient.KubedbV1alpha1(), &px, func(in *api.PerconaXtraDB) *api.PerconaXtraDB {
 			in.ObjectMeta.Finalizers = nil
 			in.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
 			return in
@@ -126,7 +138,7 @@ func (f *Framework) CleanPerconaXtraDB() {
 			fmt.Printf("error Patching PerconaXtraDB. error: %v", err)
 		}
 	}
-	if err := f.extClient.KubedbV1alpha1().PerconaXtraDBs(f.namespace).DeleteCollection(deleteInForeground(), metav1.ListOptions{}); err != nil {
+	if err := f.dbClient.KubedbV1alpha1().PerconaXtraDBs(f.namespace).DeleteCollection(deleteInForeground(), metav1.ListOptions{}); err != nil {
 		fmt.Printf("error in deletion of PerconaXtraDB. Error: %v", err)
 	}
 }

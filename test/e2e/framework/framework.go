@@ -2,12 +2,14 @@ package framework
 
 import (
 	"github.com/appscode/go/crypto/rand"
+	kext_cs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	ka "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
 	appcat_cs "kmodules.xyz/custom-resources/client/clientset/versioned/typed/appcatalog/v1alpha1"
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	cs "kubedb.dev/apimachinery/client/clientset/versioned"
+	scs "stash.appscode.dev/stash/client/clientset/versioned"
 )
 
 var (
@@ -20,9 +22,11 @@ var (
 type Framework struct {
 	restConfig       *rest.Config
 	kubeClient       kubernetes.Interface
-	extClient        cs.Interface
+	apiExtKubeClient kext_cs.ApiextensionsV1beta1Interface
+	dbClient         cs.Interface
 	kaClient         ka.Interface
 	appCatalogClient appcat_cs.AppcatalogV1alpha1Interface
+	stashClient      scs.Interface
 	namespace        string
 	name             string
 	StorageClass     string
@@ -31,17 +35,21 @@ type Framework struct {
 func New(
 	restConfig *rest.Config,
 	kubeClient kubernetes.Interface,
+	apiExtKubeClient kext_cs.ApiextensionsV1beta1Interface,
 	extClient cs.Interface,
 	kaClient ka.Interface,
 	appCatalogClient appcat_cs.AppcatalogV1alpha1Interface,
+	stashClient scs.Interface,
 	storageClass string,
 ) *Framework {
 	return &Framework{
 		restConfig:       restConfig,
 		kubeClient:       kubeClient,
-		extClient:        extClient,
+		apiExtKubeClient: apiExtKubeClient,
+		dbClient:         extClient,
 		kaClient:         kaClient,
 		appCatalogClient: appCatalogClient,
+		stashClient:      stashClient,
 		name:             "perconaxtradb-operator",
 		namespace:        rand.WithUniqSuffix(api.ResourceSingularPerconaXtraDB),
 		StorageClass:     storageClass,
@@ -60,7 +68,7 @@ func (fi *Invocation) App() string {
 }
 
 func (fi *Invocation) ExtClient() cs.Interface {
-	return fi.extClient
+	return fi.dbClient
 }
 
 func (fi *Invocation) KubeClient() kubernetes.Interface {
