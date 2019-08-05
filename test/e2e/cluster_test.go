@@ -12,7 +12,6 @@ import (
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	cat_api "kubedb.dev/apimachinery/apis/catalog/v1alpha1"
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/percona-xtradb/test/e2e/framework"
 	"kubedb.dev/percona-xtradb/test/e2e/matcher"
@@ -23,7 +22,6 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		err                  error
 		f                    *framework.Invocation
 		px                   *api.PerconaXtraDB
-		pxVersion            *cat_api.PerconaXtraDBVersion
 		garbagePerconaXtraDB *api.PerconaXtraDBList
 		//skipMessage string
 		dbName         string
@@ -32,10 +30,6 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 	)
 
 	var createAndWaitForRunning = func() {
-		By("Create PerconaXtraDB Version: " + pxVersion.Name)
-		err = f.CreatePerconaXtraDBVersion(pxVersion)
-		Expect(err).NotTo(HaveOccurred())
-
 		By("Create PerconaXtraDB: " + px.Name)
 		err = f.CreatePerconaXtraDB(px)
 		Expect(err).NotTo(HaveOccurred())
@@ -102,26 +96,6 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 			log.Infoln("Skipping cleanup. Reason: perconaxtradb is nil")
 			return
 		}
-
-		By("Check if perconaxtradb version " + pxVersion.Name + " exists.")
-		_, err = f.GetPerconaXtraDBVersion(pxVersion.ObjectMeta)
-		if err != nil {
-			if kerr.IsNotFound(err) {
-				// PerconaXtraDB was not created. Hence, rest of cleanup is not necessary.
-				return
-			}
-			Expect(err).NotTo(HaveOccurred())
-		}
-
-		By("Delete PerconaXtraDBVersion")
-		err = f.DeletePerconaXtraDBVersion(pxVersion.ObjectMeta)
-		if err != nil {
-			if kerr.IsNotFound(err) {
-				log.Infoln("Skipping rest of the cleanup. Reason: PerconaXtraDBVersion does not exist.")
-				return
-			}
-			Expect(err).NotTo(HaveOccurred())
-		}
 	}
 
 	var baseName = func(proxysql bool) string {
@@ -180,7 +154,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 	}
 
 	var CheckDBVersionForXtraDBCluster = func() {
-		if framework.DBVersion != "5.7" {
+		if framework.DBCatalogName != "5.7" {
 			Skip("For XtraDB Cluster, currently supported DB version is '5.7'")
 		}
 	}
@@ -188,7 +162,6 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 	BeforeEach(func() {
 		f = root.Invoke()
 		px = f.PerconaXtraDBCluster()
-		pxVersion = f.PerconaXtraDBVersion()
 		garbagePerconaXtraDB = new(api.PerconaXtraDBList)
 		//skipMessage = ""
 		dbName = "mysql"

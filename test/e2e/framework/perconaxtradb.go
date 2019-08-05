@@ -35,7 +35,7 @@ func (f *Invocation) PerconaXtraDB() *api.PerconaXtraDB {
 			},
 		},
 		Spec: api.PerconaXtraDBSpec{
-			Version: jsonTypes.StrYo(DBVersion),
+			Version: jsonTypes.StrYo(DBCatalogName),
 			Storage: &core.PersistentVolumeClaimSpec{
 				Resources: core.ResourceRequirements{
 					Requests: core.ResourceList{

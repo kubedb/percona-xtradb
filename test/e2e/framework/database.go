@@ -218,7 +218,7 @@ func (f *Framework) EventuallyCountRow(pxMeta metav1.ObjectMeta, proxysql bool, 
 	)
 }
 
-func (f *Framework) EventuallyPerconaVariable(pxMeta metav1.ObjectMeta, proxysql bool, dbName string, podIndex int, config string) GomegaAsyncAssertion {
+func (f *Framework) EventuallyPerconaXtraDBVariable(pxMeta metav1.ObjectMeta, proxysql bool, dbName string, podIndex int, config string) GomegaAsyncAssertion {
 	configPair := strings.Split(config, "=")
 	sql := fmt.Sprintf("SHOW VARIABLES LIKE '%s';", configPair[0])
 	return Eventually(

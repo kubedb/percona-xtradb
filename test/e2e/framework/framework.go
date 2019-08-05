@@ -14,9 +14,7 @@ var (
 	DockerRegistry     = "kubedbci"
 	SelfHostedOperator = false
 	//DBCatalogName      = "8.0-v2"
-	DBVersion = "5.7"
-	//DBToolsTag         = "8.0-v3"
-	ExporterTag = "v0.11.0"
+	DBCatalogName = "5.7"
 )
 
 type Framework struct {
