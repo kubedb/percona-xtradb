@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/appscode/go/types"
-	config_api "github.com/kubedb/apimachinery/apis/config/v1alpha1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -16,6 +15,7 @@ import (
 	core_util "kmodules.xyz/client-go/core/v1"
 	appcat "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
 	appcat_util "kmodules.xyz/custom-resources/client/clientset/versioned/typed/appcatalog/v1alpha1/util"
+	config_api "kubedb.dev/apimachinery/apis/config/v1alpha1"
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/pkg/eventer"
 )
@@ -45,7 +45,7 @@ func (c *Controller) ensureAppBinding(db *api.PerconaXtraDB) (kutil.VerbType, er
 		},
 		Address:   fmt.Sprintf("gcomm://%s", strings.Join(peers, ",")),
 		Group:     db.Name,
-		SSTMethod: "xtrabackup-v2",
+		SSTMethod: config_api.GarbdXtrabackupSSTMethod,
 	})
 	if err != nil {
 		return kutil.VerbUnchanged, err

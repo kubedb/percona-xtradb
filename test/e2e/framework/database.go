@@ -167,7 +167,7 @@ func (f *Framework) EventuallyCreateTable(pxMeta metav1.ObjectMeta, proxysql boo
 	return nil
 }
 
-func (f *Framework) EventuallyInsertRow(pxMeta metav1.ObjectMeta, proxysql bool, dbName string, podIndex, rowToInsert int) GomegaAsyncAssertion {
+func (f *Framework) EventuallyInsertRow(pxMeta metav1.ObjectMeta, proxysql bool, dbName string, podIndex, rowsCntToInsert int) GomegaAsyncAssertion {
 	count := 0
 	return Eventually(
 		func() bool {
@@ -178,7 +178,7 @@ func (f *Framework) EventuallyInsertRow(pxMeta metav1.ObjectMeta, proxysql bool,
 			defer tunnel.Close()
 			defer en.Close()
 
-			for i := count; i < rowToInsert; i++ {
+			for i := count; i < rowsCntToInsert; i++ {
 				if _, err := en.Insert(&KubedbTable{
 					//Id:      int64(i),
 					PodName: fmt.Sprintf("%s-%v", pxMeta.Name, podIndex),

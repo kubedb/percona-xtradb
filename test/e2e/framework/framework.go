@@ -15,8 +15,7 @@ import (
 var (
 	DockerRegistry     = "kubedbci"
 	SelfHostedOperator = false
-	//DBCatalogName      = "8.0-v2"
-	DBCatalogName = "5.7"
+	DBCatalogName      = "5.7"
 )
 
 type Framework struct {
@@ -50,7 +49,6 @@ func New(
 		kaClient:         kaClient,
 		appCatalogClient: appCatalogClient,
 		stashClient:      stashClient,
-		name:             "perconaxtradb-operator",
 		namespace:        rand.WithUniqSuffix(api.ResourceSingularPerconaXtraDB),
 		StorageClass:     storageClass,
 	}

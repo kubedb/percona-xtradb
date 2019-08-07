@@ -21,8 +21,8 @@ import (
 )
 
 var (
-	JobPvcStorageSize = "2Gi"
-	DBPvcStorageSize  = "1Gi"
+	JobPvcStorageSize = "50Mi"
+	DBPvcStorageSize  = "50Mi"
 )
 
 func (f *Invocation) PerconaXtraDB() *api.PerconaXtraDB {

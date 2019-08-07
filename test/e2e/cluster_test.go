@@ -22,19 +22,29 @@ import (
 	stashV1beta1 "stash.appscode.dev/stash/apis/stash/v1beta1"
 )
 
-var _ = Describe("PerconaXtraDB cluster Tests", func() {
+var _ = FDescribe("PerconaXtraDB cluster Tests", func() {
+	const (
+		googleProjectIDKey          = "GOOGLE_PROJECT_ID"
+		googleServiceAccountJsonKey = "GOOGLE_SERVICE_ACCOUNT_JSON_KEY"
+		googleBucketNameKey         = "GCS_BUCKET_NAME"
+	)
+
 	var (
 		err                  error
 		f                    *framework.Invocation
 		px                   *api.PerconaXtraDB
 		garbagePerconaXtraDB *api.PerconaXtraDBList
-		//skipMessage string
-		dbName           string
-		dbNameKubedb     string
-		wsClusterStats   map[string]string
-		skipDataChecking bool
-		secret           *corev1.Secret
+		dbName               string
+		dbNameKubedb         string
+		wsClusterStats       map[string]string
+		secret               *corev1.Secret
 	)
+
+	var isSetEnv = func(key string) bool {
+		_, set := os.LookupEnv(key)
+
+		return set
+	}
 
 	var createAndWaitForRunning = func() {
 		By("Create PerconaXtraDB: " + px.Name)
@@ -54,6 +64,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		By("Waiting for database to be ready")
 		f.EventuallyDatabaseReady(px.ObjectMeta, false, dbName, 0).Should(BeTrue())
 	}
+
 	var deleteTestResource = func() {
 		if px == nil {
 			log.Infoln("Skipping cleanup. Reason: perconaxtradb is nil")
@@ -98,11 +109,17 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 
 		By("Wait for perconaxtradb resources to be wipedOut")
 		f.EventuallyWipedOut(px.ObjectMeta).Should(Succeed())
+	}
 
-		if px == nil {
-			log.Infoln("Skipping cleanup. Reason: perconaxtradb is nil")
-			return
+	var deleteLeftOverStuffs = func() {
+		// old PerconaXtraDB are in garbagePerconaXtraDB list. delete their resources.
+		for _, p := range garbagePerconaXtraDB.Items {
+			*px = p
+			deleteTestResource()
 		}
+
+		By("Delete left over workloads if exists any")
+		f.CleanWorkloadLeftOvers()
 	}
 
 	var baseName = func(proxysql bool) string {
@@ -113,26 +130,41 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		return px.Name
 	}
 
+	var countRows = func(proxysql bool, podIndex, expectedRowCnt int) {
+		By(fmt.Sprintf("Read row from member '%s-%d'", baseName(proxysql), podIndex))
+		f.EventuallyCountRow(px.ObjectMeta, proxysql, dbNameKubedb, podIndex).Should(Equal(expectedRowCnt))
+	}
+
+	var insertRows = func(proxysql bool, podIndex, rowCntToInsert int) {
+		By(fmt.Sprintf("Insert row on member '%s-%d'", baseName(proxysql), podIndex))
+		f.EventuallyInsertRow(px.ObjectMeta, proxysql, dbNameKubedb, podIndex, rowCntToInsert).Should(BeTrue())
+	}
+
+	var create_Database_N_Table = func(proxysql bool) {
+		By("Create Database")
+		f.EventuallyCreateDatabase(px.ObjectMeta, proxysql, dbName, 0).Should(BeTrue())
+
+		By("Create Table")
+		f.EventuallyCreateTable(px.ObjectMeta, proxysql, dbNameKubedb, 0).Should(BeTrue())
+	}
+
 	var readFromEachPrimary = func(clusterSize, rowCnt int, proxysql bool) {
 		for j := 0; j < clusterSize; j += 1 {
-			By(fmt.Sprintf("Read row from member '%s-%d'", baseName(proxysql), j))
-			f.EventuallyCountRow(px.ObjectMeta, proxysql, dbNameKubedb, j).Should(Equal(rowCnt))
+			countRows(proxysql, j, rowCnt)
 		}
 	}
 
 	var writeTo_N_ReadFrom_EachPrimary = func(clusterSize, existingRowCnt int, proxysql bool) {
 		for i := 0; i < clusterSize; i += 1 {
 			rowCnt := existingRowCnt + i + 1
-			By(fmt.Sprintf("Insert row on member '%s-%d'", baseName(proxysql), i))
-			f.EventuallyInsertRow(px.ObjectMeta, proxysql, dbNameKubedb, i, 1).Should(BeTrue())
+			insertRows(proxysql, i, 1)
 			readFromEachPrimary(clusterSize, rowCnt, proxysql)
 		}
 	}
 
 	var replicationCheck = func(clusterSize int, proxysql bool) {
 		By("Checking replication")
-		f.EventuallyCreateDatabase(px.ObjectMeta, proxysql, dbName, 0).Should(BeTrue())
-		f.EventuallyCreateTable(px.ObjectMeta, proxysql, dbNameKubedb, 0).Should(BeTrue())
+		create_Database_N_Table(proxysql)
 
 		writeTo_N_ReadFrom_EachPrimary(clusterSize, 0, proxysql)
 	}
@@ -170,7 +202,6 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		f = root.Invoke()
 		px = f.PerconaXtraDBCluster()
 		garbagePerconaXtraDB = new(api.PerconaXtraDBList)
-		//skipMessage = ""
 		dbName = "mysql"
 		dbNameKubedb = "kubedb"
 
@@ -183,14 +214,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 			// delete resources for current PerconaXtraDB
 			deleteTestResource()
 
-			// old PerconaXtraDB are in garbagePerconaXtraDB list. delete their resources.
-			for _, my := range garbagePerconaXtraDB.Items {
-				*px = my
-				deleteTestResource()
-			}
-
-			By("Delete left over workloads if exists any")
-			f.CleanWorkloadLeftOvers()
+			deleteLeftOverStuffs()
 		})
 
 		Context("Basic Cluster with 3 member", func() {
@@ -365,9 +389,17 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 			var repo *stashV1alpha1.Repository
 
 			BeforeEach(func() {
-				skipDataChecking = true
 				if !f.FoundStashCRDs() {
 					Skip("Skipping tests for stash integration. reason: stash operator is not running.")
+				}
+
+				if !isSetEnv(googleProjectIDKey) ||
+					!isSetEnv(googleServiceAccountJsonKey) ||
+					!isSetEnv(googleBucketNameKey) {
+
+					Skip("Skipping tests for stash integration. reason: " +
+						fmt.Sprintf("env vars %q, %q and %q are required",
+							googleProjectIDKey, googleServiceAccountJsonKey, googleBucketNameKey))
 				}
 			})
 
@@ -383,6 +415,9 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				By("Deleting Repository")
 				err = f.DeleteRepository(repo.ObjectMeta)
 				Expect(err).NotTo(HaveOccurred())
+
+				deleteTestResource()
+				deleteLeftOverStuffs()
 			})
 
 			var createAndWaitForInitializing = func() {
@@ -392,30 +427,15 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 
 				By("Wait for Initializing mysql")
 				f.EventuallyPerconaXtraDBPhase(px.ObjectMeta).Should(Equal(api.DatabasePhaseInitializing))
-
-				By("Wait for AppBinding to create")
-				f.EventuallyAppBinding(px.ObjectMeta).Should(BeTrue())
-
-				By("Check valid AppBinding Specs")
-				err = f.CheckAppBindingSpec(px.ObjectMeta)
-				Expect(err).NotTo(HaveOccurred())
-
-				By("Waiting for database to be ready")
-				f.EventuallyDatabaseReady(px.ObjectMeta, false, dbName, 0).Should(BeTrue())
 			}
 
 			var shouldInitializeFromStash = func() {
 				// Create and wait for running MySQL
 				createAndWaitForRunning()
 
-				By("Creating Table")
-				f.EventuallyCreateTable(px.ObjectMeta, false, dbName, 0).Should(BeTrue())
-
-				By("Inserting Rows")
-				f.EventuallyInsertRow(px.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
-
-				By("Checking Row Count of Table")
-				f.EventuallyCountRow(px.ObjectMeta, false, dbName, 0).Should(Equal(3))
+				create_Database_N_Table(false)
+				insertRows(false, 0, 3)
+				countRows(false, 0, 3)
 
 				By("Create Secret")
 				err = f.CreateSecret(secret)
@@ -429,6 +449,9 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				err = f.CreateBackupConfiguration(bc)
 				Expect(err).NotTo(HaveOccurred())
 
+				By("Wait until BackupSession be created")
+				bs, err = f.WaitUntilBackkupSessionBeCreated(bc.ObjectMeta)
+
 				// eventually backupsession succeeded
 				By("Check for Succeeded backupsession")
 				f.EventuallyBackupSessionPhase(bs.ObjectMeta).Should(Equal(stashV1beta1.BackupSessionSucceeded))
@@ -438,9 +461,9 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 
 				garbagePerconaXtraDB.Items = append(garbagePerconaXtraDB.Items, *oldPerconaXtraDB)
 
-				By("Create mysql from stash")
+				By("Create perconaxtradb for initializing from stash")
 				*px = *f.PerconaXtraDBCluster()
-				rs = f.RestoreSession(px.ObjectMeta, oldPerconaXtraDB.ObjectMeta)
+				rs = f.RestoreSession(px.ObjectMeta, oldPerconaXtraDB.ObjectMeta, oldPerconaXtraDB.Spec.Replicas)
 				px.Spec.DatabaseSecret = oldPerconaXtraDB.Spec.DatabaseSecret
 				px.Spec.Init = &api.InitSpec{
 					StashRestoreSession: &corev1.LocalObjectReference{
@@ -455,15 +478,24 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				err = f.CreateRestoreSession(rs)
 				Expect(err).NotTo(HaveOccurred())
 
-				// eventually backupsession succeeded
+				// eventually restoresession succeeded
 				By("Check for Succeeded restoreSession")
 				f.EventuallyRestoreSessionPhase(rs.ObjectMeta).Should(Equal(stashV1beta1.RestoreSessionSucceeded))
 
 				By("Wait for Running mysql")
 				f.EventuallyPerconaXtraDBRunning(px.ObjectMeta).Should(BeTrue())
 
-				By("Checking Row Count of Table")
-				f.EventuallyCountRow(px.ObjectMeta, false, dbName, 0).Should(Equal(3))
+				By("Wait for AppBinding to create")
+				f.EventuallyAppBinding(px.ObjectMeta).Should(BeTrue())
+
+				By("Check valid AppBinding Specs")
+				err = f.CheckAppBindingSpec(px.ObjectMeta)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Waiting for database to be ready")
+				f.EventuallyDatabaseReady(px.ObjectMeta, false, dbName, 0).Should(BeTrue())
+
+				countRows(false, 0, 3)
 			}
 
 			Context("From GCS backend", func() {
@@ -476,7 +508,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 
 					repo.Spec.Backend = store.Backend{
 						GCS: &store.GCSSpec{
-							Bucket: os.Getenv("GCS_BUCKET_NAME"),
+							Bucket: os.Getenv(googleBucketNameKey),
 							Prefix: fmt.Sprintf("stash/%v/%v", px.Namespace, px.Name),
 						},
 						StorageSecretName: secret.Name,
