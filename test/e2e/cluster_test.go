@@ -22,7 +22,7 @@ import (
 	stashV1beta1 "stash.appscode.dev/stash/apis/stash/v1beta1"
 )
 
-var _ = FDescribe("PerconaXtraDB cluster Tests", func() {
+var _ = Describe("PerconaXtraDB cluster Tests", func() {
 	const (
 		googleProjectIDKey          = "GOOGLE_PROJECT_ID"
 		googleServiceAccountJsonKey = "GOOGLE_SERVICE_ACCOUNT_JSON_KEY"
