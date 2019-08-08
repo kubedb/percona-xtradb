@@ -92,7 +92,7 @@ func (c *Controller) ensurePerconaXtraDB(px *api.PerconaXtraDB) (kutil.VerbType,
 			Command: []string{
 				"rm",
 				"-rf",
-				"/var/lib/mysql/lost+found",
+				api.PerconaXtraDBDataLostFoundPath,
 			},
 			VolumeMounts: []core.VolumeMount{
 				{
@@ -513,7 +513,7 @@ func upsertDataVolume(statefulSet *apps.StatefulSet, pxc *api.PerconaXtraDB) *ap
 		if container.Name == api.ResourceSingularPerconaXtraDB {
 			volumeMount := core.VolumeMount{
 				Name:      "data",
-				MountPath: "/var/lib/mysql",
+				MountPath: api.PerconaXtraDBDataMountPath,
 			}
 			volumeMounts := container.VolumeMounts
 			volumeMounts = core_util.UpsertVolumeMount(volumeMounts, volumeMount)
@@ -562,6 +562,7 @@ func upsertDataVolume(statefulSet *apps.StatefulSet, pxc *api.PerconaXtraDB) *ap
 	return statefulSet
 }
 
+// upsertUserEnv add/overwrite env from user provided env in crd spec
 func upsertEnv(statefulSet *apps.StatefulSet, pxc *api.PerconaXtraDB) *apps.StatefulSet {
 	for i, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == api.ResourceSingularPerconaXtraDB || container.Name == "exporter" {
@@ -594,43 +595,6 @@ func upsertEnv(statefulSet *apps.StatefulSet, pxc *api.PerconaXtraDB) *apps.Stat
 		}
 	}
 
-	return statefulSet
-}
-
-// upsertUserEnv add/overwrite env from user provided env in crd spec
-func upsertUserEnv(statefulSet *apps.StatefulSet, pxc *api.PerconaXtraDB) *apps.StatefulSet {
-	for i, container := range statefulSet.Spec.Template.Spec.Containers {
-		if container.Name == api.ResourceSingularPerconaXtraDB {
-			statefulSet.Spec.Template.Spec.Containers[i].Env = core_util.UpsertEnvVars(container.Env, pxc.Spec.PodTemplate.Spec.Env...)
-			return statefulSet
-		}
-	}
-	return statefulSet
-}
-
-func upsertInitScript(statefulSet *apps.StatefulSet, script core.VolumeSource) *apps.StatefulSet {
-	for i, container := range statefulSet.Spec.Template.Spec.Containers {
-		if container.Name == api.ResourceSingularPerconaXtraDB {
-			volumeMount := core.VolumeMount{
-				Name:      "initial-script",
-				MountPath: "/docker-entrypoint-initdb.d",
-			}
-			statefulSet.Spec.Template.Spec.Containers[i].VolumeMounts = core_util.UpsertVolumeMount(
-				container.VolumeMounts,
-				volumeMount,
-			)
-
-			volume := core.Volume{
-				Name:         "initial-script",
-				VolumeSource: script,
-			}
-			statefulSet.Spec.Template.Spec.Volumes = core_util.UpsertVolume(
-				statefulSet.Spec.Template.Spec.Volumes,
-				volume,
-			)
-			return statefulSet
-		}
-	}
 	return statefulSet
 }
 

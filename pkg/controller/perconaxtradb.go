@@ -52,6 +52,7 @@ func (c *Controller) create(px *api.PerconaXtraDB) error {
 		px.Status = perconaxtradb.Status
 	}
 
+	// Set status as "Initializing" until specified restoresession object be succeeded, if provided
 	if _, err := meta_util.GetString(px.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
 		px.Spec.Init != nil && px.Spec.Init.StashRestoreSession != nil {
 

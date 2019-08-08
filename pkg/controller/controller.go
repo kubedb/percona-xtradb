@@ -53,7 +53,7 @@ type Controller struct {
 	pxLister   api_listers.PerconaXtraDBLister
 }
 
-//var _ amc.Snapshotter = &Controller{}
+var _ amc.Snapshotter = &Controller{}
 var _ amc.Deleter = &Controller{}
 
 func New(
@@ -97,19 +97,15 @@ func (c *Controller) EnsureCustomResourceDefinitions() error {
 		catalog.PerconaXtraDBVersion{}.CustomResourceDefinition(),
 		api.DormantDatabase{}.CustomResourceDefinition(),
 		api.Snapshot{}.CustomResourceDefinition(),
-		// TODO: need to be clear about this role crd and tasks related to this
-		//authorization.MySQLRole{}.CustomResourceDefinition(),
-		//authorization.DatabaseAccessRequest{}.CustomResourceDefinition(),
 		appcat.AppBinding{}.CustomResourceDefinition(),
 	}
 	return apiext_util.RegisterCRDs(c.ApiExtKubeClient, crds)
 }
 
-// Init initializes perconaxtradb, DormantDB amd Snapshot watcher
+// Init initializes perconaxtradb, DormantDB amd RestoreSession watcher
 func (c *Controller) Init() error {
 	c.initWatcher()
 	c.DrmnQueue = drmnc.NewController(c.Controller, c, c.Config, nil, c.recorder).AddEventHandlerFunc(c.selector)
-	//c.SnapQueue, c.JobQueue = snapc.NewController(c.Controller, c, c.Config, nil, c.recorder).AddEventHandlerFunc(c.selector)
 	c.RSQueue = restoresession.NewController(c.Controller, c, c.Config, nil, c.recorder).AddEventHandlerFunc(c.selector)
 
 	return nil
@@ -123,8 +119,6 @@ func (c *Controller) RunControllers(stopCh <-chan struct{}) {
 	// Watch x  TPR objects
 	c.pxQueue.Run(stopCh)
 	c.DrmnQueue.Run(stopCh)
-	//c.SnapQueue.Run(stopCh)
-	//c.JobQueue.Run(stopCh)
 }
 
 // Blocks caller. Intended to be called as a Go routine.

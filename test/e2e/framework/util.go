@@ -104,5 +104,4 @@ func (f *Framework) WaitUntilPodRunningBySelector(px *api.PerconaXtraDB, proxysq
 			int(types.Int32(px.Spec.PXC.Proxysql.Replicas)),
 		)
 	}
-
 }

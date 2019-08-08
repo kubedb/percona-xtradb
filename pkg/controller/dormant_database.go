@@ -46,15 +46,6 @@ func (c *Controller) waitUntilRBACStuffDeleted(px *api.PerconaXtraDB) error {
 		return err
 	}
 
-	//// Delete Snapshot ServiceAccount
-	//snapSAMeta := metav1.ObjectMeta{
-	//	Name:      px.SnapshotSAName(),
-	//	Namespace: px.Namespace,
-	//}
-	//if err := core_util.WaitUntillServiceAccountDeleted(c.Client, snapSAMeta); err != nil {
-	//	return err
-	//}
-
 	return nil
 }
 
