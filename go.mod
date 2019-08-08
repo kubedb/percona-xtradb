@@ -31,7 +31,6 @@ require (
 	github.com/prometheus/procfs v0.0.3 // indirect
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.3
-	github.com/tamalsaha/go-oneliners v0.0.0-20190126213733-6d24eabef827
 	go.etcd.io/bbolt v1.3.3 // indirect
 	gomodules.xyz/stow v0.2.0
 	google.golang.org/grpc v1.21.2 // indirect
@@ -49,7 +48,7 @@ require (
 	kmodules.xyz/objectstore-api v0.0.0-20190802205146-9816ffafe0d7
 	kmodules.xyz/offshoot-api v0.0.0-20190802203449-05938be4a23b
 	kmodules.xyz/webhook-runtime v0.0.0-20190802202019-9e77ee949266
-	kubedb.dev/apimachinery v0.13.0-rc.0.0.20190807104428-29d8ed5e7e81
+	kubedb.dev/apimachinery v0.13.0-rc.0.0.20190808064950-8f78bf3cebde
 	stash.appscode.dev/stash v0.9.0-rc.0
 )
 

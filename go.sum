@@ -564,8 +564,6 @@ github.com/stretchr/objx v0.2.0/go.mod h1:qt09Ya8vawLte6SNmTgCsAVtYtaKzEcn8ATUoH
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/stretchr/testify v1.3.0 h1:TivCn/peBQ7UY8ooIcPgZFpTNSz0Q2U6UrFlUfqbe0Q=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
-github.com/tamalsaha/go-oneliners v0.0.0-20190126213733-6d24eabef827 h1:DYQdfabujsGY4ju8d9S/54bcmRAMPi1LN0YDNZcfNhA=
-github.com/tamalsaha/go-oneliners v0.0.0-20190126213733-6d24eabef827/go.mod h1:CepEgpnfli9WBpo3iPy8fX/koT2xQa/003NZRWvfbmk=
 github.com/tidwall/pretty v0.0.0-20190325153808-1166b9ac2b65/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 h1:LnC5Kc/wtumK+WB441p7ynQJzVuNRJiqddSIE3IlSEQ=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
@@ -838,8 +836,8 @@ kmodules.xyz/openshift v0.0.0-20190802201709-f05cf11ae73e h1:PIgJaW8SNH0nl3WxMk3
 kmodules.xyz/openshift v0.0.0-20190802201709-f05cf11ae73e/go.mod h1:Jd4Y4BTn9MHJcYkQRRqQxCg75ETFFHNHAGWFvSNwpDk=
 kmodules.xyz/webhook-runtime v0.0.0-20190802202019-9e77ee949266 h1:lYDShOkpEwMDlZwkOLTKiSt+0PiTLYH8D3BDsDLsF9E=
 kmodules.xyz/webhook-runtime v0.0.0-20190802202019-9e77ee949266/go.mod h1:asvHdlCuBqzSiDWcYxeGZOG7Wx1wpmLl2lqAIJOOric=
-kubedb.dev/apimachinery v0.13.0-rc.0.0.20190807104428-29d8ed5e7e81 h1:YcGWkkb8pKObfFUMVwe+JZL+NT2IFZZ1gtEX+8A5FxA=
-kubedb.dev/apimachinery v0.13.0-rc.0.0.20190807104428-29d8ed5e7e81/go.mod h1:zvfCeKFv/9KYd6cDY18D58LdwCP0cwFKGAfg1UOKpK8=
+kubedb.dev/apimachinery v0.13.0-rc.0.0.20190808064950-8f78bf3cebde h1:CWCpqEndM4d8J/g0aiiW++EV6zXb27QutoUp3sAgxec=
+kubedb.dev/apimachinery v0.13.0-rc.0.0.20190808064950-8f78bf3cebde/go.mod h1:zvfCeKFv/9KYd6cDY18D58LdwCP0cwFKGAfg1UOKpK8=
 pack.ag/amqp v0.8.0/go.mod h1:4/cbmt4EJXSKlG6LCfWHoqmN0uFdy5i/+YFz+fTfhV4=
 pack.ag/amqp v0.11.0/go.mod h1:4/cbmt4EJXSKlG6LCfWHoqmN0uFdy5i/+YFz+fTfhV4=
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
