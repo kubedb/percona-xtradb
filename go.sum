@@ -836,8 +836,8 @@ kmodules.xyz/openshift v0.0.0-20190802201709-f05cf11ae73e h1:PIgJaW8SNH0nl3WxMk3
 kmodules.xyz/openshift v0.0.0-20190802201709-f05cf11ae73e/go.mod h1:Jd4Y4BTn9MHJcYkQRRqQxCg75ETFFHNHAGWFvSNwpDk=
 kmodules.xyz/webhook-runtime v0.0.0-20190802202019-9e77ee949266 h1:lYDShOkpEwMDlZwkOLTKiSt+0PiTLYH8D3BDsDLsF9E=
 kmodules.xyz/webhook-runtime v0.0.0-20190802202019-9e77ee949266/go.mod h1:asvHdlCuBqzSiDWcYxeGZOG7Wx1wpmLl2lqAIJOOric=
-kubedb.dev/apimachinery v0.13.0-rc.0.0.20190808064950-8f78bf3cebde h1:CWCpqEndM4d8J/g0aiiW++EV6zXb27QutoUp3sAgxec=
-kubedb.dev/apimachinery v0.13.0-rc.0.0.20190808064950-8f78bf3cebde/go.mod h1:zvfCeKFv/9KYd6cDY18D58LdwCP0cwFKGAfg1UOKpK8=
+kubedb.dev/apimachinery v0.13.0-rc.0.0.20190808091223-58fe1ccf1c97 h1:xM/XNa2ITMu+7Gx0UiDAGHcfVIrlDsLjTWHBZwgtl54=
+kubedb.dev/apimachinery v0.13.0-rc.0.0.20190808091223-58fe1ccf1c97/go.mod h1:zvfCeKFv/9KYd6cDY18D58LdwCP0cwFKGAfg1UOKpK8=
 pack.ag/amqp v0.8.0/go.mod h1:4/cbmt4EJXSKlG6LCfWHoqmN0uFdy5i/+YFz+fTfhV4=
 pack.ag/amqp v0.11.0/go.mod h1:4/cbmt4EJXSKlG6LCfWHoqmN0uFdy5i/+YFz+fTfhV4=
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=

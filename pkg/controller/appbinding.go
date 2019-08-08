@@ -38,10 +38,10 @@ func (c *Controller) ensureAppBinding(db *api.PerconaXtraDB) (kutil.VerbType, er
 		peers = append(peers, db.PeerName(i))
 	}
 
-	garbdCnfJson, err := json.Marshal(config_api.GarbdConfiguration{
+	garbdCnfJson, err := json.Marshal(config_api.GaleraArbitratorConfiguration{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: config_api.SchemeGroupVersion.String(),
-			Kind:       config_api.ResourceKindGarbdConfiguration,
+			Kind:       config_api.ResourceKindGaleraArbitratorConfiguration,
 		},
 		Address:   fmt.Sprintf("gcomm://%s", strings.Join(peers, ",")),
 		Group:     db.Name,
