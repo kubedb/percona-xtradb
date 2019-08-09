@@ -21,8 +21,8 @@ import (
 )
 
 var (
-	StashPerconaXtraDBBackupTask  = "perconaxtradb-backup-5.7"
-	StashPerconaXtraDBRestoreTask = "perconaxtradb-restore-5.7"
+	StashPerconaXtraDBBackupTask  = "percona-xtradb-backup-5.7"
+	StashPerconaXtraDBRestoreTask = "percona-xtradb-restore-5.7"
 )
 
 func (f *Framework) FoundStashCRDs() bool {
