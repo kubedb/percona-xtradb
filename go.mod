@@ -5,14 +5,14 @@ go 1.12
 require (
 	github.com/Azure/azure-pipeline-go v0.1.9 // indirect
 	github.com/Azure/azure-storage-blob-go v0.6.0 // indirect
-	github.com/appscode/go v0.0.0-20190804161047-d69b20b44118
+	github.com/appscode/go v0.0.0-20190808133642-1d4ef1f1c1e0
 	github.com/aws/aws-sdk-go v1.20.21 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
 	github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27
-	github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/prometheus-operator v0.31.1
-	github.com/emicklei/go-restful v2.9.6+incompatible // indirect
+	github.com/dnaeon/go-vcr v1.0.1 // indirect
+	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/fatih/structs v1.1.0
 	github.com/go-ini/ini v1.25.4 // indirect
 	github.com/go-openapi/spec v0.19.2 // indirect
@@ -22,7 +22,9 @@ require (
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/google/martian v2.1.1-0.20190517191504-25dcb96d9e51+incompatible // indirect
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
+	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/json-iterator/go v1.1.7 // indirect
+	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/lib/pq v1.1.1 // indirect
 	github.com/ncw/swift v1.0.49 // indirect
 	github.com/onsi/ginkgo v1.8.0
@@ -31,24 +33,25 @@ require (
 	github.com/prometheus/procfs v0.0.3 // indirect
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.3
-	go.etcd.io/bbolt v1.3.3 // indirect
 	gomodules.xyz/stow v0.2.0
 	google.golang.org/grpc v1.21.2 // indirect
 	k8s.io/api v0.0.0-20190503110853-61630f889b3c
 	k8s.io/apiextensions-apiserver v0.0.0-20190516231611-bf6753f2aa24
 	k8s.io/apimachinery v0.0.0-20190508063446-a3da69d3723c
 	k8s.io/apiserver v0.0.0-20190516230822-f89599b3f645
+	k8s.io/cli-runtime v0.0.0-20190516231937-17bc0b7fcef5 // indirect
 	k8s.io/client-go v11.0.0+incompatible
+	k8s.io/component-base v0.0.0-20190424053038-9fe063da3132 // indirect
 	k8s.io/klog v0.3.3 // indirect
 	k8s.io/kube-aggregator v0.0.0-20190508104018-6d3d96b06d29
 	k8s.io/kubernetes v1.14.5 // indirect
-	kmodules.xyz/client-go v0.0.0-20190802200916-043217632b6a
-	kmodules.xyz/custom-resources v0.0.0-20190802202832-aaad432d3364
-	kmodules.xyz/monitoring-agent-api v0.0.0-20190802203207-a87aa5b2e057
-	kmodules.xyz/objectstore-api v0.0.0-20190802205146-9816ffafe0d7
-	kmodules.xyz/offshoot-api v0.0.0-20190802203449-05938be4a23b
-	kmodules.xyz/webhook-runtime v0.0.0-20190802202019-9e77ee949266
-	kubedb.dev/apimachinery v0.0.0-20190809070454-182a04712624
+	kmodules.xyz/client-go v0.0.0-20190808141354-bbb9e14f60ab
+	kmodules.xyz/custom-resources v0.0.0-20190808144301-114abf10dfe2
+	kmodules.xyz/monitoring-agent-api v0.0.0-20190808150221-601a4005b7f7
+	kmodules.xyz/objectstore-api v0.0.0-20190808153322-733e8798e8de
+	kmodules.xyz/offshoot-api v0.0.0-20190808152534-e3dc715f844b
+	kmodules.xyz/webhook-runtime v0.0.0-20190808145328-4186c470d56b
+	kubedb.dev/apimachinery v0.13.0-rc.0.0.20190809094618-4a30bdd03738
 	stash.appscode.dev/stash v0.9.0-rc.0
 )
 
