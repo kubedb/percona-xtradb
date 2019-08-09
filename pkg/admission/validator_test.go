@@ -287,7 +287,7 @@ var cases = []struct {
 		emptyClusterName(),
 		api.PerconaXtraDB{},
 		false,
-		false,
+		true,
 	},
 	{"Create PerconaXtraDB Cluster with larger cluster name than recommended",
 		requestKind,
@@ -449,7 +449,7 @@ func emptyClusterName() api.PerconaXtraDB {
 
 func largerClusterNameThanRecommended() api.PerconaXtraDB {
 	perconaxtradb := sampleXtraDBCluster()
-	perconaxtradb.Spec.PXC.ClusterName = "aaaaa-aaaaa-aaaaa-aaaaa-aaaaa-aaaaa"
+	perconaxtradb.Name = "aaaaa-aaaaa-aaaaa-aaaaa-aaaaa-aaaaa"
 
 	return perconaxtradb
 }
