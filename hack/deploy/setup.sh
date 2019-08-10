@@ -124,8 +124,8 @@ env | sort | grep -e KUBEDB* -e APPSCODE*
 echo ""
 
 if [ "$SELF_HOSTED" -eq 1 ]; then
-  echo "${KUBEDB_SCRIPT}deploy/kubedb.sh | bash -s -- --operator-name=perconaxtradb-operator $ARGS"
-  ${KUBEDB_SCRIPT}deploy/kubedb.sh | bash -s -- --operator-name=perconaxtradb-operator ${ARGS}
+  echo "${KUBEDB_SCRIPT}deploy/kubedb.sh | bash -s -- --operator-name=percona-xtradb-operator $ARGS"
+  ${KUBEDB_SCRIPT}deploy/kubedb.sh | bash -s -- --operator-name=percona-xtradb-operator ${ARGS}
 fi
 
 if [ "$MINIKUBE" -eq 1 ]; then
@@ -138,7 +138,7 @@ if [ "$MINIKUBE" -eq 1 ]; then
 
   if [ "$MINIKUBE_RUN" -eq 1 ]; then
     $REPO_ROOT/hack/make.py
-    perconaxtradb-operator run --v=4 \
+    percona-xtradb-operator run --v=4 \
       --secure-port=8443 \
       --enable-status-subresource=true \
       --enable-mutating-webhook=true \

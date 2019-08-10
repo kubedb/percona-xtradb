@@ -84,8 +84,8 @@ fi
 
 if [ "$OPERATOR_UPDATE" -eq 1 ]; then
   cowsay -f tux "Processing Operator images" || true
-  ${REPO_ROOT}/hack/docker/perconaxtradb-operator/make.sh build
-  ${REPO_ROOT}/hack/docker/perconaxtradb-operator/make.sh push
+  ${REPO_ROOT}/hack/docker/percona-xtradb-operator/make.sh build
+  ${REPO_ROOT}/hack/docker/percona-xtradb-operator/make.sh push
 fi
 
 if [ "$PROXYSQL_UPDATE" -eq 1 ]; then

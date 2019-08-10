@@ -77,7 +77,7 @@ func (s *ExtraOptions) AddGoFlags(fs *flag.FlagSet) {
 }
 
 func (s *ExtraOptions) AddFlags(fs *pflag.FlagSet) {
-	pfs := flag.NewFlagSet("perconaxtradb-server", flag.ExitOnError)
+	pfs := flag.NewFlagSet("percona-xtradb-server", flag.ExitOnError)
 	s.AddGoFlags(pfs)
 	fs.AddGoFlagSet(pfs)
 }

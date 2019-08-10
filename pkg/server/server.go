@@ -194,7 +194,7 @@ func (c completedConfig) New() (*PerconaXtraDBServer, error) {
 							Kind:       api.ResourceKindPerconaXtraDB,
 						},
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      "test-perconaxtradb-for-webhook-xray",
+							Name:      "test-percona-xtradb-for-webhook-xray",
 							Namespace: "default",
 						},
 						Spec: api.PerconaXtraDBSpec{
@@ -210,7 +210,7 @@ func (c completedConfig) New() (*PerconaXtraDBServer, error) {
 						if e2 == nil {
 							eventer.CreateEventWithLog(
 								kubernetes.NewForConfigOrDie(c.OperatorConfig.ClientConfig),
-								"perconaxtradb-operator",
+								"percona-xtradb-operator",
 								w,
 								core.EventTypeWarning,
 								eventer.EventReasonAdmissionWebhookNotActivated,

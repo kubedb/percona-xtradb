@@ -49,7 +49,7 @@ func (c *Controller) createDatabaseSecret(px *api.PerconaXtraDB) (*core.SecretVo
 	if sc == nil {
 		randPassword := ""
 
-		// if the password starts with "-", it will cause error in bash scripts (in perconaxtradb-tools)
+		// if the password starts with "-", it will cause error in bash scripts (in percona-xtradb-tools)
 		for randPassword = rand.GeneratePassword(); randPassword[0] == '-'; {
 		}
 
@@ -68,7 +68,7 @@ func (c *Controller) createDatabaseSecret(px *api.PerconaXtraDB) (*core.SecretVo
 		if px.Spec.PXC != nil {
 			randProxysqlPassword := ""
 
-			// if the password starts with "-", it will cause error in bash scripts (in perconaxtradb-tools)
+			// if the password starts with "-", it will cause error in bash scripts (in percona-xtradb-tools)
 			for randProxysqlPassword = rand.GeneratePassword(); randProxysqlPassword[0] == '-'; {
 			}
 

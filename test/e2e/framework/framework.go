@@ -57,7 +57,7 @@ func New(
 func (f *Framework) Invoke() *Invocation {
 	return &Invocation{
 		Framework: f,
-		app:       rand.WithUniqSuffix("perconaxtradb-e2e"),
+		app:       rand.WithUniqSuffix("percona-xtradb-e2e"),
 	}
 }
 

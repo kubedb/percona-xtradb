@@ -31,7 +31,7 @@ func NewPerconaXtraDBServerOptions(out, errOut io.Writer) *PerconaXtraDBServerOp
 		RecommendedOptions: genericoptions.NewRecommendedOptions(
 			defaultEtcdPathPrefix,
 			server.Codecs.LegacyCodec(admissionv1beta1.SchemeGroupVersion),
-			genericoptions.NewProcessInfo("perconaxtradb-operator", meta.Namespace()),
+			genericoptions.NewProcessInfo("percona-xtradb-operator", meta.Namespace()),
 		),
 		ExtraOptions: NewExtraOptions(),
 		StdOut:       out,

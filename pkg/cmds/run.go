@@ -21,7 +21,7 @@ func NewCmdRun(version string, out, errOut io.Writer, stopCh <-chan struct{}) *c
 			cli.SendPeriodicAnalytics(c, version)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			log.Infoln("Starting perconaxtradb-server...")
+			log.Infoln("Starting percona-xtradb-server...")
 
 			if err := o.Complete(); err != nil {
 				return err
