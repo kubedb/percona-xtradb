@@ -28,7 +28,7 @@ var (
 func (f *Invocation) PerconaXtraDB() *api.PerconaXtraDB {
 	return &api.PerconaXtraDB{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      rand.WithUniqSuffix("perconaxtradb"),
+			Name:      rand.WithUniqSuffix("percona-xtradb"),
 			Namespace: f.namespace,
 			Labels: map[string]string{
 				"app": f.app,

@@ -272,7 +272,7 @@ $(BUILD_DIRS):
 .PHONY: install
 install:
 	@cd ../installer; \
-	APPSCODE_ENV=dev KUBEDB_DOCKER_REGISTRY=$(REGISTRY) KUBEDB_OPERATOR_TAG=$(TAG) KUBEDB_CATALOG=perconaxtradb ./deploy/kubedb.sh --operator-name=$(BIN)
+	APPSCODE_ENV=dev KUBEDB_DOCKER_REGISTRY=$(REGISTRY) KUBEDB_OPERATOR_TAG=$(TAG) KUBEDB_CATALOG=percona-xtradb ./deploy/kubedb.sh --operator-name=$(BIN)
 
 .PHONY: uninstall
 uninstall:

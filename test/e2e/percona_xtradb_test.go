@@ -56,7 +56,7 @@ var _ = Describe("PerconaXtraDB", func() {
 		err = f.CreatePerconaXtraDB(perconaxtradb)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Wait for Running perconaxtradb")
+		By("Wait for Running PerconaXtraDB")
 		f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 		By("Wait for AppBinding to create")
@@ -86,11 +86,11 @@ var _ = Describe("PerconaXtraDB", func() {
 		By("Checking Row Count of Table")
 		f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
-		By("Delete perconaxtradb")
+		By("Delete PerconaXtraDB")
 		err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Wait for perconaxtradb to be paused")
+		By("Wait for PerconaXtraDB to be paused")
 		f.EventuallyDormantDatabaseStatus(perconaxtradb.ObjectMeta).Should(matcher.HavePaused())
 
 		// Create PerconaXtraDB object again to resume it
@@ -101,7 +101,7 @@ var _ = Describe("PerconaXtraDB", func() {
 		By("Wait for DormantDatabase to be deleted")
 		f.EventuallyDormantDatabase(perconaxtradb.ObjectMeta).Should(BeFalse())
 
-		By("Wait for Running perconaxtradb")
+		By("Wait for Running PerconaXtraDB")
 		f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 		By("Checking Row Count of Table")
@@ -162,11 +162,11 @@ var _ = Describe("PerconaXtraDB", func() {
 
 	var deleteTestResource = func() {
 		if perconaxtradb == nil {
-			log.Infoln("Skipping cleanup. Reason: perconaxtradb is nil")
+			log.Infoln("Skipping cleanup. Reason: PerconaXtraDB object is nil")
 			return
 		}
 
-		By("Check if perconaxtradb " + perconaxtradb.Name + " exists.")
+		By("Check if PerconaXtraDB " + perconaxtradb.Name + " exists.")
 		pc, err := f.GetPerconaXtraDB(perconaxtradb.ObjectMeta)
 		if err != nil {
 			if kerr.IsNotFound(err) {
@@ -176,7 +176,7 @@ var _ = Describe("PerconaXtraDB", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-		By("Delete perconaxtradb")
+		By("Delete PerconaXtraDB")
 		err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 		if err != nil {
 			if kerr.IsNotFound(err) {
@@ -187,10 +187,10 @@ var _ = Describe("PerconaXtraDB", func() {
 		}
 
 		if pc.Spec.TerminationPolicy == api.TerminationPolicyPause {
-			By("Wait for perconaxtradb to be paused")
+			By("Wait for PerconaXtraDB to be paused")
 			f.EventuallyDormantDatabaseStatus(perconaxtradb.ObjectMeta).Should(matcher.HavePaused())
 
-			By("WipeOut perconaxtradb")
+			By("WipeOut PerconaXtraDB")
 			_, err := f.PatchDormantDatabase(perconaxtradb.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
 				in.Spec.WipeOut = true
 				return in
@@ -202,7 +202,7 @@ var _ = Describe("PerconaXtraDB", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-		By("Wait for perconaxtradb resources to be wipedOut")
+		By("Wait for PerconaXtraDB resources to be wipedOut")
 		f.EventuallyWipedOut(perconaxtradb.ObjectMeta).Should(Succeed())
 	}
 
@@ -828,7 +828,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 					garbagePerconaXtraDB.Items = append(garbagePerconaXtraDB.Items, *oldPerconaXtraDB)
 
-					By("Create perconaxtradb from snapshot")
+					By("Create PerconaXtraDB from snapshot")
 					perconaxtradb = f.PerconaXtraDB()
 					perconaxtradb.Spec.Init = &api.InitSpec{
 						SnapshotSource: &api.SnapshotSourceSpec{
@@ -919,11 +919,11 @@ var _ = Describe("PerconaXtraDB", func() {
 					By("Checking Row Count of Table")
 					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
-					By("Delete perconaxtradb")
+					By("Delete PerconaXtraDB")
 					err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Wait for perconaxtradb to be paused")
+					By("Wait for PerconaXtraDB to be paused")
 					f.EventuallyDormantDatabaseStatus(perconaxtradb.ObjectMeta).Should(matcher.HavePaused())
 
 					// Create PerconaXtraDB object again to resume it
@@ -932,7 +932,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					// Delete without caring if DB is resumed
-					By("Delete perconaxtradb")
+					By("Delete PerconaXtraDB")
 					err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
@@ -947,7 +947,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					By("Wait for DormantDatabase to be deleted")
 					f.EventuallyDormantDatabase(perconaxtradb.ObjectMeta).Should(BeFalse())
 
-					By("Wait for Running perconaxtradb")
+					By("Wait for Running PerconaXtraDB")
 					f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
@@ -969,11 +969,11 @@ var _ = Describe("PerconaXtraDB", func() {
 					By("Checking Row Count of Table")
 					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
-					By("Delete perconaxtradb")
+					By("Delete PerconaXtraDB")
 					err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Wait for perconaxtradb to be paused")
+					By("Wait for PerconaXtraDB to be paused")
 					f.EventuallyDormantDatabaseStatus(perconaxtradb.ObjectMeta).Should(matcher.HavePaused())
 
 					// Create PerconaXtraDB object again to resume it
@@ -984,7 +984,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					By("Wait for DormantDatabase to be deleted")
 					f.EventuallyDormantDatabase(perconaxtradb.ObjectMeta).Should(BeFalse())
 
-					By("Wait for Running perconaxtradb")
+					By("Wait for Running PerconaXtraDB")
 					f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
@@ -1013,11 +1013,11 @@ var _ = Describe("PerconaXtraDB", func() {
 					By("Checking Row Count of Table")
 					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
-					By("Delete perconaxtradb")
+					By("Delete PerconaXtraDB")
 					err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Wait for perconaxtradb to be paused")
+					By("Wait for PerconaXtraDB to be paused")
 					f.EventuallyDormantDatabaseStatus(perconaxtradb.ObjectMeta).Should(matcher.HavePaused())
 
 					// Create PerconaXtraDB object again to resume it
@@ -1028,7 +1028,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					By("Wait for DormantDatabase to be deleted")
 					f.EventuallyDormantDatabase(perconaxtradb.ObjectMeta).Should(BeFalse())
 
-					By("Wait for Running perconaxtradb")
+					By("Wait for Running PerconaXtraDB")
 					f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
@@ -1076,7 +1076,7 @@ var _ = Describe("PerconaXtraDB", func() {
 
 					garbagePerconaXtraDB.Items = append(garbagePerconaXtraDB.Items, *oldPerconaXtraDB)
 
-					By("Create perconaxtradb from snapshot")
+					By("Create PerconaXtraDB from snapshot")
 					perconaxtradb = f.PerconaXtraDB()
 					perconaxtradb.Spec.Init = &api.InitSpec{
 						SnapshotSource: &api.SnapshotSourceSpec{
@@ -1099,11 +1099,11 @@ var _ = Describe("PerconaXtraDB", func() {
 					By("Checking Row Count of Table")
 					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
 
-					By("Delete perconaxtradb")
+					By("Delete PerconaXtraDB")
 					err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Wait for perconaxtradb to be paused")
+					By("Wait for PerconaXtraDB to be paused")
 					f.EventuallyDormantDatabaseStatus(perconaxtradb.ObjectMeta).Should(matcher.HavePaused())
 
 					// Create PerconaXtraDB object again to resume it
@@ -1114,7 +1114,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					By("Wait for DormantDatabase to be deleted")
 					f.EventuallyDormantDatabase(perconaxtradb.ObjectMeta).Should(BeFalse())
 
-					By("Wait for Running perconaxtradb")
+					By("Wait for Running PerconaXtraDB")
 					f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
@@ -1155,11 +1155,11 @@ var _ = Describe("PerconaXtraDB", func() {
 					for i := 0; i < 3; i++ {
 						By(fmt.Sprintf("%v-th", i+1) + " time running.")
 
-						By("Delete perconaxtradb")
+						By("Delete PerconaXtraDB")
 						err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 						Expect(err).NotTo(HaveOccurred())
 
-						By("Wait for perconaxtradb to be paused")
+						By("Wait for PerconaXtraDB to be paused")
 						f.EventuallyDormantDatabaseStatus(perconaxtradb.ObjectMeta).Should(matcher.HavePaused())
 
 						// Create PerconaXtraDB object again to resume it
@@ -1170,7 +1170,7 @@ var _ = Describe("PerconaXtraDB", func() {
 						By("Wait for DormantDatabase to be deleted")
 						f.EventuallyDormantDatabase(perconaxtradb.ObjectMeta).Should(BeFalse())
 
-						By("Wait for Running perconaxtradb")
+						By("Wait for Running PerconaXtraDB")
 						f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 						By("Checking Row Count of Table")
@@ -1290,7 +1290,7 @@ var _ = Describe("PerconaXtraDB", func() {
 		//			err := f.CreateSecret(secret)
 		//			Expect(err).NotTo(HaveOccurred())
 		//
-		//			By("Update perconaxtradb")
+		//			By("Update PerconaXtraDB")
 		//			_, err = f.PatchPerconaXtraDB(perconaxtradb.ObjectMeta, func(in *api.PerconaXtraDB) *api.PerconaXtraDB{
 		//				in.Spec.BackupSchedule = &api.BackupScheduleSpec{
 		//					CronExpression: "@every 20s",
@@ -1338,7 +1338,7 @@ var _ = Describe("PerconaXtraDB", func() {
 		//			err := f.CreateSecret(secret)
 		//			Expect(err).NotTo(HaveOccurred())
 		//
-		//			By("Update perconaxtradb")
+		//			By("Update PerconaXtraDB")
 		//			_, err = f.PatchPerconaXtraDB(perconaxtradb.ObjectMeta, func(in *api.PerconaXtraDB) *api.PerconaXtraDB{
 		//				in.Spec.BackupSchedule = &api.BackupScheduleSpec{
 		//					CronExpression: "@every 20s",
@@ -1371,11 +1371,11 @@ var _ = Describe("PerconaXtraDB", func() {
 		//			By("Verify multiple Succeeded Snapshot")
 		//			f.EventuallyMultipleSnapshotFinishedProcessing(perconaxtradb.ObjectMeta).Should(Succeed())
 		//
-		//			By("Delete perconaxtradb")
+		//			By("Delete PerconaXtraDB")
 		//			err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 		//			Expect(err).NotTo(HaveOccurred())
 		//
-		//			By("Wait for perconaxtradb to be paused")
+		//			By("Wait for PerconaXtraDB to be paused")
 		//			f.EventuallyDormantDatabaseStatus(perconaxtradb.ObjectMeta).Should(matcher.HavePaused())
 		//
 		//			// Create PerconaXtraDB object again to resume it
@@ -1386,7 +1386,7 @@ var _ = Describe("PerconaXtraDB", func() {
 		//			By("Wait for DormantDatabase to be deleted")
 		//			f.EventuallyDormantDatabase(perconaxtradb.ObjectMeta).Should(BeFalse())
 		//
-		//			By("Wait for Running perconaxtradb")
+		//			By("Wait for Running PerconaXtraDB")
 		//			f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 		//
 		//			By("Checking Row Count of Table")
@@ -1430,17 +1430,17 @@ var _ = Describe("PerconaXtraDB", func() {
 					// Create and wait for running PerconaXtraDB
 					createAndWaitForRunning()
 
-					By("Delete perconaxtradb")
+					By("Delete PerconaXtraDB")
 					err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).Should(HaveOccurred())
 
-					By("PerconaXtraDB is not paused. Check for perconaxtradb")
+					By("PerconaXtraDB is not paused. Check for PerconaXtraDB")
 					f.EventuallyPerconaXtraDB(perconaxtradb.ObjectMeta).Should(BeTrue())
 
-					By("Check for Running perconaxtradb")
+					By("Check for Running PerconaXtraDB")
 					f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
-					By("Update perconaxtradb to set spec.terminationPolicy = Pause")
+					By("Update PerconaXtraDB to set spec.terminationPolicy = Pause")
 					_, err := f.PatchPerconaXtraDB(perconaxtradb.ObjectMeta, func(in *api.PerconaXtraDB) *api.PerconaXtraDB {
 						in.Spec.TerminationPolicy = api.TerminationPolicyPause
 						return in
@@ -1470,8 +1470,8 @@ var _ = Describe("PerconaXtraDB", func() {
 					err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					// DormantDatabase.Status= paused, means perconaxtradb object is deleted
-					By("Waiting for perconaxtradb to be paused")
+					// DormantDatabase.Status= paused, means PerconaXtraDB object is deleted
+					By("Waiting for PerconaXtraDB to be paused")
 					f.EventuallyDormantDatabaseStatus(perconaxtradb.ObjectMeta).Should(matcher.HavePaused())
 
 					By("Checking PVC hasn't been deleted")
@@ -1496,7 +1496,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					By("Wait for DormantDatabase to be deleted")
 					f.EventuallyDormantDatabase(perconaxtradb.ObjectMeta).Should(BeFalse())
 
-					By("Wait for Running perconaxtradb")
+					By("Wait for Running PerconaXtraDB")
 					f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Checking row count of table")
@@ -1525,11 +1525,11 @@ var _ = Describe("PerconaXtraDB", func() {
 					// Run PerconaXtraDB and take snapshot
 					shouldInsertDataAndTakeSnapshot()
 
-					By("Delete perconaxtradb")
+					By("Delete PerconaXtraDB")
 					err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("wait until perconaxtradb is deleted")
+					By("wait until PerconaXtraDB is deleted")
 					f.EventuallyPerconaXtraDB(perconaxtradb.ObjectMeta).Should(BeFalse())
 
 					By("Checking DormantDatabase is not created")
@@ -1561,11 +1561,11 @@ var _ = Describe("PerconaXtraDB", func() {
 					// Run PerconaXtraDB and take snapshot
 					shouldInsertDataAndTakeSnapshot()
 
-					By("Delete perconaxtradb")
+					By("Delete PerconaXtraDB")
 					err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("wait until perconaxtradb is deleted")
+					By("wait until PerconaXtraDB is deleted")
 					f.EventuallyPerconaXtraDB(perconaxtradb.ObjectMeta).Should(BeFalse())
 
 					By("Checking DormantDatabase is not created")
@@ -1696,7 +1696,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					// Create PerconaXtraDB
 					createAndWaitForRunning()
 
-					By("Checking perconaxtradb configured from provided custom configuration")
+					By("Checking PerconaXtraDB configured from provided custom configuration")
 					for _, cfg := range customConfigs {
 						f.EventuallyPerconaXtraDBVariable(perconaxtradb.ObjectMeta, false, dbName, 0, cfg).Should(matcher.UseCustomConfig(cfg))
 					}
@@ -1712,7 +1712,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					Skip(skipMessage)
 				}
 
-				// Create Percona
+				// Create PerconaXtraDB
 				createAndWaitForRunning()
 
 				By("Creating Table")
