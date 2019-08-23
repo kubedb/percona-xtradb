@@ -5,8 +5,8 @@
 [![mailing list](https://img.shields.io/badge/mailing_list-join-blue.svg)](https://groups.google.com/forum/#!forum/kubedb)
 [![Twitter](https://img.shields.io/twitter/follow/kubedb.svg?style=social&logo=twitter&label=Follow)](https://twitter.com/intent/follow?screen_name=kubedb)
 
-# mysql
-Run MySQL in Kubernetes
+# percona-xtradb
+Run Percona XtraDB in Kubernetes
 
 ## Installation
 To install KubeDB, please follow the guide [here](https://kubedb.com/docs/latest/setup/install/).
