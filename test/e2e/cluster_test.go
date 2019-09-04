@@ -38,6 +38,8 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		dbNameKubedb         string
 		wsClusterStats       map[string]string
 		secret               *corev1.Secret
+
+		psql *api.ProxySQL
 	)
 
 	var isSetEnv = func(key string) bool {
@@ -46,7 +48,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		return set
 	}
 
-	var createAndWaitForRunning = func() {
+	var createAndWaitForRunningPerconaXtraDB = func() {
 		By("Create PerconaXtraDB: " + px.Name)
 		err = f.CreatePerconaXtraDB(px)
 		Expect(err).NotTo(HaveOccurred())
@@ -122,9 +124,21 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		f.CleanWorkloadLeftOvers()
 	}
 
+	var createAndWaitForRunningProxySQL = func() {
+		By("Create ProxySQL: " + psql.Name)
+		err = f.CreateProxySQL(psql)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Wait for Running ProxySQL")
+		f.EventuallyProxySQLPhase(px.ObjectMeta).Should(Equal(api.DatabasePhaseRunning))
+
+		By("Waiting for database to be ready")
+		f.EventuallyDatabaseReady(px.ObjectMeta, true, dbName, 0).Should(BeTrue())
+	}
+
 	var baseName = func(proxysql bool) string {
 		if proxysql {
-			return px.ProxysqlName()
+			return psql.Name
 		}
 
 		return px.Name
@@ -171,7 +185,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 
 	var storeWsClusterStats = func() {
 		pods, err := f.KubeClient().CoreV1().Pods(px.Namespace).List(metav1.ListOptions{
-			LabelSelector: labels.Set(px.ClusterSelectors()).String(),
+			LabelSelector: labels.Set(px.OffshootSelectors()).String(),
 		})
 		Expect(err).NotTo(HaveOccurred())
 		clusterMembersAddr := make([]*string, 0)
@@ -198,6 +212,12 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		}
 	}
 
+	var CheckProxySQLVersionForXtraDBCluster = func() {
+		if framework.ProxySQLCatalogName != "5.7" {
+			Skip("For XtraDB Cluster, currently supported ProxySQL version is '5.7'")
+		}
+	}
+
 	BeforeEach(func() {
 		f = root.Invoke()
 		px = f.PerconaXtraDBCluster()
@@ -219,7 +239,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 
 		Context("Basic Cluster with 3 member", func() {
 			BeforeEach(func() {
-				createAndWaitForRunning()
+				createAndWaitForRunningPerconaXtraDB()
 				storeWsClusterStats()
 			})
 
@@ -236,7 +256,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 
 		Context("Failover", func() {
 			BeforeEach(func() {
-				createAndWaitForRunning()
+				createAndWaitForRunningPerconaXtraDB()
 				storeWsClusterStats()
 			})
 
@@ -266,7 +286,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 
 		Context("Scale up", func() {
 			BeforeEach(func() {
-				createAndWaitForRunning()
+				createAndWaitForRunningPerconaXtraDB()
 				storeWsClusterStats()
 			})
 
@@ -312,7 +332,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 			BeforeEach(func() {
 				px.Spec.Replicas = types.Int32P(4)
 
-				createAndWaitForRunning()
+				createAndWaitForRunningPerconaXtraDB()
 				storeWsClusterStats()
 			})
 
@@ -356,23 +376,27 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 
 		Context("Proxysql", func() {
 			BeforeEach(func() {
-				createAndWaitForRunning()
+				CheckProxySQLVersionForXtraDBCluster()
+
+				createAndWaitForRunningPerconaXtraDB()
 				storeWsClusterStats()
 
+				psql = f.ProxySQL(px.Name)
+				createAndWaitForRunningProxySQL()
 			})
 
-			It("should configure poxysql for backend server", func() {
+			It("should configure poxysql for backend servers", func() {
 				for i := 0; i < api.PerconaXtraDBDefaultClusterSize; i++ {
 					By(fmt.Sprintf("Checking the cluster stats from Pod '%s-%d'", px.Name, i))
 					f.EventuallyCheckCluster(px.ObjectMeta, false, dbName, i, wsClusterStats).
 						Should(Equal(true))
 				}
-				for i := 0; i < int(*px.Spec.PXC.Proxysql.Replicas); i++ {
-					By(fmt.Sprintf("Checking the cluster stats from Proxysql Pod '%s-%d'", px.ProxysqlName(), i))
+				for i := 0; i < int(*psql.Spec.Replicas); i++ {
+					By(fmt.Sprintf("Checking the cluster stats from Proxysql Pod '%s-%d'", psql.Name, i))
 					f.EventuallyCheckCluster(px.ObjectMeta, true, dbName, i, wsClusterStats).
 						Should(Equal(true))
 				}
-				replicationCheck(int(*px.Spec.PXC.Proxysql.Replicas), true)
+				replicationCheck(int(*psql.Spec.Replicas), true)
 			})
 		})
 	})
@@ -431,7 +455,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 
 			var shouldInitializeFromStash = func() {
 				// Create and wait for running MySQL
-				createAndWaitForRunning()
+				createAndWaitForRunningPerconaXtraDB()
 
 				create_Database_N_Table(false)
 				insertRows(false, 0, 3)

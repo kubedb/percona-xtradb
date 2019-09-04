@@ -20,8 +20,8 @@ type KubedbTable struct {
 	PodName string
 }
 
-func proxysqlName(perconaName string) string {
-	return perconaName + "-proxysql"
+func proxysqlName(perconaxtradbName string) string {
+	return perconaxtradbName + "-proxysql"
 }
 
 func (f *Framework) forwardPort(meta metav1.ObjectMeta, clientPodIndex, remotePort int) (*portforward.Tunnel, error) {

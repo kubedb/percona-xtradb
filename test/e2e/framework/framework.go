@@ -12,9 +12,10 @@ import (
 )
 
 var (
-	DockerRegistry     = "kubedbci"
-	SelfHostedOperator = false
-	DBCatalogName      = "5.7"
+	DockerRegistry      = "kubedbci"
+	SelfHostedOperator  = false
+	DBCatalogName       = "5.7"
+	ProxySQLCatalogName = "5.7"
 )
 
 type Framework struct {
