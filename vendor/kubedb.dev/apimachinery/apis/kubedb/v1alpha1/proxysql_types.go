@@ -10,39 +10,52 @@ import (
 )
 
 const (
-	ResourceCodePerconaXtraDB     = "px"
-	ResourceKindPerconaXtraDB     = "PerconaXtraDB"
-	ResourceSingularPerconaXtraDB = "perconaxtradb"
-	ResourcePluralPerconaXtraDB   = "perconaxtradbs"
+	ResourceCodeProxySQL     = "psql"
+	ResourceKindProxySQL     = "ProxySQL"
+	ResourceSingularProxySQL = "proxysql"
+	ResourcePluralProxySQL   = "proxysqls"
 )
 
-// PerconaXtraDB defines a percona variation of Mysql database.
+type LoadBalanceMode string
+
+const (
+	ConfigurationTypeGalera           LoadBalanceMode = "Galera"
+	ConfigurationTypeGroupReplication LoadBalanceMode = "GroupReplication"
+)
+
+// ProxySQL defines a percona variation of Mysql database.
 
 // +genclient
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:path=perconaxtradbs,singular=perconaxtradb,shortName=px,categories={datastore,kubedb,appscode,all}
+// +kubebuilder:resource:path=proxysqls,singular=proxysql,shortName=psql,categories={datastore,kubedb,appscode,all}
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Version",type="string",JSONPath=".spec.version"
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-type PerconaXtraDB struct {
+type ProxySQL struct {
 	metav1.TypeMeta   `json:",inline,omitempty"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              PerconaXtraDBSpec   `json:"spec,omitempty"`
-	Status            PerconaXtraDBStatus `json:"status,omitempty"`
+	Spec              ProxySQLSpec   `json:"spec,omitempty"`
+	Status            ProxySQLStatus `json:"status,omitempty"`
 }
 
-type PerconaXtraDBSpec struct {
-	// Version of PerconaXtraDB to be deployed.
+type ProxySQLSpec struct {
+	// Version of ProxySQL to be deployed.
 	Version types.StrYo `json:"version"`
 
-	// Number of instances to deploy for PerconaXtraDB.
-	// Replicas: 1		-->		Deploy standalone PerconaXtraDB
-	// Replicas: > 1	-->		Deploy PerconaXtraDB cluster with specified number of masters
+	// Number of instances to deploy for ProxySQL. Currently we support only replicas = 1.
+	// TODO: If replicas > 1, proxysql will be clustered
 	Replicas *int32 `json:"replicas,omitempty"`
+
+	// Mode specifies the type of MySQL/Percona-XtraDB/MariaDB cluster for which proxysql
+	// will be configured. It must be either "Galera" or "GroupReplication"
+	Mode *LoadBalanceMode `json:"mode,omitempty"`
+
+	// Backend specifies the information about backend MySQL/Percona-XtraDB/MariaDB servers
+	Backend *ProxySQLBackendSpec `json:"backend,omitempty"`
 
 	// StorageType can be durable (default) or ephemeral
 	StorageType StorageType `json:"storageType,omitempty"`
@@ -50,26 +63,22 @@ type PerconaXtraDBSpec struct {
 	// Storage spec to specify how storage shall be used.
 	Storage *core.PersistentVolumeClaimSpec `json:"storage,omitempty"`
 
-	// Database authentication secret
-	DatabaseSecret *core.SecretVolumeSource `json:"databaseSecret,omitempty"`
+	// ProxySQL secret containing username and password for root user and proxysql user
+	ProxySQLSecret *core.SecretVolumeSource `json:"proxysqlSecret,omitempty"`
 
-	// Init is used to initialize database
-	// +optional
-	Init *InitSpec `json:"init,omitempty"`
-
-	// Monitor is used monitor database instance
+	// Monitor is used monitor proxysql instance
 	// +optional
 	Monitor *mona.AgentSpec `json:"monitor,omitempty"`
 
-	// ConfigSource is an optional field to provide custom configuration file for database (i.e custom-mysql.cnf).
+	// ConfigSource is an optional field to provide custom configuration file for proxysql (i.e custom-proxysql.cnf).
 	// If specified, this file will be used as configuration file otherwise default configuration file will be used.
 	ConfigSource *core.VolumeSource `json:"configSource,omitempty"`
 
-	// PodTemplate is an optional configuration for pods used to expose database
+	// PodTemplate is an optional configuration for pods used to expose proxysql
 	// +optional
 	PodTemplate ofst.PodTemplateSpec `json:"podTemplate,omitempty"`
 
-	// ServiceTemplate is an optional configuration for service used to expose database
+	// ServiceTemplate is an optional configuration for service used to expose proxysql
 	// +optional
 	ServiceTemplate ofst.ServiceTemplateSpec `json:"serviceTemplate,omitempty"`
 
@@ -83,7 +92,21 @@ type PerconaXtraDBSpec struct {
 	TerminationPolicy TerminationPolicy `json:"terminationPolicy,omitempty"`
 }
 
-type PerconaXtraDBStatus struct {
+type ProxySQLBackendSpec struct {
+	// Ref lets one to locate the typed referenced object
+	// (in our case, it is the backend database object)
+	// inside the same namespace.
+	Ref *core.TypedLocalObjectReference `json:"ref,omitempty" protobuf:"bytes,7,opt,name=ref"`
+
+	// Number of backend servers.
+	Replicas *int32 `json:"replicas,omitempty"`
+
+	// Reference to backend MySQL/Percona-XtraDB/MariaDB object where the
+	// target database is located
+	AppBindingName string `json:"appBindingName,omitempty"`
+}
+
+type ProxySQLStatus struct {
 	Phase  DatabasePhase `json:"phase,omitempty"`
 	Reason string        `json:"reason,omitempty"`
 	// observedGeneration is the most recent generation observed for this resource. It corresponds to the
@@ -94,9 +117,9 @@ type PerconaXtraDBStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type PerconaXtraDBList struct {
+type ProxySQLList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	// Items is a list of PerconaXtraDB TPR objects
-	Items []PerconaXtraDB `json:"items,omitempty"`
+	// Items is a list of ProxySQL TPR objects
+	Items []ProxySQL `json:"items,omitempty"`
 }

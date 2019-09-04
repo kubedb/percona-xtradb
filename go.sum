@@ -286,6 +286,7 @@ github.com/gopherjs/gopherjs v0.0.0-20190430165422-3e4dfb77656c/go.mod h1:wJfORR
 github.com/gorilla/context v1.1.1/go.mod h1:kBGZzfjB9CEq2AlWe17Uuf7NDRt0dE0s8S51q0aT7Yg=
 github.com/gorilla/mux v1.6.2/go.mod h1:1lud6UwP+6orDFRuTfBEV8e9/aOM/c4fVVCaMa2zaAs=
 github.com/gorilla/mux v1.7.1/go.mod h1:1lud6UwP+6orDFRuTfBEV8e9/aOM/c4fVVCaMa2zaAs=
+github.com/gorilla/mux v1.7.3/go.mod h1:1lud6UwP+6orDFRuTfBEV8e9/aOM/c4fVVCaMa2zaAs=
 github.com/gorilla/websocket v1.4.0 h1:WDFjx/TMzVgy9VdMMQi2K2Emtwi2QcUQsztZ/zLaH/Q=
 github.com/gorilla/websocket v1.4.0/go.mod h1:E7qHFY5m1UJ88s3WnNqhKjPHQ0heANvMoAMk2YaljkQ=
 github.com/gotestyourself/gotestyourself v2.2.0+incompatible/go.mod h1:zZKM6oeNM8k+FRljX1mnzVYeS8wiGgQyvST1/GafPbY=
@@ -850,8 +851,8 @@ kmodules.xyz/openshift v0.0.0-20190808144841-c8f9a927f1d1/go.mod h1:+E8HHcxBx6ja
 kmodules.xyz/webhook-runtime v0.0.0-20190802202019-9e77ee949266/go.mod h1:asvHdlCuBqzSiDWcYxeGZOG7Wx1wpmLl2lqAIJOOric=
 kmodules.xyz/webhook-runtime v0.0.0-20190808145328-4186c470d56b h1:yd/uzBgLgsir3X4kGoznJY7CdrkgfznsNKvD4p2xUaQ=
 kmodules.xyz/webhook-runtime v0.0.0-20190808145328-4186c470d56b/go.mod h1:X8J6YJvk3NqufXEDqcl2oFuL8T6+mV+AN30/miV4iJU=
-kubedb.dev/apimachinery v0.13.0-rc.0.0.20190822093130-f61829ac46bc h1:1Vhu3w1yiiIJnQvVnkZSN6O6C0AsJfkeYhOto3oIPyQ=
-kubedb.dev/apimachinery v0.13.0-rc.0.0.20190822093130-f61829ac46bc/go.mod h1:f7xI1dB0IqrO6Y1Y85rUw3Jl9/nRYauVuVZJfoSe68k=
+kubedb.dev/apimachinery v0.0.0-20190902084429-16f85ca30888 h1:YZtTjaI4H04QzJgxUURE4QbGx4DIyq5Qt7X6E8Tpj5M=
+kubedb.dev/apimachinery v0.0.0-20190902084429-16f85ca30888/go.mod h1:NN021x/+FEEe1NLFYzmVXY9dvswKVLmjM1CBnczXKOE=
 labix.org/v2/mgo v0.0.0-20140701140051-000000000287/go.mod h1:Lg7AYkt1uXJoR9oeSZ3W/8IXLdvOfIITgZnommstyz4=
 launchpad.net/gocheck v0.0.0-20140225173054-000000000087/go.mod h1:hj7XX3B/0A+80Vse0e+BUHsHMTEhd0O4cpUHr/e/BUM=
 pack.ag/amqp v0.8.0/go.mod h1:4/cbmt4EJXSKlG6LCfWHoqmN0uFdy5i/+YFz+fTfhV4=
