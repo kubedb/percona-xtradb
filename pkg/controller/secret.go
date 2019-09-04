@@ -14,9 +14,6 @@ import (
 
 const (
 	mysqlUser = "root"
-
-	KeyPerconaXtraDBUser     = "username"
-	KeyPerconaXtraDBPassword = "password"
 )
 
 func (c *Controller) ensureDatabaseSecret(px *api.PerconaXtraDB) error {
@@ -56,24 +53,13 @@ func (c *Controller) createDatabaseSecret(px *api.PerconaXtraDB) (*core.SecretVo
 		secret := &core.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   authSecretName,
-				Labels: px.OffshootSelectors(),
+				Labels: px.OffshootLabels(),
 			},
 			Type: core.SecretTypeOpaque,
 			StringData: map[string]string{
-				KeyPerconaXtraDBUser:     mysqlUser,
-				KeyPerconaXtraDBPassword: randPassword,
+				api.MySQLUserKey:     mysqlUser,
+				api.MySQLPasswordKey: randPassword,
 			},
-		}
-
-		if px.Spec.PXC != nil {
-			randProxysqlPassword := ""
-
-			// if the password starts with "-", it will cause error in bash scripts (in percona-xtradb-tools)
-			for randProxysqlPassword = rand.GeneratePassword(); randProxysqlPassword[0] == '-'; {
-			}
-
-			secret.StringData[api.ProxysqlUser] = "proxysql"
-			secret.StringData[api.ProxysqlPassword] = randProxysqlPassword
 		}
 
 		if _, err := c.Client.CoreV1().Secrets(px.Namespace).Create(secret); err != nil {
@@ -94,9 +80,9 @@ func (c *Controller) upgradeDatabaseSecret(px *api.PerconaXtraDB) error {
 	}
 
 	_, _, err := core_util.CreateOrPatchSecret(c.Client, meta, func(in *core.Secret) *core.Secret {
-		if _, ok := in.Data[KeyPerconaXtraDBUser]; !ok {
+		if _, ok := in.Data[api.MySQLUserKey]; !ok {
 			if val, ok2 := in.Data["user"]; ok2 {
-				in.StringData = map[string]string{KeyPerconaXtraDBUser: string(val)}
+				in.StringData = map[string]string{api.MySQLUserKey: string(val)}
 			}
 		}
 		return in
