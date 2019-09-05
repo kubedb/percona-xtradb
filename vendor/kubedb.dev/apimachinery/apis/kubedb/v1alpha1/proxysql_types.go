@@ -19,8 +19,8 @@ const (
 type LoadBalanceMode string
 
 const (
-	ConfigurationTypeGalera           LoadBalanceMode = "Galera"
-	ConfigurationTypeGroupReplication LoadBalanceMode = "GroupReplication"
+	LoadBalanceModeGalera           LoadBalanceMode = "Galera"
+	LoadBalanceModeGroupReplication LoadBalanceMode = "GroupReplication"
 )
 
 // ProxySQL defines a percona variation of Mysql database.
@@ -54,8 +54,10 @@ type ProxySQLSpec struct {
 	// will be configured. It must be either "Galera" or "GroupReplication"
 	Mode *LoadBalanceMode `json:"mode,omitempty"`
 
-	// Backend specifies the information about backend MySQL/Percona-XtraDB/MariaDB servers
-	Backend *ProxySQLBackendSpec `json:"backend,omitempty"`
+	// Backend lets one to locate the typed referenced object
+	// (in our case, it is the MySQL/Percona-XtraDB/MariaDB object)
+	// inside the same namespace.
+	Backend *core.TypedLocalObjectReference `json:"backend,omitempty" protobuf:"bytes,7,opt,name=backend"`
 
 	// StorageType can be durable (default) or ephemeral
 	StorageType StorageType `json:"storageType,omitempty"`
@@ -90,20 +92,6 @@ type ProxySQLSpec struct {
 	// TerminationPolicy controls the delete operation for database
 	// +optional
 	TerminationPolicy TerminationPolicy `json:"terminationPolicy,omitempty"`
-}
-
-type ProxySQLBackendSpec struct {
-	// Ref lets one to locate the typed referenced object
-	// (in our case, it is the backend database object)
-	// inside the same namespace.
-	Ref *core.TypedLocalObjectReference `json:"ref,omitempty" protobuf:"bytes,7,opt,name=ref"`
-
-	// Number of backend servers.
-	Replicas *int32 `json:"replicas,omitempty"`
-
-	// Reference to backend MySQL/Percona-XtraDB/MariaDB object where the
-	// target database is located
-	AppBindingName string `json:"appBindingName,omitempty"`
 }
 
 type ProxySQLStatus struct {

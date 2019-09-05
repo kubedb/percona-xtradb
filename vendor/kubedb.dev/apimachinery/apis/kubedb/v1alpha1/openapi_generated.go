@@ -404,7 +404,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"kubedb.dev/apimachinery/apis/kubedb/v1alpha1.PostgresTableInfo":              schema_apimachinery_apis_kubedb_v1alpha1_PostgresTableInfo(ref),
 		"kubedb.dev/apimachinery/apis/kubedb/v1alpha1.PostgresWALSourceSpec":          schema_apimachinery_apis_kubedb_v1alpha1_PostgresWALSourceSpec(ref),
 		"kubedb.dev/apimachinery/apis/kubedb/v1alpha1.ProxySQL":                       schema_apimachinery_apis_kubedb_v1alpha1_ProxySQL(ref),
-		"kubedb.dev/apimachinery/apis/kubedb/v1alpha1.ProxySQLBackendSpec":            schema_apimachinery_apis_kubedb_v1alpha1_ProxySQLBackendSpec(ref),
 		"kubedb.dev/apimachinery/apis/kubedb/v1alpha1.ProxySQLList":                   schema_apimachinery_apis_kubedb_v1alpha1_ProxySQLList(ref),
 		"kubedb.dev/apimachinery/apis/kubedb/v1alpha1.ProxySQLSpec":                   schema_apimachinery_apis_kubedb_v1alpha1_ProxySQLSpec(ref),
 		"kubedb.dev/apimachinery/apis/kubedb/v1alpha1.ProxySQLStatus":                 schema_apimachinery_apis_kubedb_v1alpha1_ProxySQLStatus(ref),
@@ -18600,40 +18599,6 @@ func schema_apimachinery_apis_kubedb_v1alpha1_ProxySQL(ref common.ReferenceCallb
 	}
 }
 
-func schema_apimachinery_apis_kubedb_v1alpha1_ProxySQLBackendSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"ref": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Ref lets one to locate the typed referenced object (in our case, it is the backend database object) inside the same namespace.",
-							Ref:         ref("k8s.io/api/core/v1.TypedLocalObjectReference"),
-						},
-					},
-					"replicas": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Number of backend servers.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"appBindingName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Reference to backend MySQL/Percona-XtraDB/MariaDB object where the target database is located",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/api/core/v1.TypedLocalObjectReference"},
-	}
-}
-
 func schema_apimachinery_apis_kubedb_v1alpha1_ProxySQLList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -18709,8 +18674,8 @@ func schema_apimachinery_apis_kubedb_v1alpha1_ProxySQLSpec(ref common.ReferenceC
 					},
 					"backend": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Backend specifies the information about backend MySQL/Percona-XtraDB/MariaDB servers",
-							Ref:         ref("kubedb.dev/apimachinery/apis/kubedb/v1alpha1.ProxySQLBackendSpec"),
+							Description: "Backend lets one to locate the typed referenced object (in our case, it is the MySQL/Percona-XtraDB/MariaDB object) inside the same namespace.",
+							Ref:         ref("k8s.io/api/core/v1.TypedLocalObjectReference"),
 						},
 					},
 					"storageType": {
@@ -18774,7 +18739,7 @@ func schema_apimachinery_apis_kubedb_v1alpha1_ProxySQLSpec(ref common.ReferenceC
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/apps/v1.StatefulSetUpdateStrategy", "k8s.io/api/core/v1.PersistentVolumeClaimSpec", "k8s.io/api/core/v1.SecretVolumeSource", "k8s.io/api/core/v1.VolumeSource", "kmodules.xyz/monitoring-agent-api/api/v1.AgentSpec", "kmodules.xyz/offshoot-api/api/v1.PodTemplateSpec", "kmodules.xyz/offshoot-api/api/v1.ServiceTemplateSpec", "kubedb.dev/apimachinery/apis/kubedb/v1alpha1.ProxySQLBackendSpec"},
+			"k8s.io/api/apps/v1.StatefulSetUpdateStrategy", "k8s.io/api/core/v1.PersistentVolumeClaimSpec", "k8s.io/api/core/v1.SecretVolumeSource", "k8s.io/api/core/v1.TypedLocalObjectReference", "k8s.io/api/core/v1.VolumeSource", "kmodules.xyz/monitoring-agent-api/api/v1.AgentSpec", "kmodules.xyz/offshoot-api/api/v1.PodTemplateSpec", "kmodules.xyz/offshoot-api/api/v1.ServiceTemplateSpec"},
 	}
 }
 
