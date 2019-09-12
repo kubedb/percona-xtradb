@@ -12,9 +12,12 @@ import (
 )
 
 var (
-	DockerRegistry      = "kubedbci"
-	SelfHostedOperator  = false
-	DBCatalogName       = "5.7"
+	DockerRegistry     = "kubedbci"
+	SelfHostedOperator = true
+	DBCatalogName      = "5.7"
+
+	// for proxysql integration
+	IntegrateProxySQL   = false
 	ProxySQLCatalogName = "5.7"
 )
 

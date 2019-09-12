@@ -130,7 +130,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Wait for Running ProxySQL")
-		f.EventuallyProxySQLPhase(px.ObjectMeta).Should(Equal(api.DatabasePhaseRunning))
+		f.EventuallyProxySQLPhase(psql.ObjectMeta).Should(Equal(api.DatabasePhaseRunning))
 
 		By("Waiting for database to be ready")
 		f.EventuallyDatabaseReady(px.ObjectMeta, true, dbName, 0).Should(BeTrue())
@@ -310,9 +310,13 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 					NotTo(HaveOccurred())
 
 				By("Wait for new member to be ready")
-				Expect(f.WaitUntilPodRunningBySelector(px, false)).NotTo(HaveOccurred())
-				By("Wait for proxysql to be ready")
-				Expect(f.WaitUntilPodRunningBySelector(px, true)).NotTo(HaveOccurred())
+				Expect(f.WaitUntilPodRunningBySelector(
+					px.Namespace, px.OffshootSelectors(), int(types.Int32(px.Spec.Replicas)),
+				)).NotTo(HaveOccurred())
+				//By("Wait for proxysql to be ready")
+				//Expect(f.WaitUntilPodRunningBySelector(
+				//	psql.Namespace, psql.OffshootSelectors(), int(types.Int32(psql.Spec.Replicas)),
+				//)).NotTo(HaveOccurred())
 
 				By("Checking status after scaling up")
 				storeWsClusterStats()
@@ -356,9 +360,13 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 					NotTo(HaveOccurred())
 
 				By("Wait for new member to be ready")
-				Expect(f.WaitUntilPodRunningBySelector(px, false)).NotTo(HaveOccurred())
-				By("Wait for proxysql to be ready")
-				Expect(f.WaitUntilPodRunningBySelector(px, true)).NotTo(HaveOccurred())
+				Expect(f.WaitUntilPodRunningBySelector(
+					px.Namespace, px.OffshootSelectors(), int(types.Int32(px.Spec.Replicas)),
+				)).NotTo(HaveOccurred())
+				//By("Wait for proxysql to be ready")
+				//Expect(f.WaitUntilPodRunningBySelector(
+				//	psql.Namespace, psql.OffshootSelectors(), int(types.Int32(psql.Spec.Replicas)),
+				//)).NotTo(HaveOccurred())
 
 				By("Checking status after scaling down")
 				storeWsClusterStats()
@@ -374,8 +382,12 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 			})
 		})
 
-		Context("Proxysql", func() {
+		FContext("Proxysql", func() {
 			BeforeEach(func() {
+				if !framework.IntegrateProxySQL {
+					Skip("For ProxySQL test, the value of '--proxysql' flag must be 'true' while running e2e-tests command")
+				}
+
 				CheckProxySQLVersionForXtraDBCluster()
 
 				createAndWaitForRunningPerconaXtraDB()

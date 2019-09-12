@@ -27,6 +27,13 @@ func (f *Framework) EventuallyCRD() GomegaAsyncAssertion {
 				return errors.New("CRD DormantDatabase is not ready")
 			}
 
+			// Check ProxySQL CRD
+			if IntegrateProxySQL {
+				if _, err := f.dbClient.KubedbV1alpha1().ProxySQLs(core.NamespaceAll).List(metav1.ListOptions{}); err != nil {
+					return errors.New("CRD ProxySQL is not ready")
+				}
+			}
+
 			return nil
 		},
 		time.Minute*2,

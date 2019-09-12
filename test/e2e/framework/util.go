@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appscode/go/types"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -84,24 +83,13 @@ func (f *Framework) CleanWorkloadLeftOvers() {
 	}
 }
 
-func (f *Framework) WaitUntilPodRunningBySelector(px *api.PerconaXtraDB, proxysql bool) error {
-	if !proxysql {
-		return core_util.WaitUntilPodRunningBySelector(
-			f.kubeClient,
-			px.Namespace,
-			&metav1.LabelSelector{
-				MatchLabels: px.ClusterSelectors(),
-			},
-			int(types.Int32(px.Spec.Replicas)),
-		)
-	} else {
-		return core_util.WaitUntilPodRunningBySelector(
-			f.kubeClient,
-			px.Namespace,
-			&metav1.LabelSelector{
-				MatchLabels: px.ProxysqlSelectors(),
-			},
-			int(types.Int32(px.Spec.PXC.Proxysql.Replicas)),
-		)
-	}
+func (f *Framework) WaitUntilPodRunningBySelector(namespace string, selectors map[string]string, replicas int) error {
+	return core_util.WaitUntilPodRunningBySelector(
+		f.kubeClient,
+		namespace,
+		&metav1.LabelSelector{
+			MatchLabels: selectors,
+		},
+		replicas,
+	)
 }

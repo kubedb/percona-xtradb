@@ -38,6 +38,7 @@ func init() {
 	flag.StringVar(&framework.DBCatalogName, "db-catalog", framework.DBCatalogName, "PerconaXtraDB version")
 	flag.StringVar(&framework.DockerRegistry, "docker-registry", framework.DockerRegistry, "User provided docker repository")
 	flag.BoolVar(&framework.SelfHostedOperator, "selfhosted-operator", framework.SelfHostedOperator, "Enable this for provided controller")
+	flag.BoolVar(&framework.IntegrateProxySQL, "proxysql", framework.IntegrateProxySQL, "Enable this for proxysql controller")
 }
 
 const (
@@ -98,7 +99,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	root.EventuallyCRD().Should(Succeed())
-	root.EventuallyAPIServiceReady().Should(Succeed())
+	//root.EventuallyAPIServiceReady().Should(Succeed())
 })
 
 var _ = AfterSuite(func() {

@@ -150,7 +150,7 @@ func ValidatePerconaXtraDB(client kubernetes.Interface, extClient cs.Interface, 
 
 	if px.Spec.Replicas == nil {
 		return fmt.Errorf(`'spec.replicas' "%v" invalid. Value must be 1 for standalone percona-xtradb server, but for percona-xtradb cluster, value must be greater than 0`,
-			px.Spec.Replicas)
+			*px.Spec.Replicas)
 	}
 
 	if pxVersion, err := extClient.CatalogV1alpha1().PerconaXtraDBVersions().Get(string(px.Spec.Version), metav1.GetOptions{}); err != nil {

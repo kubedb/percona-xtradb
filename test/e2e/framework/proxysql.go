@@ -32,10 +32,13 @@ func (f *Invocation) ProxySQL(backendObjName string) *api.ProxySQL {
 			Version:  jsonTypes.StrYo(ProxySQLCatalogName),
 			Replicas: types.Int32P(1),
 			Mode:     &mode,
-			Backend: &corev1.TypedLocalObjectReference{
-				APIGroup: types.StringP(kubedb.GroupName),
-				Kind:     api.ResourceKindPerconaXtraDB,
-				Name:     backendObjName,
+			Backend: &api.ProxySQLBackendSpec{
+				Ref: &corev1.TypedLocalObjectReference{
+					APIGroup: types.StringP(kubedb.GroupName),
+					Kind:     api.ResourceKindPerconaXtraDB,
+					Name:     backendObjName,
+				},
+				Replicas: types.Int32P(api.PerconaXtraDBDefaultClusterSize),
 			},
 			Storage: &corev1.PersistentVolumeClaimSpec{
 				Resources: corev1.ResourceRequirements{
@@ -91,9 +94,9 @@ func (f *Framework) DeleteProxySQL(meta metav1.ObjectMeta) error {
 func (f *Framework) EventuallyProxySQLPhase(meta metav1.ObjectMeta) GomegaAsyncAssertion {
 	return Eventually(
 		func() api.DatabasePhase {
-			db, err := f.dbClient.KubedbV1alpha1().ProxySQLs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+			psql, err := f.dbClient.KubedbV1alpha1().ProxySQLs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			return db.Status.Phase
+			return psql.Status.Phase
 		},
 		time.Minute*5,
 		time.Second*5,
