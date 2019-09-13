@@ -73,11 +73,6 @@ func (c *Controller) create(px *api.PerconaXtraDB) error {
 		return nil
 	}
 
-	//// create Governing Service
-	//governingService := c.GoverningService
-	//if err := c.CreateGoverningService(governingService, px.Namespace); err != nil {
-	//	return err
-	//}
 	// create Governing Service
 	governingService, err := c.createPerconaXtraDBGoverningService(px)
 	if err != nil {

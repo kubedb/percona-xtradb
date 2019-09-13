@@ -5,17 +5,16 @@ import (
 	"time"
 
 	"github.com/appscode/go/crypto/rand"
-	"github.com/appscode/go/wait"
-	kutil "kmodules.xyz/client-go"
-
-	//"github.com/appscode/go/crypto/rand"
 	jsonTypes "github.com/appscode/go/encoding/json/types"
 	"github.com/appscode/go/types"
+	"github.com/appscode/go/wait"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kutil "kmodules.xyz/client-go"
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 )
@@ -35,7 +34,8 @@ func (f *Invocation) PerconaXtraDB() *api.PerconaXtraDB {
 			},
 		},
 		Spec: api.PerconaXtraDBSpec{
-			Version: jsonTypes.StrYo(DBCatalogName),
+			Version:     jsonTypes.StrYo(DBCatalogName),
+			StorageType: api.StorageTypeDurable,
 			Storage: &core.PersistentVolumeClaimSpec{
 				Resources: core.ResourceRequirements{
 					Requests: core.ResourceList{
@@ -44,6 +44,10 @@ func (f *Invocation) PerconaXtraDB() *api.PerconaXtraDB {
 				},
 				StorageClassName: types.StringP(f.StorageClass),
 			},
+			UpdateStrategy: appsv1.StatefulSetUpdateStrategy{
+				Type: appsv1.RollingUpdateStatefulSetStrategyType,
+			},
+			TerminationPolicy: api.TerminationPolicyWipeOut,
 		},
 	}
 }

@@ -28,7 +28,7 @@ func (f *Framework) EventuallyCRD() GomegaAsyncAssertion {
 			}
 
 			// Check ProxySQL CRD
-			if IntegrateProxySQL {
+			if ProxySQLTest {
 				if _, err := f.dbClient.KubedbV1alpha1().ProxySQLs(core.NamespaceAll).List(metav1.ListOptions{}); err != nil {
 					return errors.New("CRD ProxySQL is not ready")
 				}

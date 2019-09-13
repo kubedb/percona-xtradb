@@ -17,7 +17,7 @@ var (
 	DBCatalogName      = "5.7"
 
 	// for proxysql integration
-	IntegrateProxySQL   = false
+	ProxySQLTest        = false
 	ProxySQLCatalogName = "5.7"
 )
 

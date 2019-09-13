@@ -161,8 +161,8 @@ func (f *Framework) GetMySQLRootPassword(px *api.PerconaXtraDB) (string, error) 
 	return password, nil
 }
 
-func (f *Framework) GetMySQLCred(px *api.PerconaXtraDB, key string) (string, error) {
-	secret, err := f.kubeClient.CoreV1().Secrets(px.Namespace).Get(px.Spec.DatabaseSecret.SecretName, metav1.GetOptions{})
+func (f *Framework) GetSecretCred(secretMeta metav1.ObjectMeta, key string) (string, error) {
+	secret, err := f.kubeClient.CoreV1().Secrets(secretMeta.Namespace).Get(secretMeta.Name, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
