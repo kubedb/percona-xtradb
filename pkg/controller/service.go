@@ -21,8 +21,8 @@ import (
 var defaultDBPort = core.ServicePort{
 	Name:       "db",
 	Protocol:   core.ProtocolTCP,
-	Port:       3306,
-	TargetPort: intstr.FromString("db"),
+	Port:       api.MySQLNodePort,
+	TargetPort: intstr.FromInt(api.MySQLNodePort),
 }
 
 func (c *Controller) ensureService(px *api.PerconaXtraDB) (kutil.VerbType, error) {
@@ -77,10 +77,10 @@ func (c *Controller) createService(px *api.PerconaXtraDB) (kutil.VerbType, error
 
 	_, ok, err := core_util.CreateOrPatchService(c.Client, meta, func(in *core.Service) *core.Service {
 		core_util.EnsureOwnerReference(&in.ObjectMeta, ref)
-		in.Labels = px.XtraDBLabels()
+		in.Labels = px.OffshootLabels()
 		in.Annotations = px.Spec.ServiceTemplate.Annotations
 
-		in.Spec.Selector = px.XtraDBSelectors()
+		in.Spec.Selector = px.OffshootSelectors()
 		in.Spec.Ports = ofst.MergeServicePorts(
 			core_util.MergeServicePorts(in.Spec.Ports, []core.ServicePort{defaultDBPort}),
 			px.Spec.ServiceTemplate.Spec.Ports,
@@ -164,7 +164,7 @@ func (c *Controller) createPerconaXtraDBGoverningService(px *api.PerconaXtraDB) 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      px.GoverningServiceName(),
 			Namespace: px.Namespace,
-			Labels:    px.XtraDBLabels(),
+			Labels:    px.OffshootLabels(),
 			// 'tolerate-unready-endpoints' annotation is deprecated.
 			// ref: https://github.com/kubernetes/kubernetes/pull/63742
 			Annotations: map[string]string{
@@ -181,46 +181,7 @@ func (c *Controller) createPerconaXtraDBGoverningService(px *api.PerconaXtraDB) 
 					Port: api.MySQLNodePort,
 				},
 			},
-			Selector: px.XtraDBSelectors(),
-		},
-	}
-	core_util.EnsureOwnerReference(&service.ObjectMeta, ref)
-
-	_, err := c.Client.CoreV1().Services(px.Namespace).Create(service)
-	if err != nil && !kerr.IsAlreadyExists(err) {
-		return "", err
-	}
-	return service.Name, nil
-}
-
-func (c *Controller) createProxysqlService(px *api.PerconaXtraDB) (string, error) {
-	ref, rerr := reference.GetReference(clientsetscheme.Scheme, px)
-	if rerr != nil {
-		return "", rerr
-	}
-
-	service := &core.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      px.ProxysqlServiceName(),
-			Namespace: px.Namespace,
-			Labels:    px.ProxysqlLabels(),
-			// 'tolerate-unready-endpoints' annotation is deprecated.
-			// ref: https://github.com/kubernetes/kubernetes/pull/63742
-			Annotations: map[string]string{
-				"service.alpha.kubernetes.io/tolerate-unready-endpoints": "true",
-			},
-		},
-		Spec: core.ServiceSpec{
-			Type:                     core.ServiceTypeClusterIP,
-			ClusterIP:                core.ClusterIPNone,
-			PublishNotReadyAddresses: true,
-			Ports: []core.ServicePort{
-				{
-					Name: "mysql",
-					Port: api.ProxysqlMySQLNodePort,
-				},
-			},
-			Selector: px.ProxysqlSelectors(),
+			Selector: px.OffshootSelectors(),
 		},
 	}
 	core_util.EnsureOwnerReference(&service.ObjectMeta, ref)

@@ -13,8 +13,12 @@ import (
 
 var (
 	DockerRegistry     = "kubedbci"
-	SelfHostedOperator = false
+	SelfHostedOperator = true
 	DBCatalogName      = "5.7"
+
+	// for proxysql integration
+	ProxySQLTest        = false
+	ProxySQLCatalogName = "2.0.4"
 )
 
 type Framework struct {

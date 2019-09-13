@@ -98,7 +98,7 @@ func (c *Controller) create(px *api.PerconaXtraDB) error {
 	}
 
 	// ensure database StatefulSet
-	vt2, err := c.ensurePerconaXtraDBNode(px)
+	vt2, err := c.ensurePerconaXtraDB(px)
 	if err != nil {
 		return err
 	}

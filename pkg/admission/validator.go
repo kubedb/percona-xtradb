@@ -128,16 +128,13 @@ func (a *PerconaXtraDBValidator) Admit(req *admission.AdmissionRequest) *admissi
 	return status
 }
 
-// validatePXC checks whether the configurations for PerconaXtraDB Cluster are ok
-func validatePXC(px *api.PerconaXtraDB) error {
-	if px.Spec.PXC != nil {
-		if len(px.Name) > api.PerconaXtraDBMaxClusterNameLength {
+// validateCluster checks whether the configurations for PerconaXtraDB Cluster are ok
+func validateCluster(px *api.PerconaXtraDB) error {
+	if px.IsCluster() {
+		clusterName := px.ClusterName()
+		if len(clusterName) > api.PerconaXtraDBMaxClusterNameLength {
 			return errors.Errorf(`'spec.px.clusterName' "%s" shouldn't have more than %d characters'`,
-				px.Name, api.PerconaXtraDBMaxClusterNameLength)
-		}
-		if *px.Spec.PXC.Proxysql.Replicas != 1 {
-			return errors.Errorf(`'spec.px.proxysql.replicas' "%v" is invalid. Currently, supported replicas for proxysql is 1`,
-				px.Spec.PXC.Proxysql.Replicas)
+				clusterName, api.PerconaXtraDBMaxClusterNameLength)
 		}
 	}
 
@@ -150,29 +147,25 @@ func ValidatePerconaXtraDB(client kubernetes.Interface, extClient cs.Interface, 
 	if px.Spec.Version == "" {
 		return errors.New(`'spec.version' is missing`)
 	}
+
+	if px.Spec.Replicas == nil {
+		return fmt.Errorf(`'spec.replicas' "%v" invalid. Value must be 1 for standalone percona-xtradb server, but for percona-xtradb cluster, value must be greater than 0`,
+			*px.Spec.Replicas)
+	}
+
 	if pxVersion, err := extClient.CatalogV1alpha1().PerconaXtraDBVersions().Get(string(px.Spec.Version), metav1.GetOptions{}); err != nil {
 		return err
-	} else if px.Spec.PXC != nil && pxVersion.Spec.Version != api.PerconaXtraDBClusterRecommendedVersion {
+	} else if px.IsCluster() && pxVersion.Spec.Version != api.PerconaXtraDBClusterRecommendedVersion {
 		return errors.Errorf("unsupported version for xtradb cluster, recommended version is %s",
 			api.PerconaXtraDBClusterRecommendedVersion)
 	}
 
-	if px.Spec.Replicas == nil {
-		return fmt.Errorf(`'spec.replicas' "%v" invalid. Value must be 1 for standalone percona-xtradb server, but for percona-xtradb cluster, value must be greater than 0`,
-			px.Spec.Replicas)
-	}
-
-	if px.Spec.PXC == nil && *px.Spec.Replicas > api.PerconaXtraDBStandaloneReplicas {
-		return fmt.Errorf(`'spec.replicas' "%v" invalid. Value must be 1 for standalone percona-xtradb server`,
-			px.Spec.Replicas)
-	}
-
-	if px.Spec.PXC != nil && *px.Spec.Replicas < api.PerconaXtraDBDefaultClusterSize {
+	if px.IsCluster() && *px.Spec.Replicas < api.PerconaXtraDBDefaultClusterSize {
 		return fmt.Errorf(`'spec.replicas' "%v" invalid. Value must be %d for xtradb cluster`,
 			px.Spec.Replicas, api.PerconaXtraDBDefaultClusterSize)
 	}
 
-	if err := validatePXC(px); err != nil {
+	if err := validateCluster(px); err != nil {
 		return err
 	}
 

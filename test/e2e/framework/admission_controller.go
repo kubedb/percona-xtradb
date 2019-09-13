@@ -146,3 +146,41 @@ func (f *Framework) CleanAdmissionConfigs() {
 
 	time.Sleep(time.Second * 1) // let the kube-server know it!!
 }
+
+func (f *Framework) RunProxySQLOperatorAndServer(config *restclient.Config, kubeconfigPath string, stopCh <-chan struct{}) {
+	defer GinkgoRecover()
+
+	// Check and set EnableStatusSubresource=true for >=kubernetes v1.11
+	// Todo: remove this part and set EnableStatusSubresource=true automatically when subresources is must in kubedb.
+	discClient, err := discovery.NewDiscoveryClientForConfig(config)
+	Expect(err).NotTo(HaveOccurred())
+	serverVersion, err := discovery_util.GetBaseVersion(discClient)
+	Expect(err).NotTo(HaveOccurred())
+	if strings.Compare(serverVersion, "1.11") >= 0 {
+		apis.EnableStatusSubresource = true
+	}
+
+	sh := shell.NewSession().SetDir(filepath.Join("..", "..", "..", "proxysql"))
+	sh.Env["REGISTRY"] = DockerRegistry
+	args := []interface{}{"push", "install"}
+	SetupServer := filepath.Join("make")
+
+	By("Creating API server and webhook stuffs")
+	cmd := sh.Command(SetupServer, args...)
+	err = cmd.Run()
+	Expect(err).ShouldNot(HaveOccurred())
+
+	By("Starting Server and Operator")
+	serverOpt := server.NewPerconaXtraDBServerOptions(os.Stdout, os.Stderr)
+
+	serverOpt.RecommendedOptions.CoreAPI.CoreAPIKubeconfigPath = kubeconfigPath
+	serverOpt.RecommendedOptions.SecureServing.BindPort = 8443
+	serverOpt.RecommendedOptions.SecureServing.BindAddress = net.ParseIP("127.0.0.1")
+	serverOpt.RecommendedOptions.Authorization.RemoteKubeConfigFile = kubeconfigPath
+	serverOpt.RecommendedOptions.Authentication.RemoteKubeConfigFile = kubeconfigPath
+	serverOpt.ExtraOptions.EnableMutatingWebhook = true
+	serverOpt.ExtraOptions.EnableValidatingWebhook = true
+
+	err = serverOpt.Run(stopCh)
+	Expect(err).NotTo(HaveOccurred())
+}

@@ -16,7 +16,6 @@ import (
 	v1 "kmodules.xyz/client-go/core/v1"
 	store "kmodules.xyz/objectstore-api/api/v1"
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
-	"kubedb.dev/percona-xtradb/pkg/controller"
 	"stash.appscode.dev/stash/pkg/restic"
 )
 
@@ -158,12 +157,12 @@ func (f *Framework) GetMySQLRootPassword(px *api.PerconaXtraDB) (string, error) 
 	if err != nil {
 		return "", err
 	}
-	password := string(secret.Data[controller.KeyPerconaXtraDBPassword])
+	password := string(secret.Data[api.MySQLPasswordKey])
 	return password, nil
 }
 
-func (f *Framework) GetMySQLCred(px *api.PerconaXtraDB, key string) (string, error) {
-	secret, err := f.kubeClient.CoreV1().Secrets(px.Namespace).Get(px.Spec.DatabaseSecret.SecretName, metav1.GetOptions{})
+func (f *Framework) GetSecretCred(secretMeta metav1.ObjectMeta, key string) (string, error) {
+	secret, err := f.kubeClient.CoreV1().Secrets(secretMeta.Namespace).Get(secretMeta.Name, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

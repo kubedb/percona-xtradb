@@ -147,16 +147,6 @@ var cases = []struct {
 		false,
 		true,
 	},
-	{"Create PerconaXtraDB without single node replicas",
-		requestKind,
-		"foo",
-		"default",
-		admission.Create,
-		perconaxtradbWithoutSingleReplica(),
-		api.PerconaXtraDB{},
-		false,
-		false,
-	},
 	{"Create Invalid percona-xtradb",
 		requestKind,
 		"foo",
@@ -279,42 +269,12 @@ var cases = []struct {
 		false,
 		false,
 	},
-	{"Create PerconaXtraDB Cluster with empty cluster name",
-		requestKind,
-		"foo",
-		"default",
-		admission.Create,
-		emptyClusterName(),
-		api.PerconaXtraDB{},
-		false,
-		true,
-	},
 	{"Create PerconaXtraDB Cluster with larger cluster name than recommended",
 		requestKind,
 		"foo",
 		"default",
 		admission.Create,
 		largerClusterNameThanRecommended(),
-		api.PerconaXtraDB{},
-		false,
-		false,
-	},
-	{"Create PerconaXtraDB Cluster without single proxysql replicas",
-		requestKind,
-		"foo",
-		"default",
-		admission.Create,
-		withoutSingleProxysqlReplicas(),
-		api.PerconaXtraDB{},
-		false,
-		false,
-	},
-	{"Create PerconaXtraDB Cluster with 0 proxysql replicas",
-		requestKind,
-		"foo",
-		"default",
-		admission.Create,
-		withZeroProxysqlReplicas(),
 		api.PerconaXtraDB{},
 		false,
 		false,
@@ -370,12 +330,6 @@ func getAwkwardPerconaXtraDB() api.PerconaXtraDB {
 	return px
 }
 
-func perconaxtradbWithoutSingleReplica() api.PerconaXtraDB {
-	px := samplePerconaXtraDB()
-	px.Spec.Replicas = types.Int32P(3)
-	return px
-}
-
 func editExistingSecret(old api.PerconaXtraDB) api.PerconaXtraDB {
 	old.Spec.DatabaseSecret = &core.SecretVolumeSource{
 		SecretName: "foo-auth",
@@ -423,26 +377,13 @@ func pauseDatabase(old api.PerconaXtraDB) api.PerconaXtraDB {
 func sampleXtraDBCluster() api.PerconaXtraDB {
 	perconaxtradb := samplePerconaXtraDB()
 	perconaxtradb.Spec.Replicas = types.Int32P(3)
-	perconaxtradb.Spec.PXC = &api.PXCSpec{
-		ClusterName: "foo-xtradb-cluster",
-		Proxysql: api.ProxysqlSpec{
-			Replicas: types.Int32P(1),
-		},
-	}
 
 	return perconaxtradb
 }
 
 func insufficientNodeReplicas() api.PerconaXtraDB {
 	perconaxtradb := sampleXtraDBCluster()
-	perconaxtradb.Spec.Replicas = types.Int32P(1)
-
-	return perconaxtradb
-}
-
-func emptyClusterName() api.PerconaXtraDB {
-	perconaxtradb := sampleXtraDBCluster()
-	perconaxtradb.Spec.PXC.ClusterName = ""
+	perconaxtradb.Spec.Replicas = types.Int32P(2)
 
 	return perconaxtradb
 }
@@ -450,20 +391,6 @@ func emptyClusterName() api.PerconaXtraDB {
 func largerClusterNameThanRecommended() api.PerconaXtraDB {
 	perconaxtradb := sampleXtraDBCluster()
 	perconaxtradb.Name = "aaaaa-aaaaa-aaaaa-aaaaa-aaaaa-aaaaa"
-
-	return perconaxtradb
-}
-
-func withoutSingleProxysqlReplicas() api.PerconaXtraDB {
-	perconaxtradb := sampleXtraDBCluster()
-	perconaxtradb.Spec.PXC.Proxysql.Replicas = types.Int32P(3)
-
-	return perconaxtradb
-}
-
-func withZeroProxysqlReplicas() api.PerconaXtraDB {
-	perconaxtradb := sampleXtraDBCluster()
-	perconaxtradb.Spec.PXC.Proxysql.Replicas = types.Int32P(0)
 
 	return perconaxtradb
 }

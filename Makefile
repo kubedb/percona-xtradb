@@ -79,8 +79,8 @@ BUILD_DIRS  := bin/$(OS)_$(ARCH)     \
                .go/bin/$(OS)_$(ARCH) \
                .go/cache
 
-DOCKERFILE_PROD  = Dockerfile.in
-DOCKERFILE_DBG   = Dockerfile.dbg
+DOCKERFILE_PROD  = hack/docker/percona-xtradb-operator/Dockerfile.in
+DOCKERFILE_DBG   = hack/docker/percona-xtradb-operator/Dockerfile.dbg
 
 # If you want to build all binaries, see the 'all-build' rule.
 # If you want to build all containers, see the 'all-container' rule.
@@ -271,6 +271,7 @@ e2e-tests: $(BUILD_DIRS)
 	    -w /src                                                 \
 	    --net=host                                              \
 	    -v $(HOME)/.kube:/.kube                                 \
+	    -v $(HOME)/.minikube:$(HOME)/.minikube		            \
 	    -v $(HOME)/.credentials:$(HOME)/.credentials            \
 	    -v $$(pwd)/.go/bin/$(OS)_$(ARCH):/go/bin                \
 	    -v $$(pwd)/.go/bin/$(OS)_$(ARCH):/go/bin/$(OS)_$(ARCH)  \
@@ -318,10 +319,12 @@ lint: $(BUILD_DIRS)
 $(BUILD_DIRS):
 	@mkdir -p $@
 
+INSTALL_ARGS   ?=
+
 .PHONY: install
 install:
 	@cd ../installer; \
-	APPSCODE_ENV=dev KUBEDB_DOCKER_REGISTRY=$(REGISTRY) KUBEDB_OPERATOR_TAG=$(TAG) KUBEDB_CATALOG=percona-xtradb ./deploy/kubedb.sh --operator-name=$(BIN)
+	APPSCODE_ENV=dev KUBEDB_DOCKER_REGISTRY=$(REGISTRY) KUBEDB_OPERATOR_TAG=$(TAG) KUBEDB_CATALOG=percona-xtradb ./deploy/kubedb.sh --operator-name=$(BIN) $(INSTALL_ARGS)
 
 .PHONY: uninstall
 uninstall:
