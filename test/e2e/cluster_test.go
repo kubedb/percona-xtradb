@@ -232,8 +232,8 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 	}
 
 	var CheckProxySQLVersionForXtraDBCluster = func() {
-		if framework.ProxySQLCatalogName != "5.7" {
-			Skip("For XtraDB Cluster, currently supported ProxySQL version is '5.7'")
+		if framework.ProxySQLCatalogName != "2.0.4" {
+			Skip("For XtraDB Cluster, currently supported ProxySQL version is '2.0.4'")
 		}
 	}
 
