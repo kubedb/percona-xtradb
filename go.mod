@@ -7,16 +7,15 @@ require (
 	github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27
 	github.com/coreos/prometheus-operator v0.31.1
 	github.com/fatih/structs v1.1.0
-	github.com/go-openapi/spec v0.19.2 // indirect
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/go-xorm/xorm v0.7.4
-	github.com/mailru/easyjson v0.0.0-20190620125010-da37f6c1e481 // indirect
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/pkg/errors v0.8.1
+	github.com/smartystreets/assertions v0.0.0-20190116191733-b6c0e53d7304 // indirect
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.3
-	golang.org/x/sys v0.0.0-20190621203818-d432491b9138 // indirect
+	golang.org/x/sys v0.0.0-20190508100423-12bbe5a7a520 // indirect
 	gomodules.xyz/stow v0.2.0
 	google.golang.org/genproto v0.0.0-20190508193815-b515fa19cec8 // indirect
 	k8s.io/api v0.0.0-20190503110853-61630f889b3c
@@ -24,9 +23,7 @@ require (
 	k8s.io/apimachinery v0.0.0-20190508063446-a3da69d3723c
 	k8s.io/apiserver v0.0.0-20190516230822-f89599b3f645
 	k8s.io/client-go v11.0.0+incompatible
-	k8s.io/klog v0.3.3 // indirect
 	k8s.io/kube-aggregator v0.0.0-20190508104018-6d3d96b06d29
-	k8s.io/kube-openapi v0.0.0-20190603182131-db7b694dc208 // indirect
 	kmodules.xyz/client-go v0.0.0-20190808141354-bbb9e14f60ab
 	kmodules.xyz/custom-resources v0.0.0-20190808144301-114abf10dfe2
 	kmodules.xyz/monitoring-agent-api v0.0.0-20190808150221-601a4005b7f7
