@@ -324,8 +324,7 @@ INSTALL_ARGS   ?=
 .PHONY: install
 install:
 	@cd ../installer; \
-	APPSCODE_ENV=dev KUBEDB_DOCKER_REGISTRY=$(REGISTRY) KUBEDB_OPERATOR_TAG=action-e2e_linux_amd64 KUBEDB_CATALOG=percona-xtradb ./deploy/kubedb.sh --operator-name=$(BIN) $(INSTALL_ARGS)
-#	APPSCODE_ENV=dev KUBEDB_DOCKER_REGISTRY=$(REGISTRY) KUBEDB_OPERATOR_TAG=$(TAG) KUBEDB_CATALOG=percona-xtradb ./deploy/kubedb.sh --operator-name=$(BIN) $(INSTALL_ARGS)
+	APPSCODE_ENV=dev KUBEDB_DOCKER_REGISTRY=$(REGISTRY) KUBEDB_OPERATOR_TAG=$(TAG) KUBEDB_CATALOG=percona-xtradb ./deploy/kubedb.sh --operator-name=$(BIN) $(INSTALL_ARGS)
 
 .PHONY: uninstall
 uninstall:
