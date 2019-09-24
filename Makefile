@@ -264,7 +264,7 @@ TEST_ARGS   ?=
 .PHONY: e2e-tests
 e2e-tests: $(BUILD_DIRS)
 	@docker run                                                 \
-	    -i                                                      \
+	    -it                                                     \
 	    --rm                                                    \
 	    -u $$(id -u):$$(id -g)                                  \
 	    -v $$(pwd):/src                                         \
