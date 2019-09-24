@@ -67,15 +67,6 @@ func TestE2e(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	// Kubernetes config
-	//fmt.Println(">>>>>>>", sh.NewSession().Command("ls", "/.kube", "-lah").Run())
-	//fmt.Println(">>>>>>>>>", homedir.HomeDir())
-	//fmt.Println()
-	//kubeconfigPath, found := os.LookupEnv(KUBECONFIG_KEY)
-	//if !found {
-	//	kubeconfigPath = filepath.Join(homedir.HomeDir(), ".kube/config")
-	//}
-
 	kubeconfigPath := filepath.Join(homedir.HomeDir(), os.Getenv(KUBECONFIG_KEY))
 	By("Using kubeconfig from " + kubeconfigPath)
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)

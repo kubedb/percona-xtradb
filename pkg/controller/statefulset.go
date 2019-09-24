@@ -283,8 +283,7 @@ func (c *Controller) ensureStatefulSet(
 			core.Container{
 				Name:            opts.conatainerName,
 				Image:           opts.image,
-				//ImagePullPolicy: core.PullIfNotPresent,
-				ImagePullPolicy: core.PullAlways,
+				ImagePullPolicy: core.PullIfNotPresent,
 				Command:         opts.cmd,
 				Args:            opts.args,
 				Ports:           opts.ports,
@@ -296,10 +295,10 @@ func (c *Controller) ensureStatefulSet(
 				VolumeMounts:    opts.volumeMount,
 			})
 
-		//in.Spec.Template.Spec.InitContainers = core_util.UpsertContainers(
-		//	in.Spec.Template.Spec.InitContainers,
-		//	opts.initContainers,
-		//)
+		in.Spec.Template.Spec.InitContainers = core_util.UpsertContainers(
+			in.Spec.Template.Spec.InitContainers,
+			opts.initContainers,
+		)
 
 		if opts.monitorContainer != nil && px.GetMonitoringVendor() == mona.VendorPrometheus {
 			in.Spec.Template.Spec.Containers = core_util.UpsertContainer(
