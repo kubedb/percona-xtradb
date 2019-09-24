@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/appscode/go/log"
 	admission "k8s.io/api/admission/v1beta1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,7 +38,9 @@ var (
 )
 
 func init() {
-	admission.AddToScheme(Scheme)
+	if err := admission.AddToScheme(Scheme); err != nil {
+		log.Infoln(err)
+	}
 
 	// we need to add the options to empty v1
 	// TODO fix the server code to avoid this

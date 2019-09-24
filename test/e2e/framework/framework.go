@@ -30,8 +30,8 @@ type Framework struct {
 	appCatalogClient appcat_cs.AppcatalogV1alpha1Interface
 	stashClient      scs.Interface
 	namespace        string
-	name             string
-	StorageClass     string
+	//name             string
+	StorageClass string
 }
 
 func New(
@@ -52,8 +52,9 @@ func New(
 		kaClient:         kaClient,
 		appCatalogClient: appCatalogClient,
 		stashClient:      stashClient,
-		namespace:        rand.WithUniqSuffix("percona-xtradb"),
-		StorageClass:     storageClass,
+		//name:             "default",
+		namespace:    rand.WithUniqSuffix("percona-xtradb"),
+		StorageClass: storageClass,
 	}
 }
 

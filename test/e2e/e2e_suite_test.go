@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"flag"
 	"log"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -22,7 +23,6 @@ import (
 	appcat_cs "kmodules.xyz/custom-resources/client/clientset/versioned/typed/appcatalog/v1alpha1"
 	cs "kubedb.dev/apimachinery/client/clientset/versioned"
 	"kubedb.dev/apimachinery/client/clientset/versioned/scheme"
-	"kubedb.dev/percona-xtradb/pkg/controller"
 	"kubedb.dev/percona-xtradb/test/e2e/framework"
 	scs "stash.appscode.dev/stash/client/clientset/versioned"
 )
@@ -32,7 +32,9 @@ var (
 )
 
 func init() {
-	scheme.AddToScheme(clientSetScheme.Scheme)
+	if err := scheme.AddToScheme(clientSetScheme.Scheme); err != nil {
+		log.Println(err)
+	}
 
 	flag.StringVar(&storageClass, "storageclass", storageClass, "Kubernetes StorageClass name")
 	flag.StringVar(&framework.DBCatalogName, "db-catalog", framework.DBCatalogName, "PerconaXtraDB version")
@@ -45,11 +47,12 @@ func init() {
 }
 
 const (
-	TIMEOUT = 20 * time.Minute
+	TIMEOUT        = 20 * time.Minute
+	KUBECONFIG_KEY = "KUBECONFIG"
 )
 
 var (
-	ctrl *controller.Controller
+	//ctrl *controller.Controller
 	root *framework.Framework
 )
 
@@ -64,11 +67,7 @@ func TestE2e(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-
-	userHome := homedir.HomeDir()
-
-	// Kubernetes config
-	kubeconfigPath := filepath.Join(userHome, ".kube/config")
+	kubeconfigPath := filepath.Join(homedir.HomeDir(), os.Getenv(KUBECONFIG_KEY))
 	By("Using kubeconfig from " + kubeconfigPath)
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	Expect(err).NotTo(HaveOccurred())
