@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/appscode/go/flags"
+	"github.com/appscode/go/log"
 	"github.com/appscode/go/log/golog"
 	v "github.com/appscode/go/version"
 	"github.com/spf13/cobra"
@@ -24,8 +25,14 @@ func NewRootCmd(version string) *cobra.Command {
 			flags.DumpAll(c.Flags())
 			cli.SendAnalytics(c, version)
 
-			scheme.AddToScheme(clientsetscheme.Scheme)
-			appcatscheme.AddToScheme(clientsetscheme.Scheme)
+			//scheme.AddToScheme(clientsetscheme.Scheme)
+			if err := scheme.AddToScheme(clientsetscheme.Scheme); err != nil {
+				log.Errorln(err)
+			}
+			//appcatscheme.AddToScheme(clientsetscheme.Scheme)
+			if err := appcatscheme.AddToScheme(clientsetscheme.Scheme); err != nil {
+				log.Errorln(err)
+			}
 			cli.LoggerOptions = golog.ParseFlags(c.Flags())
 		},
 	}

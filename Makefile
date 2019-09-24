@@ -264,7 +264,7 @@ TEST_ARGS   ?=
 .PHONY: e2e-tests
 e2e-tests: $(BUILD_DIRS)
 	@docker run                                                 \
-	    -it                                                     \
+	    -i                                                      \
 	    --rm                                                    \
 	    -u $$(id -u):$$(id -g)                                  \
 	    -v $$(pwd):/src                                         \
@@ -324,7 +324,8 @@ INSTALL_ARGS   ?=
 .PHONY: install
 install:
 	@cd ../installer; \
-	APPSCODE_ENV=dev KUBEDB_DOCKER_REGISTRY=$(REGISTRY) KUBEDB_OPERATOR_TAG=$(TAG) KUBEDB_CATALOG=percona-xtradb ./deploy/kubedb.sh --operator-name=$(BIN) $(INSTALL_ARGS)
+	APPSCODE_ENV=dev KUBEDB_DOCKER_REGISTRY=$(REGISTRY) KUBEDB_OPERATOR_TAG=action-e2e_linux_amd64 KUBEDB_CATALOG=percona-xtradb ./deploy/kubedb.sh --operator-name=$(BIN) $(INSTALL_ARGS)
+#	APPSCODE_ENV=dev KUBEDB_DOCKER_REGISTRY=$(REGISTRY) KUBEDB_OPERATOR_TAG=$(TAG) KUBEDB_CATALOG=percona-xtradb ./deploy/kubedb.sh --operator-name=$(BIN) $(INSTALL_ARGS)
 
 .PHONY: uninstall
 uninstall:
@@ -340,7 +341,8 @@ purge:
 dev: gen fmt push
 
 .PHONY: ci
-ci: lint test build #cover
+#ci: lint test build #cover
+ci: lint build #cover
 
 .PHONY: qa
 qa:

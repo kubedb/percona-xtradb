@@ -117,7 +117,7 @@ func (f *Framework) EventuallyPerconaXtraDBRunning(meta metav1.ObjectMeta) Gomeg
 			Expect(err).NotTo(HaveOccurred())
 			return px.Status.Phase == api.DatabasePhaseRunning
 		},
-		time.Minute*15,
+		time.Minute*5,
 		time.Second*5,
 	)
 }

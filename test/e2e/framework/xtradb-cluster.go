@@ -23,14 +23,14 @@ func (f *Framework) EventuallyCheckCluster(
 			defer tunnel.Close()
 			defer en.Close()
 
-			r := make([]map[string]string, 0)
-			r, err = en.QueryString("show status like \"wsrep%%\"")
+			//rows := make([]map[string]string, 0)
+			rows, err := en.QueryString("show status like \"wsrep%%\"")
 			if err != nil {
 				return false
 			}
 
 			ch := true
-			for _, m := range r {
+			for _, m := range rows {
 				if m["Variable_name"] == "wsrep_local_state" {
 					ch = ch && m["Value"] == clusterStats["wsrep_local_state"]
 				}

@@ -137,10 +137,8 @@ func (f *Framework) EventuallyCreateDatabase(meta metav1.ObjectMeta, proxysql bo
 			defer en.Close()
 
 			_, err = en.Exec("CREATE DATABASE kubedb")
-			if err != nil {
-				return false
-			}
-			return true
+
+			return err == nil
 		},
 		time.Minute*10,
 		time.Second*20,
@@ -167,7 +165,6 @@ func (f *Framework) EventuallyCreateTable(meta metav1.ObjectMeta, proxysql bool,
 		time.Minute*10,
 		time.Second*20,
 	)
-	return nil
 }
 
 func (f *Framework) EventuallyInsertRow(meta metav1.ObjectMeta, proxysql bool, dbName string, podIndex, rowsCntToInsert int) GomegaAsyncAssertion {
@@ -195,7 +192,6 @@ func (f *Framework) EventuallyInsertRow(meta metav1.ObjectMeta, proxysql bool, d
 		time.Minute*10,
 		time.Second*10,
 	)
-	return nil
 }
 
 func (f *Framework) EventuallyCountRow(meta metav1.ObjectMeta, proxysql bool, dbName string, podIndex int) GomegaAsyncAssertion {

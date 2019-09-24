@@ -24,10 +24,6 @@ import (
 	"kubedb.dev/apimachinery/client/clientset/versioned/scheme"
 )
 
-func init() {
-	scheme.AddToScheme(clientSetScheme.Scheme)
-}
-
 var requestKind = metaV1.GroupVersionKind{
 	Group:   api.SchemeGroupVersion.Group,
 	Version: api.SchemeGroupVersion.Version,
@@ -35,6 +31,9 @@ var requestKind = metaV1.GroupVersionKind{
 }
 
 func TestPerconaXtraDBValidator_Admit(t *testing.T) {
+	if err := scheme.AddToScheme(clientSetScheme.Scheme); err != nil {
+		t.Error(err)
+	}
 	for _, c := range cases {
 		t.Run(c.testName, func(t *testing.T) {
 			validator := PerconaXtraDBValidator{}

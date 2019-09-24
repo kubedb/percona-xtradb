@@ -82,7 +82,7 @@ func (a *PerconaXtraDBMutator) Admit(req *admission.AdmissionRequest) *admission
 	if err != nil {
 		return hookapi.StatusBadRequest(err)
 	}
-	perconaxtradbMod, err := setDefaultValues(a.client, a.extClient, obj.(*api.PerconaXtraDB).DeepCopy())
+	perconaxtradbMod, err := setDefaultValues(a.extClient, obj.(*api.PerconaXtraDB).DeepCopy())
 	if err != nil {
 		return hookapi.StatusForbidden(err)
 	} else if perconaxtradbMod != nil {
@@ -100,7 +100,7 @@ func (a *PerconaXtraDBMutator) Admit(req *admission.AdmissionRequest) *admission
 }
 
 // setDefaultValues provides the defaulting that is performed in mutating stage of creating/updating a MySQL database
-func setDefaultValues(client kubernetes.Interface, extClient cs.Interface, px *api.PerconaXtraDB) (runtime.Object, error) {
+func setDefaultValues(extClient cs.Interface, px *api.PerconaXtraDB) (runtime.Object, error) {
 	if px.Spec.Version == "" {
 		return nil, errors.New(`'spec.version' is missing`)
 	}
