@@ -202,6 +202,11 @@ func ValidatePerconaXtraDB(client kubernetes.Interface, extClient cs.Interface, 
 		if pxVersion.Spec.Deprecated {
 			return fmt.Errorf("percona-xtradb %s/%s is using deprecated version %v. Skipped processing", px.Namespace, px.Name, pxVersion.Name)
 		}
+
+		if err := pxVersion.ValidateSpecs(); err != nil {
+			return fmt.Errorf("perconaXtraDBVersion %s/%s is using invalid perconaXtraDBVersion %v. Skipped processing. reason: %v", pxVersion.Namespace,
+				pxVersion.Name, pxVersion.Name, err)
+		}
 	}
 
 	if px.Spec.Init != nil &&
