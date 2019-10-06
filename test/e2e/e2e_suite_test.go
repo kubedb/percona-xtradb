@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/appscode/go/homedir"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
@@ -17,9 +16,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	clientSetScheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
 	ka "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
 	"kmodules.xyz/client-go/logs"
+	"kmodules.xyz/client-go/tools/clientcmd"
 	appcat_cs "kmodules.xyz/custom-resources/client/clientset/versioned/typed/appcatalog/v1alpha1"
 	cs "kubedb.dev/apimachinery/client/clientset/versioned"
 	"kubedb.dev/apimachinery/client/clientset/versioned/scheme"
@@ -28,13 +28,24 @@ import (
 )
 
 var (
-	storageClass = "standard"
+	storageClass   = "standard"
+	kubeconfigPath = func() string {
+		kubecfg := os.Getenv("KUBECONFIG")
+		if kubecfg != "" {
+			return kubecfg
+		}
+		return filepath.Join(homedir.HomeDir(), ".kube", "config")
+	}()
+	kubeContext = ""
 )
 
 func init() {
 	if err := scheme.AddToScheme(clientSetScheme.Scheme); err != nil {
 		log.Println(err)
 	}
+
+	flag.StringVar(&kubeconfigPath, "kubeconfig", kubeconfigPath, "Path to kubeconfig file with authorization information (the master location is set by the master flag).")
+	flag.StringVar(&kubeContext, "kube-context", "", "Name of kube context")
 
 	flag.StringVar(&storageClass, "storageclass", storageClass, "Kubernetes StorageClass name")
 	flag.StringVar(&framework.DBCatalogName, "db-catalog", framework.DBCatalogName, "PerconaXtraDB version")
@@ -67,9 +78,8 @@ func TestE2e(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	kubeconfigPath := filepath.Join(homedir.HomeDir(), os.Getenv(KUBECONFIG_KEY))
 	By("Using kubeconfig from " + kubeconfigPath)
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	config, err := clientcmd.BuildConfigFromContext(kubeconfigPath, kubeContext)
 	Expect(err).NotTo(HaveOccurred())
 	// raise throttling time. ref: https://github.com/appscode/voyager/issues/640
 	config.Burst = 100
