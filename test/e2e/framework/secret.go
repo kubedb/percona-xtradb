@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/log"
 	. "github.com/onsi/gomega"
@@ -15,7 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	v1 "kmodules.xyz/client-go/core/v1"
 	store "kmodules.xyz/objectstore-api/api/v1"
-	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"stash.appscode.dev/stash/pkg/restic"
 )
 

@@ -3,6 +3,11 @@ package controller
 import (
 	"fmt"
 
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
+	"kubedb.dev/apimachinery/pkg/eventer"
+	validator "kubedb.dev/percona-xtradb/pkg/admission"
+
 	"github.com/appscode/go/encoding/json/types"
 	"github.com/appscode/go/log"
 	"github.com/pkg/errors"
@@ -15,10 +20,6 @@ import (
 	kutil "kmodules.xyz/client-go"
 	dynamic_util "kmodules.xyz/client-go/dynamic"
 	meta_util "kmodules.xyz/client-go/meta"
-	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
-	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
-	"kubedb.dev/apimachinery/pkg/eventer"
-	validator "kubedb.dev/percona-xtradb/pkg/admission"
 )
 
 func (c *Controller) create(px *api.PerconaXtraDB) error {
