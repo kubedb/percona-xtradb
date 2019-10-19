@@ -15,7 +15,6 @@ import (
 	kutil "kmodules.xyz/client-go"
 	dynamic_util "kmodules.xyz/client-go/dynamic"
 	meta_util "kmodules.xyz/client-go/meta"
-	"kubedb.dev/apimachinery/apis"
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	"kubedb.dev/apimachinery/pkg/eventer"
@@ -45,7 +44,7 @@ func (c *Controller) create(px *api.PerconaXtraDB) error {
 		perconaxtradb, err := util.UpdatePerconaXtraDBStatus(c.ExtClient.KubedbV1alpha1(), px, func(in *api.PerconaXtraDBStatus) *api.PerconaXtraDBStatus {
 			in.Phase = api.DatabasePhaseCreating
 			return in
-		}, apis.EnableStatusSubresource)
+		})
 		if err != nil {
 			return err
 		}
@@ -63,7 +62,7 @@ func (c *Controller) create(px *api.PerconaXtraDB) error {
 		perconaxtradb, err := util.UpdatePerconaXtraDBStatus(c.ExtClient.KubedbV1alpha1(), px, func(in *api.PerconaXtraDBStatus) *api.PerconaXtraDBStatus {
 			in.Phase = api.DatabasePhaseInitializing
 			return in
-		}, apis.EnableStatusSubresource)
+		})
 		if err != nil {
 			return err
 		}
@@ -123,7 +122,7 @@ func (c *Controller) create(px *api.PerconaXtraDB) error {
 		in.Phase = api.DatabasePhaseRunning
 		in.ObservedGeneration = types.NewIntHash(px.Generation, meta_util.GenerationHash(px))
 		return in
-	}, apis.EnableStatusSubresource)
+	})
 	if err != nil {
 		return err
 	}

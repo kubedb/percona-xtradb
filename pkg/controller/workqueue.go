@@ -4,7 +4,6 @@ import (
 	"github.com/appscode/go/log"
 	core_util "kmodules.xyz/client-go/core/v1"
 	"kmodules.xyz/client-go/tools/queue"
-	"kubedb.dev/apimachinery/apis"
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 )
@@ -13,7 +12,7 @@ func (c *Controller) initWatcher() {
 	c.pxInformer = c.KubedbInformerFactory.Kubedb().V1alpha1().PerconaXtraDBs().Informer()
 	c.pxQueue = queue.New("PerconaXtraDB", c.MaxNumRequeues, c.NumThreads, c.runPerconaXtraDB)
 	c.pxLister = c.KubedbInformerFactory.Kubedb().V1alpha1().PerconaXtraDBs().Lister()
-	c.pxInformer.AddEventHandler(queue.NewObservableUpdateHandler(c.pxQueue.GetQueue(), apis.EnableStatusSubresource))
+	c.pxInformer.AddEventHandler(queue.NewObservableUpdateHandler(c.pxQueue.GetQueue(), true))
 }
 
 func (c *Controller) runPerconaXtraDB(key string) error {
