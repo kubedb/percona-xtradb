@@ -58,7 +58,6 @@ percona-xtradb-operator run [flags]
       --client-ca-file string                                   If set, any request presenting a client certificate signed by one of the authorities in the client-ca-file is authenticated with an identity corresponding to the CommonName of the client certificate.
       --contention-profiling                                    Enable lock contention profiling, if profiling is enabled
       --enable-mutating-webhook                                 If true, enables mutating webhooks for KubeDB CRDs.
-      --enable-status-subresource                               If true, uses sub resource for KubeDB crds.
       --enable-validating-webhook                               If true, enables validating webhooks for KubeDB CRDs.
       --governing-service string                                Governing service for database statefulset (default "kubedb")
   -h, --help                                                    help for run
