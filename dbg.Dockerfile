@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 # Copyright The KubeDB Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,21 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -eou pipefail
+FROM {ARG_FROM}
 
-GOPATH=$(go env GOPATH)
-REPO_ROOT="$GOPATH/src/kubedb.dev/percona-xtradb"
+ADD bin/{ARG_OS}_{ARG_ARCH}/{ARG_BIN} /{ARG_BIN}
 
-pushd $REPO_ROOT
-
-echo "" >coverage.txt
-
-for d in $(go list ./... | grep -v -e vendor -e test); do
-  go test -v -race -coverprofile=profile.out -covermode=atomic "$d"
-  if [ -f profile.out ]; then
-    cat profile.out >>coverage.txt
-    rm profile.out
-  fi
-done
-
-popd
+ENTRYPOINT ["/{ARG_BIN}"]
