@@ -1,5 +1,5 @@
 [![Go Report Card](https://goreportcard.com/badge/kubedb.dev/percona-xtradb)](https://goreportcard.com/report/kubedb.dev/percona-xtradb)
-[![Build Status](https://travis-ci.org/kubedb/percona-xtradb.svg?branch=master)](https://travis-ci.org/kubedb/percona-xtradb)
+[![Build Status](https://github.com/kubedb/percona-xtradb/workflows/CI/badge.svg)](https://github.com/kubedb/percona-xtradb/actions?workflow=CI)
 [![codecov](https://codecov.io/gh/kubedb/percona-xtradb/branch/master/graph/badge.svg)](https://codecov.io/gh/kubedb/percona-xtradb)
 [![Slack](http://slack.kubernetes.io/badge.svg)](http://slack.kubernetes.io/#kubedb)
 [![mailing list](https://img.shields.io/badge/mailing_list-join-blue.svg)](https://groups.google.com/forum/#!forum/kubedb)
