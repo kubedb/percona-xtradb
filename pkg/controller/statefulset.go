@@ -72,7 +72,7 @@ func (c *Controller) ensurePerconaXtraDB(px *api.PerconaXtraDB) (kutil.VerbType,
 		return kutil.VerbUnchanged, err
 	}
 
-	initContainers := append([]core.Container{
+	initContainers := []core.Container{
 		{
 			Name:            "remove-lost-found",
 			Image:           pxVersion.Spec.InitContainer.Image,
@@ -90,7 +90,7 @@ func (c *Controller) ensurePerconaXtraDB(px *api.PerconaXtraDB) (kutil.VerbType,
 			},
 			Resources: px.Spec.PodTemplate.Spec.Resources,
 		},
-	})
+	}
 
 	var cmds, args []string
 	var ports = []core.ContainerPort{

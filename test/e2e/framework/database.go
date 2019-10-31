@@ -51,38 +51,25 @@ func (f *Framework) forwardPort(meta metav1.ObjectMeta, clientPodIndex, remotePo
 	return tunnel, nil
 }
 
-func (f *Framework) getPerconaXtraDBClient(meta metav1.ObjectMeta, tunnel *portforward.Tunnel, dbName string, proxysql bool) (*xorm.Engine, error) {
+func (f *Framework) getPerconaXtraDBClient(meta metav1.ObjectMeta, tunnel *portforward.Tunnel, dbName string) (*xorm.Engine, error) {
 	var user, pass string
 	var userErr, passErr error
 
-	if !proxysql {
-		px, err := f.GetPerconaXtraDB(meta)
-		if err != nil {
-			return nil, err
-		}
-		secretMeta := metav1.ObjectMeta{
-			Name:      px.Spec.DatabaseSecret.SecretName,
-			Namespace: px.Namespace,
-		}
-
-		user, userErr = f.GetSecretCred(secretMeta, api.MySQLUserKey)
-		pass, passErr = f.GetSecretCred(secretMeta, api.MySQLPasswordKey)
-	} else {
-		psql, err := f.GetProxySQL(meta)
-		if err != nil {
-			return nil, err
-		}
-		secretMeta := metav1.ObjectMeta{
-			Name:      psql.Spec.ProxySQLSecret.SecretName,
-			Namespace: psql.Namespace,
-		}
-
-		user, userErr = f.GetSecretCred(secretMeta, api.ProxySQLUserKey)
-		pass, passErr = f.GetSecretCred(secretMeta, api.ProxySQLPasswordKey)
+	px, err := f.GetPerconaXtraDB(meta)
+	if err != nil {
+		return nil, err
 	}
+	secretMeta := metav1.ObjectMeta{
+		Name:      px.Spec.DatabaseSecret.SecretName,
+		Namespace: px.Namespace,
+	}
+
+	user, userErr = f.GetSecretCred(secretMeta, api.MySQLUserKey)
 	if userErr != nil {
 		return nil, userErr
 	}
+
+	pass, passErr = f.GetSecretCred(secretMeta, api.MySQLPasswordKey)
 	if passErr != nil {
 		return nil, passErr
 	}
@@ -91,10 +78,10 @@ func (f *Framework) getPerconaXtraDBClient(meta metav1.ObjectMeta, tunnel *portf
 	return xorm.NewEngine("mysql", cnnstr)
 }
 
-func (f *Framework) EventuallyDatabaseReady(meta metav1.ObjectMeta, proxysql bool, dbName string, podIndex int) GomegaAsyncAssertion {
+func (f *Framework) EventuallyDatabaseReady(meta metav1.ObjectMeta, dbName string, podIndex int) GomegaAsyncAssertion {
 	return Eventually(
 		func() bool {
-			tunnel, en, err := f.GetEngine(meta, proxysql, dbName, podIndex)
+			tunnel, en, err := f.GetEngine(meta, dbName, podIndex)
 			if err != nil {
 				return false
 			}
@@ -109,7 +96,7 @@ func (f *Framework) EventuallyDatabaseReady(meta metav1.ObjectMeta, proxysql boo
 }
 
 func (f *Framework) GetEngine(
-	meta metav1.ObjectMeta, proxysql bool,
+	meta metav1.ObjectMeta,
 	dbName string, forwardingPodIndex int) (*portforward.Tunnel, *xorm.Engine, error) {
 
 	var (
@@ -118,11 +105,8 @@ func (f *Framework) GetEngine(
 		err    error
 		port   int
 	)
-	if proxysql {
-		port = 6033
-	} else {
-		port = 3306
-	}
+
+	port = 3306
 	By(fmt.Sprintf("Name: %v, Namespace: %v, Port: %v", meta.Name, meta.Namespace, port))
 
 	tunnel, err = f.forwardPort(meta, forwardingPodIndex, port)
@@ -130,7 +114,7 @@ func (f *Framework) GetEngine(
 		return nil, nil, err
 	}
 
-	en, err = f.getPerconaXtraDBClient(meta, tunnel, dbName, proxysql)
+	en, err = f.getPerconaXtraDBClient(meta, tunnel, dbName)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -142,10 +126,10 @@ func (f *Framework) GetEngine(
 	return tunnel, en, nil
 }
 
-func (f *Framework) EventuallyCreateDatabase(meta metav1.ObjectMeta, proxysql bool, dbName string, podIndex int) GomegaAsyncAssertion {
+func (f *Framework) EventuallyCreateDatabase(meta metav1.ObjectMeta, dbName string, podIndex int) GomegaAsyncAssertion {
 	return Eventually(
 		func() bool {
-			tunnel, en, err := f.GetEngine(meta, proxysql, dbName, podIndex)
+			tunnel, en, err := f.GetEngine(meta, dbName, podIndex)
 			if err != nil {
 				return false
 			}
@@ -161,10 +145,10 @@ func (f *Framework) EventuallyCreateDatabase(meta metav1.ObjectMeta, proxysql bo
 	)
 }
 
-func (f *Framework) EventuallyCreateTable(meta metav1.ObjectMeta, proxysql bool, dbName string, podIndex int) GomegaAsyncAssertion {
+func (f *Framework) EventuallyCreateTable(meta metav1.ObjectMeta, dbName string, podIndex int) GomegaAsyncAssertion {
 	return Eventually(
 		func() bool {
-			tunnel, en, err := f.GetEngine(meta, proxysql, dbName, podIndex)
+			tunnel, en, err := f.GetEngine(meta, dbName, podIndex)
 			if err != nil {
 				return false
 			}
@@ -183,11 +167,11 @@ func (f *Framework) EventuallyCreateTable(meta metav1.ObjectMeta, proxysql bool,
 	)
 }
 
-func (f *Framework) EventuallyInsertRow(meta metav1.ObjectMeta, proxysql bool, dbName string, podIndex, rowsCntToInsert int) GomegaAsyncAssertion {
+func (f *Framework) EventuallyInsertRow(meta metav1.ObjectMeta, dbName string, podIndex, rowsCntToInsert int) GomegaAsyncAssertion {
 	count := 0
 	return Eventually(
 		func() bool {
-			tunnel, en, err := f.GetEngine(meta, proxysql, dbName, podIndex)
+			tunnel, en, err := f.GetEngine(meta, dbName, podIndex)
 			if err != nil {
 				return false
 			}
@@ -210,10 +194,10 @@ func (f *Framework) EventuallyInsertRow(meta metav1.ObjectMeta, proxysql bool, d
 	)
 }
 
-func (f *Framework) EventuallyCountRow(meta metav1.ObjectMeta, proxysql bool, dbName string, podIndex int) GomegaAsyncAssertion {
+func (f *Framework) EventuallyCountRow(meta metav1.ObjectMeta, dbName string, podIndex int) GomegaAsyncAssertion {
 	return Eventually(
 		func() int {
-			tunnel, en, err := f.GetEngine(meta, proxysql, dbName, podIndex)
+			tunnel, en, err := f.GetEngine(meta, dbName, podIndex)
 			if err != nil {
 				return -1
 			}
@@ -232,12 +216,12 @@ func (f *Framework) EventuallyCountRow(meta metav1.ObjectMeta, proxysql bool, db
 	)
 }
 
-func (f *Framework) EventuallyPerconaXtraDBVariable(meta metav1.ObjectMeta, proxysql bool, dbName string, podIndex int, config string) GomegaAsyncAssertion {
+func (f *Framework) EventuallyPerconaXtraDBVariable(meta metav1.ObjectMeta, dbName string, podIndex int, config string) GomegaAsyncAssertion {
 	configPair := strings.Split(config, "=")
 	sql := fmt.Sprintf("SHOW VARIABLES LIKE '%s';", configPair[0])
 	return Eventually(
 		func() []map[string][]byte {
-			tunnel, en, err := f.GetEngine(meta, proxysql, dbName, podIndex)
+			tunnel, en, err := f.GetEngine(meta, dbName, podIndex)
 			if err != nil {
 				return nil
 			}

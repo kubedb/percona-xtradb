@@ -83,7 +83,7 @@ var _ = Describe("PerconaXtraDB", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for database to be ready")
-		f.EventuallyDatabaseReady(perconaxtradb.ObjectMeta, false, dbName, 0).Should(BeTrue())
+		f.EventuallyDatabaseReady(perconaxtradb.ObjectMeta, dbName, 0).Should(BeTrue())
 	}
 
 	var testGeneralBehaviour = func() {
@@ -94,13 +94,13 @@ var _ = Describe("PerconaXtraDB", func() {
 		createAndWaitForRunning()
 
 		By("Creating Table")
-		f.EventuallyCreateTable(perconaxtradb.ObjectMeta, false, dbName, 0).Should(BeTrue())
+		f.EventuallyCreateTable(perconaxtradb.ObjectMeta, dbName, 0).Should(BeTrue())
 
 		By("Inserting Rows")
-		f.EventuallyInsertRow(perconaxtradb.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
+		f.EventuallyInsertRow(perconaxtradb.ObjectMeta, dbName, 0, 3).Should(BeTrue())
 
 		By("Checking Row Count of Table")
-		f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
+		f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
 
 		By("Delete PerconaXtraDB")
 		err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
@@ -121,7 +121,7 @@ var _ = Describe("PerconaXtraDB", func() {
 		f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 		By("Checking Row Count of Table")
-		f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
+		f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
 
 	}
 
@@ -151,13 +151,13 @@ var _ = Describe("PerconaXtraDB", func() {
 		createAndWaitForRunning()
 
 		By("Creating Table")
-		f.EventuallyCreateTable(perconaxtradb.ObjectMeta, false, dbName, 0).Should(BeTrue())
+		f.EventuallyCreateTable(perconaxtradb.ObjectMeta, dbName, 0).Should(BeTrue())
 
 		By("Inserting Row")
-		f.EventuallyInsertRow(perconaxtradb.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
+		f.EventuallyInsertRow(perconaxtradb.ObjectMeta, dbName, 0, 3).Should(BeTrue())
 
 		By("Checking Row Count of Table")
-		f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
+		f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
 
 		By("Create Secret")
 		err := f.CreateSecret(secret)
@@ -259,6 +259,11 @@ var _ = Describe("PerconaXtraDB", func() {
 	})
 
 	Describe("Test", func() {
+		BeforeEach(func() {
+			if *perconaxtradb.Spec.Replicas > 1 {
+				Skip("This test is not for clustered percona xtradb")
+			}
+		})
 
 		Context("General", func() {
 
@@ -819,7 +824,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					createAndWaitForRunning()
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
 				})
 			})
 
@@ -865,7 +870,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					createAndWaitForRunning()
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
 				}
 
 				Context("From Local backend", func() {
@@ -927,13 +932,13 @@ var _ = Describe("PerconaXtraDB", func() {
 					createAndWaitForRunning()
 
 					By("Creating Table")
-					f.EventuallyCreateTable(perconaxtradb.ObjectMeta, false, dbName, 0).Should(BeTrue())
+					f.EventuallyCreateTable(perconaxtradb.ObjectMeta, dbName, 0).Should(BeTrue())
 
 					By("Inserting Row")
-					f.EventuallyInsertRow(perconaxtradb.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
+					f.EventuallyInsertRow(perconaxtradb.ObjectMeta, dbName, 0, 3).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
 
 					By("Delete PerconaXtraDB")
 					err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
@@ -967,7 +972,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
 				})
 			})
 
@@ -977,13 +982,13 @@ var _ = Describe("PerconaXtraDB", func() {
 					createAndWaitForRunning()
 
 					By("Creating Table")
-					f.EventuallyCreateTable(perconaxtradb.ObjectMeta, false, dbName, 0).Should(BeTrue())
+					f.EventuallyCreateTable(perconaxtradb.ObjectMeta, dbName, 0).Should(BeTrue())
 
 					By("Inserting Row")
-					f.EventuallyInsertRow(perconaxtradb.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
+					f.EventuallyInsertRow(perconaxtradb.ObjectMeta, dbName, 0, 3).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
 
 					By("Delete PerconaXtraDB")
 					err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
@@ -1004,7 +1009,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
 				})
 			})
 
@@ -1027,7 +1032,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					createAndWaitForRunning()
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
 
 					By("Delete PerconaXtraDB")
 					err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
@@ -1048,7 +1053,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
 
 					perconaxtradb, err := f.GetPerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
@@ -1113,7 +1118,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					createAndWaitForRunning()
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
 
 					By("Delete PerconaXtraDB")
 					err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
@@ -1134,7 +1139,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
 
 					perconaxtradb, err = f.GetPerconaXtraDB(perconaxtradb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
@@ -1166,7 +1171,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					createAndWaitForRunning()
 
 					By("Checking Row Count of Table")
-					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
 
 					for i := 0; i < 3; i++ {
 						By(fmt.Sprintf("%v-th", i+1) + " time running.")
@@ -1190,7 +1195,7 @@ var _ = Describe("PerconaXtraDB", func() {
 						f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 						By("Checking Row Count of Table")
-						f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
+						f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
 
 						perconaxtradb, err := f.GetPerconaXtraDB(perconaxtradb.ObjectMeta)
 						Expect(err).NotTo(HaveOccurred())
@@ -1516,7 +1521,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Checking row count of table")
-					f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
+					f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
 				})
 			})
 
@@ -1714,7 +1719,7 @@ var _ = Describe("PerconaXtraDB", func() {
 
 					By("Checking PerconaXtraDB configured from provided custom configuration")
 					for _, cfg := range customConfigs {
-						f.EventuallyPerconaXtraDBVariable(perconaxtradb.ObjectMeta, false, dbName, 0, cfg).Should(matcher.UseCustomConfig(cfg))
+						f.EventuallyPerconaXtraDBVariable(perconaxtradb.ObjectMeta, dbName, 0, cfg).Should(matcher.UseCustomConfig(cfg))
 					}
 				})
 			})
@@ -1732,13 +1737,13 @@ var _ = Describe("PerconaXtraDB", func() {
 				createAndWaitForRunning()
 
 				By("Creating Table")
-				f.EventuallyCreateTable(perconaxtradb.ObjectMeta, false, dbName, 0).Should(BeTrue())
+				f.EventuallyCreateTable(perconaxtradb.ObjectMeta, dbName, 0).Should(BeTrue())
 
 				By("Inserting Rows")
-				f.EventuallyInsertRow(perconaxtradb.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
+				f.EventuallyInsertRow(perconaxtradb.ObjectMeta, dbName, 0, 3).Should(BeTrue())
 
 				By("Checking Row Count of Table")
-				f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
+				f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
 			}
 
 			Context("Ephemeral", func() {

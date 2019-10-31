@@ -25,7 +25,6 @@ import (
 	"kubedb.dev/percona-xtradb/test/e2e/matcher"
 
 	"github.com/appscode/go/log"
-	"github.com/appscode/go/strings"
 	"github.com/appscode/go/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -54,9 +53,6 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		dbNameKubedb         string
 		wsClusterStats       map[string]string
 		secret               *corev1.Secret
-
-		proxysql bool
-		psql     *api.ProxySQL
 	)
 
 	var isSetEnv = func(key string) bool {
@@ -81,7 +77,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Waiting for database to be ready")
-		f.EventuallyDatabaseReady(px.ObjectMeta, false, dbName, 0).Should(BeTrue())
+		f.EventuallyDatabaseReady(px.ObjectMeta, dbName, 0).Should(BeTrue())
 	}
 
 	var deletePerconaXtraDBResource = func() {
@@ -130,34 +126,8 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		f.EventuallyWipedOut(px.ObjectMeta).Should(Succeed())
 	}
 
-	var deleteProxySQLResource = func() {
-		if psql == nil {
-			log.Infoln("Skipping cleanup. Reason: ProxySQL object is nil")
-			return
-		}
-		By("Check if ProxySQL " + psql.Name + " exists.")
-		_, err = f.GetProxySQL(psql.ObjectMeta)
-		if err != nil {
-			if kerr.IsNotFound(err) {
-				// ProxySQL was not created. Hence, rest of cleanup is not necessary.
-				return
-			}
-			Expect(err).NotTo(HaveOccurred())
-		}
-		By("Delete ProxySQL")
-		err = f.DeleteProxySQL(psql.ObjectMeta)
-		if err != nil {
-			if kerr.IsNotFound(err) {
-				log.Infoln("Skipping rest of the cleanup. Reason: ProxySQL does not exist.")
-				return
-			}
-			Expect(err).NotTo(HaveOccurred())
-		}
-	}
-
 	var deleteTestResource = func() {
 		deletePerconaXtraDBResource()
-		deleteProxySQLResource()
 	}
 
 	var deleteLeftOverStuffs = func() {
@@ -171,31 +141,22 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		f.CleanWorkloadLeftOvers()
 	}
 
-	var createAndWaitForRunningProxySQL = func() {
-		By("Create ProxySQL: " + psql.Name)
-		err = f.CreateProxySQL(psql)
-		Expect(err).NotTo(HaveOccurred())
-
-		By("Wait for Running ProxySQL")
-		f.EventuallyProxySQLPhase(psql.ObjectMeta).Should(Equal(api.DatabasePhaseRunning))
-	}
-
 	var countRows = func(meta metav1.ObjectMeta, podIndex, expectedRowCnt int) {
 		By(fmt.Sprintf("Read row from member '%s-%d'", meta.Name, podIndex))
-		f.EventuallyCountRow(meta, proxysql, dbNameKubedb, podIndex).Should(Equal(expectedRowCnt))
+		f.EventuallyCountRow(meta, dbNameKubedb, podIndex).Should(Equal(expectedRowCnt))
 	}
 
 	var insertRows = func(meta metav1.ObjectMeta, podIndex, rowCntToInsert int) {
 		By(fmt.Sprintf("Insert row on member '%s-%d'", meta.Name, podIndex))
-		f.EventuallyInsertRow(meta, proxysql, dbNameKubedb, podIndex, rowCntToInsert).Should(BeTrue())
+		f.EventuallyInsertRow(meta, dbNameKubedb, podIndex, rowCntToInsert).Should(BeTrue())
 	}
 
 	var create_Database_N_Table = func(meta metav1.ObjectMeta, podIndex int) {
 		By("Create Database")
-		f.EventuallyCreateDatabase(meta, proxysql, dbName, podIndex).Should(BeTrue())
+		f.EventuallyCreateDatabase(meta, dbName, podIndex).Should(BeTrue())
 
 		By("Create Table")
-		f.EventuallyCreateTable(meta, proxysql, dbNameKubedb, podIndex).Should(BeTrue())
+		f.EventuallyCreateTable(meta, dbNameKubedb, podIndex).Should(BeTrue())
 	}
 
 	var readFromEachPrimary = func(meta metav1.ObjectMeta, clusterSize, rowCnt int) {
@@ -223,16 +184,10 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 			LabelSelector: labels.Set(px.OffshootSelectors()).String(),
 		})
 		Expect(err).NotTo(HaveOccurred())
-		clusterMembersAddr := make([]*string, 0)
-		for _, pod := range pods.Items {
-			addr := fmt.Sprintf("%s:%d", pod.Status.PodIP, api.MySQLNodePort)
-			clusterMembersAddr = append(clusterMembersAddr, &addr)
-		}
 
 		wsClusterStats = map[string]string{
 			"wsrep_local_state":         strconv.Itoa(4),
 			"wsrep_local_state_comment": "Synced",
-			"wsrep_incoming_addresses":  strings.Join(clusterMembersAddr, ","),
 			"wsrep_evs_state":           "OPERATIONAL",
 			"wsrep_cluster_size":        strconv.Itoa(len(pods.Items)),
 			"wsrep_cluster_status":      "Primary",
@@ -247,19 +202,12 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		}
 	}
 
-	var CheckProxySQLVersionForXtraDBCluster = func() {
-		if framework.ProxySQLCatalogName != "2.0.4" {
-			Skip("For XtraDB Cluster, currently supported ProxySQL version is '2.0.4'")
-		}
-	}
-
 	BeforeEach(func() {
 		f = root.Invoke()
 		px = f.PerconaXtraDBCluster()
 		garbagePerconaXtraDB = new(api.PerconaXtraDBList)
 		dbName = "mysql"
 		dbNameKubedb = "kubedb"
-		proxysql = false
 
 		CheckDBVersionForXtraDBCluster()
 	})
@@ -278,10 +226,10 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				storeWsClusterStats()
 			})
 
-			FIt("should be possible to create a basic 3 member cluster", func() {
+			It("should be possible to create a basic 3 member cluster", func() {
 				for i := 0; i < api.PerconaXtraDBDefaultClusterSize; i++ {
 					By(fmt.Sprintf("Checking the cluster stats from Pod '%s-%d'", px.Name, i))
-					f.EventuallyCheckCluster(px.ObjectMeta, false, dbName, i, wsClusterStats).
+					f.EventuallyCheckCluster(px.ObjectMeta, dbName, i, wsClusterStats).
 						Should(Equal(true))
 				}
 
@@ -298,7 +246,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 			It("should failover successfully", func() {
 				for i := 0; i < api.PerconaXtraDBDefaultClusterSize; i++ {
 					By(fmt.Sprintf("Checking the cluster stats from Pod '%s-%d'", px.Name, i))
-					f.EventuallyCheckCluster(px.ObjectMeta, false, dbName, i, wsClusterStats).
+					f.EventuallyCheckCluster(px.ObjectMeta, dbName, i, wsClusterStats).
 						Should(Equal(true))
 				}
 				replicationCheck(px.ObjectMeta, api.PerconaXtraDBDefaultClusterSize)
@@ -310,7 +258,8 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				By(fmt.Sprintf("Checking status after failing primary '%s-%d'", px.Name, 0))
 				for i := 0; i < api.PerconaXtraDBDefaultClusterSize; i++ {
 					By(fmt.Sprintf("Checking the cluster stats member count from Pod '%s-%d'", px.Name, i))
-					f.EventuallyCheckCluster(px.ObjectMeta, false, dbName, i, wsClusterStats).
+					storeWsClusterStats()
+					f.EventuallyCheckCluster(px.ObjectMeta, dbName, i, wsClusterStats).
 						Should(Equal(true))
 				}
 
@@ -328,7 +277,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 			It("should be possible to scale up", func() {
 				for i := 0; i < api.PerconaXtraDBDefaultClusterSize; i++ {
 					By(fmt.Sprintf("Checking the cluster stats from Pod '%s-%d'", px.Name, i))
-					f.EventuallyCheckCluster(px.ObjectMeta, false, dbName, i, wsClusterStats).
+					f.EventuallyCheckCluster(px.ObjectMeta, dbName, i, wsClusterStats).
 						Should(Equal(true))
 				}
 				replicationCheck(px.ObjectMeta, api.PerconaXtraDBDefaultClusterSize)
@@ -353,7 +302,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				storeWsClusterStats()
 				for i := 0; i < api.PerconaXtraDBDefaultClusterSize+1; i++ {
 					By(fmt.Sprintf("Checking the cluster stats member count from Pod '%s-%d'", px.Name, i))
-					f.EventuallyCheckCluster(px.ObjectMeta, false, dbName, i, wsClusterStats).
+					f.EventuallyCheckCluster(px.ObjectMeta, dbName, i, wsClusterStats).
 						Should(Equal(true))
 				}
 
@@ -374,7 +323,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 			It("Should be possible to scale down", func() {
 				for i := 0; i < api.PerconaXtraDBDefaultClusterSize+1; i++ {
 					By(fmt.Sprintf("Checking the cluster stats from Pod '%s-%d'", px.Name, i))
-					f.EventuallyCheckCluster(px.ObjectMeta, false, dbName, i, wsClusterStats).
+					f.EventuallyCheckCluster(px.ObjectMeta, dbName, i, wsClusterStats).
 						Should(Equal(true))
 				}
 				replicationCheck(px.ObjectMeta, api.PerconaXtraDBDefaultClusterSize+1)
@@ -399,7 +348,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				storeWsClusterStats()
 				for i := 0; i < api.PerconaXtraDBDefaultClusterSize; i++ {
 					By(fmt.Sprintf("Checking the cluster stats member count from Pod '%s-%d'", px.Name, i))
-					f.EventuallyCheckCluster(px.ObjectMeta, false, dbName, i, wsClusterStats).
+					f.EventuallyCheckCluster(px.ObjectMeta, dbName, i, wsClusterStats).
 						Should(Equal(true))
 				}
 
@@ -407,45 +356,6 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				readFromEachPrimary(px.ObjectMeta, api.PerconaXtraDBDefaultClusterSize, 4)
 				writeTo_N_ReadFrom_EachPrimary(px.ObjectMeta, api.PerconaXtraDBDefaultClusterSize, 4)
 			})
-		})
-	})
-
-	Context("Proxysql", func() {
-		BeforeEach(func() {
-			if !framework.ProxySQLTest {
-				Skip("For ProxySQL test, the value of '--proxysql' flag must be 'true' while running e2e-tests command")
-			}
-
-			CheckProxySQLVersionForXtraDBCluster()
-
-			createAndWaitForRunningPerconaXtraDB()
-			storeWsClusterStats()
-
-			psql = f.ProxySQL(px.Name)
-			createAndWaitForRunningProxySQL()
-		})
-
-		AfterEach(func() {
-			// delete resources for current PerconaXtraDB
-			deleteTestResource()
-			deleteLeftOverStuffs()
-		})
-
-		It("should configure poxysql for backend servers", func() {
-			for i := 0; i < api.PerconaXtraDBDefaultClusterSize; i++ {
-				By(fmt.Sprintf("Checking the cluster stats from Pod '%s-%d'", px.Name, i))
-				f.EventuallyCheckCluster(px.ObjectMeta, proxysql, dbName, i, wsClusterStats).
-					Should(Equal(true))
-			}
-			proxysql = true
-			for i := 0; i < int(*psql.Spec.Replicas); i++ {
-				By(fmt.Sprintf("Checking the cluster stats from Proxysql Pod '%s-%d'", psql.Name, i))
-				f.EventuallyCheckCluster(psql.ObjectMeta, proxysql, dbName, i, wsClusterStats).
-					Should(Equal(true))
-			}
-			replicationCheck(psql.ObjectMeta, int(*psql.Spec.Replicas))
-			proxysql = false
-			readFromEachPrimary(px.ObjectMeta, api.PerconaXtraDBDefaultClusterSize, int(*psql.Spec.Replicas))
 		})
 	})
 
@@ -565,7 +475,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Waiting for database to be ready")
-				f.EventuallyDatabaseReady(px.ObjectMeta, false, dbName, 0).Should(BeTrue())
+				f.EventuallyDatabaseReady(px.ObjectMeta, dbName, 0).Should(BeTrue())
 
 				countRows(px.ObjectMeta, 0, 3)
 			}
@@ -573,7 +483,6 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 			Context("From GCS backend", func() {
 
 				BeforeEach(func() {
-					proxysql = false
 					secret = f.SecretForGCSBackend()
 					secret = f.PatchSecretForRestic(secret)
 					bc = f.BackupConfiguration(px.ObjectMeta)
