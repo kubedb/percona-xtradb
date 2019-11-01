@@ -31,7 +31,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	v1 "kmodules.xyz/client-go/core/v1"
-	store "kmodules.xyz/objectstore-api/api/v1"
+	"kmodules.xyz/constants/aws"
+	"kmodules.xyz/constants/azure"
+	"kmodules.xyz/constants/google"
+	"kmodules.xyz/constants/openstack"
 	"stash.appscode.dev/stash/pkg/restic"
 )
 
@@ -46,8 +49,8 @@ func (fi *Invocation) SecretForLocalBackend() *core.Secret {
 }
 
 func (fi *Invocation) SecretForS3Backend() *core.Secret {
-	if os.Getenv(store.AWS_ACCESS_KEY_ID) == "" ||
-		os.Getenv(store.AWS_SECRET_ACCESS_KEY) == "" {
+	if os.Getenv(aws.AWS_ACCESS_KEY_ID) == "" ||
+		os.Getenv(aws.AWS_SECRET_ACCESS_KEY) == "" {
 		return &core.Secret{}
 	}
 
@@ -57,19 +60,19 @@ func (fi *Invocation) SecretForS3Backend() *core.Secret {
 			Namespace: fi.namespace,
 		},
 		Data: map[string][]byte{
-			store.AWS_ACCESS_KEY_ID:     []byte(os.Getenv(store.AWS_ACCESS_KEY_ID)),
-			store.AWS_SECRET_ACCESS_KEY: []byte(os.Getenv(store.AWS_SECRET_ACCESS_KEY)),
+			aws.AWS_ACCESS_KEY_ID:     []byte(os.Getenv(aws.AWS_ACCESS_KEY_ID)),
+			aws.AWS_SECRET_ACCESS_KEY: []byte(os.Getenv(aws.AWS_SECRET_ACCESS_KEY)),
 		},
 	}
 }
 
 func (fi *Invocation) SecretForGCSBackend() *core.Secret {
-	if os.Getenv(store.GOOGLE_PROJECT_ID) == "" ||
-		(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" && os.Getenv(store.GOOGLE_SERVICE_ACCOUNT_JSON_KEY) == "") {
+	if os.Getenv(google.GOOGLE_PROJECT_ID) == "" ||
+		(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" && os.Getenv(google.GOOGLE_SERVICE_ACCOUNT_JSON_KEY) == "") {
 		return &core.Secret{}
 	}
 
-	jsonKey := os.Getenv(store.GOOGLE_SERVICE_ACCOUNT_JSON_KEY)
+	jsonKey := os.Getenv(google.GOOGLE_SERVICE_ACCOUNT_JSON_KEY)
 	if jsonKey == "" {
 		if keyBytes, err := ioutil.ReadFile(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")); err == nil {
 			jsonKey = string(keyBytes)
@@ -82,15 +85,15 @@ func (fi *Invocation) SecretForGCSBackend() *core.Secret {
 			Namespace: fi.namespace,
 		},
 		Data: map[string][]byte{
-			store.GOOGLE_PROJECT_ID:               []byte(os.Getenv(store.GOOGLE_PROJECT_ID)),
-			store.GOOGLE_SERVICE_ACCOUNT_JSON_KEY: []byte(jsonKey),
+			google.GOOGLE_PROJECT_ID:               []byte(os.Getenv(google.GOOGLE_PROJECT_ID)),
+			google.GOOGLE_SERVICE_ACCOUNT_JSON_KEY: []byte(jsonKey),
 		},
 	}
 }
 
 func (fi *Invocation) SecretForAzureBackend() *core.Secret {
-	if os.Getenv(store.AZURE_ACCOUNT_NAME) == "" ||
-		os.Getenv(store.AZURE_ACCOUNT_KEY) == "" {
+	if os.Getenv(azure.AZURE_ACCOUNT_NAME) == "" ||
+		os.Getenv(azure.AZURE_ACCOUNT_KEY) == "" {
 		return &core.Secret{}
 	}
 
@@ -100,17 +103,17 @@ func (fi *Invocation) SecretForAzureBackend() *core.Secret {
 			Namespace: fi.namespace,
 		},
 		Data: map[string][]byte{
-			store.AZURE_ACCOUNT_NAME: []byte(os.Getenv(store.AZURE_ACCOUNT_NAME)),
-			store.AZURE_ACCOUNT_KEY:  []byte(os.Getenv(store.AZURE_ACCOUNT_KEY)),
+			azure.AZURE_ACCOUNT_NAME: []byte(os.Getenv(azure.AZURE_ACCOUNT_NAME)),
+			azure.AZURE_ACCOUNT_KEY:  []byte(os.Getenv(azure.AZURE_ACCOUNT_KEY)),
 		},
 	}
 }
 
 func (fi *Invocation) SecretForSwiftBackend() *core.Secret {
-	if os.Getenv(store.OS_AUTH_URL) == "" ||
-		(os.Getenv(store.OS_TENANT_ID) == "" && os.Getenv(store.OS_TENANT_NAME) == "") ||
-		os.Getenv(store.OS_USERNAME) == "" ||
-		os.Getenv(store.OS_PASSWORD) == "" {
+	if os.Getenv(openstack.OS_AUTH_URL) == "" ||
+		(os.Getenv(openstack.OS_TENANT_ID) == "" && os.Getenv(openstack.OS_TENANT_NAME) == "") ||
+		os.Getenv(openstack.OS_USERNAME) == "" ||
+		os.Getenv(openstack.OS_PASSWORD) == "" {
 		return &core.Secret{}
 	}
 
@@ -120,12 +123,12 @@ func (fi *Invocation) SecretForSwiftBackend() *core.Secret {
 			Namespace: fi.namespace,
 		},
 		Data: map[string][]byte{
-			store.OS_AUTH_URL:    []byte(os.Getenv(store.OS_AUTH_URL)),
-			store.OS_TENANT_ID:   []byte(os.Getenv(store.OS_TENANT_ID)),
-			store.OS_TENANT_NAME: []byte(os.Getenv(store.OS_TENANT_NAME)),
-			store.OS_USERNAME:    []byte(os.Getenv(store.OS_USERNAME)),
-			store.OS_PASSWORD:    []byte(os.Getenv(store.OS_PASSWORD)),
-			store.OS_REGION_NAME: []byte(os.Getenv(store.OS_REGION_NAME)),
+			openstack.OS_AUTH_URL:    []byte(os.Getenv(openstack.OS_AUTH_URL)),
+			openstack.OS_TENANT_ID:   []byte(os.Getenv(openstack.OS_TENANT_ID)),
+			openstack.OS_TENANT_NAME: []byte(os.Getenv(openstack.OS_TENANT_NAME)),
+			openstack.OS_USERNAME:    []byte(os.Getenv(openstack.OS_USERNAME)),
+			openstack.OS_PASSWORD:    []byte(os.Getenv(openstack.OS_PASSWORD)),
+			openstack.OS_REGION_NAME: []byte(os.Getenv(openstack.OS_REGION_NAME)),
 		},
 	}
 }
@@ -165,7 +168,7 @@ func (f *Framework) UpdateSecret(meta metav1.ObjectMeta, transformer func(core.S
 		log.Errorf("Attempt %d failed to update Secret %s@%s due to %s.", attempt, cur.Name, cur.Namespace, err)
 		time.Sleep(updateRetryInterval)
 	}
-	return fmt.Errorf("Failed to update Secret %s@%s after %d attempts.", meta.Name, meta.Namespace, attempt)
+	return fmt.Errorf("failed to update Secret %s@%s after %d attempts", meta.Name, meta.Namespace, attempt)
 }
 
 func (f *Framework) GetMySQLRootPassword(px *api.PerconaXtraDB) (string, error) {
