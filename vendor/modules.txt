@@ -134,10 +134,6 @@ github.com/emicklei/go-restful/log
 github.com/evanphx/json-patch
 # github.com/fatih/structs v1.1.0
 github.com/fatih/structs
-# github.com/gabriel-vasile/mimetype v0.3.22
-github.com/gabriel-vasile/mimetype
-github.com/gabriel-vasile/mimetype/internal/json
-github.com/gabriel-vasile/mimetype/internal/matchers
 # github.com/ghodss/yaml v1.0.0
 github.com/ghodss/yaml
 # github.com/go-openapi/jsonpointer v0.19.3
@@ -237,11 +233,6 @@ github.com/jmespath/go-jmespath
 github.com/jpillora/go-ogle-analytics
 # github.com/json-iterator/go v1.1.8
 github.com/json-iterator/go
-# github.com/kubernetes-csi/external-snapshotter v1.2.1-0.20191220025132-bbbadbc41e30
-github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1beta1
-github.com/kubernetes-csi/external-snapshotter/pkg/client/clientset/versioned
-github.com/kubernetes-csi/external-snapshotter/pkg/client/clientset/versioned/scheme
-github.com/kubernetes-csi/external-snapshotter/pkg/client/clientset/versioned/typed/volumesnapshot/v1beta1
 # github.com/mailru/easyjson v0.7.0
 github.com/mailru/easyjson/buffer
 github.com/mailru/easyjson/jlexer
@@ -593,7 +584,6 @@ k8s.io/apimachinery/pkg/util/mergepatch
 k8s.io/apimachinery/pkg/util/naming
 k8s.io/apimachinery/pkg/util/net
 k8s.io/apimachinery/pkg/util/rand
-k8s.io/apimachinery/pkg/util/remotecommand
 k8s.io/apimachinery/pkg/util/runtime
 k8s.io/apimachinery/pkg/util/sets
 k8s.io/apimachinery/pkg/util/strategicpatch
@@ -924,13 +914,11 @@ k8s.io/client-go/tools/portforward
 k8s.io/client-go/tools/record
 k8s.io/client-go/tools/record/util
 k8s.io/client-go/tools/reference
-k8s.io/client-go/tools/remotecommand
 k8s.io/client-go/tools/watch
 k8s.io/client-go/transport
 k8s.io/client-go/transport/spdy
 k8s.io/client-go/util/cert
 k8s.io/client-go/util/connrotation
-k8s.io/client-go/util/exec
 k8s.io/client-go/util/flowcontrol
 k8s.io/client-go/util/homedir
 k8s.io/client-go/util/jsonpath
@@ -965,7 +953,6 @@ k8s.io/kubernetes/pkg/util/hash
 # k8s.io/utils v0.0.0-20190801114015-581e00157fb1 => k8s.io/utils v0.0.0-20190801114015-581e00157fb1
 k8s.io/utils/buffer
 k8s.io/utils/integer
-k8s.io/utils/io
 k8s.io/utils/path
 k8s.io/utils/pointer
 k8s.io/utils/trace
@@ -985,7 +972,6 @@ kmodules.xyz/client-go/rbac/v1beta1
 kmodules.xyz/client-go/tools/analytics
 kmodules.xyz/client-go/tools/cli
 kmodules.xyz/client-go/tools/clientcmd
-kmodules.xyz/client-go/tools/exec
 kmodules.xyz/client-go/tools/portforward
 kmodules.xyz/client-go/tools/queue
 # kmodules.xyz/constants v0.0.0-20191024095500-cd4313df4aa6
@@ -1017,24 +1003,10 @@ kmodules.xyz/objectstore-api/api/v1
 kmodules.xyz/objectstore-api/osm
 # kmodules.xyz/offshoot-api v0.0.0-20200103145223-2c4f520520d2
 kmodules.xyz/offshoot-api/api/v1
-kmodules.xyz/offshoot-api/util
-# kmodules.xyz/openshift v0.0.0-20191127145035-f6c48a90dbb7
-kmodules.xyz/openshift/apis/apps/v1
-kmodules.xyz/openshift/apis/security/v1
-kmodules.xyz/openshift/client/clientset/versioned
-kmodules.xyz/openshift/client/clientset/versioned/scheme
-kmodules.xyz/openshift/client/clientset/versioned/typed/apps/v1
-kmodules.xyz/openshift/client/clientset/versioned/typed/security/v1
 # kmodules.xyz/prober v0.0.0-20191216013129-7c91e2b0edb2
-kmodules.xyz/prober/api
 kmodules.xyz/prober/api/v1
-kmodules.xyz/prober/probe
-kmodules.xyz/prober/probe/exec
-kmodules.xyz/prober/probe/http
-kmodules.xyz/prober/probe/tcp
 # kmodules.xyz/webhook-runtime v0.0.0-20191127075323-d4bfdee6974d
 kmodules.xyz/webhook-runtime/admission/v1beta1
-kmodules.xyz/webhook-runtime/apis/workload/v1
 kmodules.xyz/webhook-runtime/registry/admissionreview/v1beta1
 # kubedb.dev/apimachinery v0.13.0-rc.2.0.20200111104535-722f0b216a67
 kubedb.dev/apimachinery/api/crds
@@ -1132,9 +1104,7 @@ stash.appscode.dev/stash/client/informers/externalversions/stash/v1alpha1
 stash.appscode.dev/stash/client/informers/externalversions/stash/v1beta1
 stash.appscode.dev/stash/client/listers/stash/v1alpha1
 stash.appscode.dev/stash/client/listers/stash/v1beta1
-stash.appscode.dev/stash/pkg/docker
 stash.appscode.dev/stash/pkg/restic
-stash.appscode.dev/stash/pkg/util
 # xorm.io/builder v0.3.6
 xorm.io/builder
 # xorm.io/core v0.7.2-0.20190928055935-90aeac8d08eb
