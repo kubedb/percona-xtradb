@@ -49,7 +49,7 @@ func (f *Invocation) PerconaXtraDB() *api.PerconaXtraDB {
 			},
 		},
 		Spec: api.PerconaXtraDBSpec{
-			Replicas:    types.Int32P(api.PerconaXtraDBDefaultClusterSize),
+			Replicas:    types.Int32P(1),
 			Version:     DBCatalogName,
 			StorageType: api.StorageTypeDurable,
 			Storage: &core.PersistentVolumeClaimSpec{

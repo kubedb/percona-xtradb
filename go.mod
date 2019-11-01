@@ -4,7 +4,6 @@ go 1.12
 
 require (
 	github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc
-	github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27
 	github.com/coreos/prometheus-operator v0.34.0
 	github.com/fatih/structs v1.1.0
 	github.com/go-sql-driver/mysql v1.4.1
