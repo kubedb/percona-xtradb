@@ -892,6 +892,11 @@ kmodules.xyz/client-go/tools/portforward
 kmodules.xyz/client-go/tools/analytics
 kmodules.xyz/client-go/apiregistration/v1beta1
 kmodules.xyz/client-go/policy/v1beta1
+# kmodules.xyz/constants v0.0.0-20191009183447-fbd33067b8a6
+kmodules.xyz/constants/aws
+kmodules.xyz/constants/azure
+kmodules.xyz/constants/google
+kmodules.xyz/constants/openstack
 # kmodules.xyz/custom-resources v0.0.0-20190927035424-65fe358bb045
 kmodules.xyz/custom-resources/client/clientset/versioned/scheme
 kmodules.xyz/custom-resources/client/clientset/versioned
@@ -910,8 +915,8 @@ kmodules.xyz/monitoring-agent-api/agents
 kmodules.xyz/monitoring-agent-api/agents/coreosprometheusoperator
 kmodules.xyz/monitoring-agent-api/agents/prometheusbuiltin
 # kmodules.xyz/objectstore-api v0.0.0-20191014210450-ac380fa650a3
-kmodules.xyz/objectstore-api/api/v1
 kmodules.xyz/objectstore-api/osm
+kmodules.xyz/objectstore-api/api/v1
 # kmodules.xyz/offshoot-api v0.0.0-20190901210649-de049192326c
 kmodules.xyz/offshoot-api/api/v1
 kmodules.xyz/offshoot-api/util
@@ -943,8 +948,8 @@ kubedb.dev/apimachinery/pkg/controller/restoresession
 kubedb.dev/apimachinery/pkg/eventer
 kubedb.dev/apimachinery/pkg/admission/dormantdatabase
 kubedb.dev/apimachinery/pkg/admission/namespace
-kubedb.dev/apimachinery/apis/kubedb
 kubedb.dev/apimachinery/apis
+kubedb.dev/apimachinery/apis/kubedb
 kubedb.dev/apimachinery/client/clientset/versioned/typed/catalog/v1alpha1
 kubedb.dev/apimachinery/client/clientset/versioned/typed/config/v1alpha1
 kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1

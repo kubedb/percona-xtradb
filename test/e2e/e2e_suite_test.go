@@ -67,10 +67,6 @@ func init() {
 	flag.StringVar(&framework.DBCatalogName, "db-catalog", framework.DBCatalogName, "PerconaXtraDB version")
 	flag.StringVar(&framework.DockerRegistry, "docker-registry", framework.DockerRegistry, "User provided docker repository")
 	flag.BoolVar(&framework.SelfHostedOperator, "selfhosted-operator", framework.SelfHostedOperator, "Enable this for provided controller")
-
-	// for ProxySQL
-	flag.BoolVar(&framework.ProxySQLTest, "proxysql", framework.ProxySQLTest, "Enable this for proxysql controller")
-	flag.StringVar(&framework.ProxySQLCatalogName, "psql-catalog", framework.ProxySQLCatalogName, "ProxySQL version")
 }
 
 const (
@@ -79,7 +75,6 @@ const (
 )
 
 var (
-	//ctrl *controller.Controller
 	root *framework.Framework
 )
 

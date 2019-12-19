@@ -17,7 +17,6 @@ package framework
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	. "github.com/onsi/gomega"
@@ -25,13 +24,13 @@ import (
 )
 
 func (f *Framework) EventuallyCheckCluster(
-	pxMeta metav1.ObjectMeta, proxysql bool,
+	pxMeta metav1.ObjectMeta,
 	dbName string, podIndex int,
 	clusterStats map[string]string) GomegaAsyncAssertion {
 
 	return Eventually(
 		func() bool {
-			tunnel, en, err := f.GetEngine(pxMeta, proxysql, dbName, podIndex)
+			tunnel, en, err := f.GetEngine(pxMeta, dbName, podIndex)
 			if err != nil {
 				return false
 			}
@@ -51,20 +50,6 @@ func (f *Framework) EventuallyCheckCluster(
 				}
 				if m["Variable_name"] == "wsrep_local_state_comment" {
 					ch = ch && m["Value"] == clusterStats["wsrep_local_state_comment"]
-				}
-				if m["Variable_name"] == "wsrep_incoming_addresses" {
-					addrsExpected := strings.Split(clusterStats["wsrep_incoming_addresses"], ",")
-					addrsGot := strings.Split(m["Value"], ",")
-					var flag bool
-					for _, addrG := range addrsGot {
-						flag = false
-						for _, addrE := range addrsExpected {
-							if addrG == addrE {
-								flag = true
-							}
-						}
-						ch = ch && flag
-					}
 				}
 				if m["Variable_name"] == "wsrep_evs_state" {
 					ch = ch && m["Value"] == clusterStats["wsrep_evs_state"]
