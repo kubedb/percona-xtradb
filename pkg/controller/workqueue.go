@@ -28,7 +28,7 @@ func (c *Controller) initWatcher() {
 	c.pxInformer = c.KubedbInformerFactory.Kubedb().V1alpha1().PerconaXtraDBs().Informer()
 	c.pxQueue = queue.New("PerconaXtraDB", c.MaxNumRequeues, c.NumThreads, c.runPerconaXtraDB)
 	c.pxLister = c.KubedbInformerFactory.Kubedb().V1alpha1().PerconaXtraDBs().Lister()
-	c.pxInformer.AddEventHandler(queue.NewObservableUpdateHandler(c.pxQueue.GetQueue(), true))
+	c.pxInformer.AddEventHandler(queue.NewReconcilableHandler(c.pxQueue.GetQueue()))
 }
 
 func (c *Controller) runPerconaXtraDB(key string) error {

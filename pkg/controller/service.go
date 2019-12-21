@@ -26,8 +26,6 @@ import (
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/reference"
 	kutil "kmodules.xyz/client-go"
 	core_util "kmodules.xyz/client-go/core/v1"
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
@@ -86,13 +84,10 @@ func (c *Controller) createService(px *api.PerconaXtraDB) (kutil.VerbType, error
 		Namespace: px.Namespace,
 	}
 
-	ref, rerr := reference.GetReference(clientsetscheme.Scheme, px)
-	if rerr != nil {
-		return kutil.VerbUnchanged, rerr
-	}
+	owner := metav1.NewControllerRef(px, api.SchemeGroupVersion.WithKind(api.ResourceKindPerconaXtraDB))
 
 	_, ok, err := core_util.CreateOrPatchService(c.Client, meta, func(in *core.Service) *core.Service {
-		core_util.EnsureOwnerReference(&in.ObjectMeta, ref)
+		core_util.EnsureOwnerReference(&in.ObjectMeta, owner)
 		in.Labels = px.OffshootLabels()
 		in.Annotations = px.Spec.ServiceTemplate.Annotations
 
@@ -132,10 +127,7 @@ func (c *Controller) ensureStatsService(px *api.PerconaXtraDB) (kutil.VerbType, 
 		return kutil.VerbUnchanged, err
 	}
 
-	ref, rerr := reference.GetReference(clientsetscheme.Scheme, px)
-	if rerr != nil {
-		return kutil.VerbUnchanged, rerr
-	}
+	owner := metav1.NewControllerRef(px, api.SchemeGroupVersion.WithKind(api.ResourceKindPerconaXtraDB))
 
 	// reconcile stats Service
 	meta := metav1.ObjectMeta{
@@ -143,7 +135,7 @@ func (c *Controller) ensureStatsService(px *api.PerconaXtraDB) (kutil.VerbType, 
 		Namespace: px.Namespace,
 	}
 	_, vt, err := core_util.CreateOrPatchService(c.Client, meta, func(in *core.Service) *core.Service {
-		core_util.EnsureOwnerReference(&in.ObjectMeta, ref)
+		core_util.EnsureOwnerReference(&in.ObjectMeta, owner)
 		in.Labels = px.StatsServiceLabels()
 		in.Spec.Selector = px.OffshootSelectors()
 		in.Spec.Ports = core_util.MergeServicePorts(in.Spec.Ports, []core.ServicePort{
@@ -171,10 +163,7 @@ func (c *Controller) ensureStatsService(px *api.PerconaXtraDB) (kutil.VerbType, 
 }
 
 func (c *Controller) createPerconaXtraDBGoverningService(px *api.PerconaXtraDB) (string, error) {
-	ref, rerr := reference.GetReference(clientsetscheme.Scheme, px)
-	if rerr != nil {
-		return "", rerr
-	}
+	owner := metav1.NewControllerRef(px, api.SchemeGroupVersion.WithKind(api.ResourceKindPerconaXtraDB))
 
 	service := &core.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -182,7 +171,7 @@ func (c *Controller) createPerconaXtraDBGoverningService(px *api.PerconaXtraDB) 
 			Namespace: px.Namespace,
 			Labels:    px.OffshootLabels(),
 			// 'tolerate-unready-endpoints' annotation is deprecated.
-			// ref: https://github.com/kubernetes/kubernetes/pull/63742
+			// owner: https://github.com/kubernetes/kubernetes/pull/63742
 			Annotations: map[string]string{
 				"service.alpha.kubernetes.io/tolerate-unready-endpoints": "true",
 			},
@@ -200,7 +189,7 @@ func (c *Controller) createPerconaXtraDBGoverningService(px *api.PerconaXtraDB) 
 			Selector: px.OffshootSelectors(),
 		},
 	}
-	core_util.EnsureOwnerReference(&service.ObjectMeta, ref)
+	core_util.EnsureOwnerReference(&service.ObjectMeta, owner)
 
 	_, err := c.Client.CoreV1().Services(px.Namespace).Create(service)
 	if err != nil && !kerr.IsAlreadyExists(err) {

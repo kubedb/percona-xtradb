@@ -14,6 +14,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
+    - name: Set up Go 1.13
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.13
+      id: go
+
     - name: Check out code into the Go module directory
       uses: actions/checkout@v1
 
@@ -28,7 +34,7 @@ jobs:
 
     - name: Run checks
       run: |
-        sudo apt-get -qq update
+        sudo apt-get -qq update || true
         sudo apt-get install -y bzr
         make ci
 
@@ -45,6 +51,7 @@ jobs:
       id: kind
       uses: engineerd/setup-kind@v0.1.0
       with:
+        version: v0.6.1
         config: hack/kubernetes/kind.yaml
 
     - name: Prepare cluster for testing
@@ -77,14 +84,11 @@ jobs:
         cd ..
         git clone https://github.com/kubedb/installer.git
         cd installer
-        git checkout pxc
+        git checkout master
 
     - name: Install stash and addons
       run: |
         export KUBECONFIG="$(kind get kubeconfig-path)"
-        if [ -x "$(command -v helm)" ]; then
-            helm init --client-only
-        fi
         make stash-install
 
     - name: Run e2e tests

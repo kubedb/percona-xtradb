@@ -23,15 +23,12 @@ import (
 	"kubedb.dev/apimachinery/pkg/eventer"
 	validator "kubedb.dev/percona-xtradb/pkg/admission"
 
-	"github.com/appscode/go/encoding/json/types"
 	"github.com/appscode/go/log"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/reference"
 	kutil "kmodules.xyz/client-go"
 	dynamic_util "kmodules.xyz/client-go/dynamic"
 	meta_util "kmodules.xyz/client-go/meta"
@@ -95,11 +92,9 @@ func (c *Controller) create(px *api.PerconaXtraDB) error {
 	}
 	c.GoverningService = governingService
 
-	if c.EnableRBAC {
-		// Ensure ClusterRoles for statefulsets
-		if err := c.ensureRBACStuff(px); err != nil {
-			return err
-		}
+	// Ensure ClusterRoles for statefulsets
+	if err := c.ensureRBACStuff(px); err != nil {
+		return err
 	}
 
 	// ensure database Service
@@ -136,7 +131,7 @@ func (c *Controller) create(px *api.PerconaXtraDB) error {
 
 	per, err := util.UpdatePerconaXtraDBStatus(c.ExtClient.KubedbV1alpha1(), px, func(in *api.PerconaXtraDBStatus) *api.PerconaXtraDBStatus {
 		in.Phase = api.DatabasePhaseRunning
-		in.ObservedGeneration = types.NewIntHash(px.Generation, meta_util.GenerationHash(px))
+		in.ObservedGeneration = px.Generation
 		return in
 	})
 	if err != nil {
@@ -179,15 +174,10 @@ func (c *Controller) create(px *api.PerconaXtraDB) error {
 }
 
 func (c *Controller) terminate(px *api.PerconaXtraDB) error {
-	ref, rerr := reference.GetReference(clientsetscheme.Scheme, px)
-	if rerr != nil {
-		return rerr
-	}
-
 	// If TerminationPolicy is "pause", keep everything (ie, PVCs,Secrets,Snapshots) intact.
 	// In operator, create dormantdatabase
 	if px.Spec.TerminationPolicy == api.TerminationPolicyPause {
-		if err := c.removeOwnerReferenceFromOffshoots(px, ref); err != nil {
+		if err := c.removeOwnerReferenceFromOffshoots(px); err != nil {
 			return err
 		}
 
@@ -212,7 +202,7 @@ func (c *Controller) terminate(px *api.PerconaXtraDB) error {
 		// If TerminationPolicy is "wipeOut", delete everything (ie, PVCs,Secrets,Snapshots).
 		// If TerminationPolicy is "delete", delete PVCs and keep snapshots,secrets intact.
 		// In both these cases, don't create dormantdatabase
-		if err := c.setOwnerReferenceToOffshoots(px, ref); err != nil {
+		if err := c.setOwnerReferenceToOffshoots(px); err != nil {
 			return err
 		}
 	}
@@ -228,7 +218,8 @@ func (c *Controller) terminate(px *api.PerconaXtraDB) error {
 	return nil
 }
 
-func (c *Controller) setOwnerReferenceToOffshoots(px *api.PerconaXtraDB, ref *core.ObjectReference) error {
+func (c *Controller) setOwnerReferenceToOffshoots(px *api.PerconaXtraDB) error {
+	owner := metav1.NewControllerRef(px, api.SchemeGroupVersion.WithKind(api.ResourceKindPerconaXtraDB))
 	selector := labels.SelectorFromSet(px.OffshootSelectors())
 
 	// If TerminationPolicy is "wipeOut", delete snapshots and secrets,
@@ -239,10 +230,10 @@ func (c *Controller) setOwnerReferenceToOffshoots(px *api.PerconaXtraDB, ref *co
 			api.SchemeGroupVersion.WithResource(api.ResourcePluralSnapshot),
 			px.Namespace,
 			selector,
-			ref); err != nil {
+			owner); err != nil {
 			return err
 		}
-		if err := c.wipeOutDatabase(px.ObjectMeta, px.Spec.GetSecrets(), ref); err != nil {
+		if err := c.wipeOutDatabase(px.ObjectMeta, px.Spec.GetSecrets(), owner); err != nil {
 			return errors.Wrap(err, "error in wiping out database.")
 		}
 	} else {
@@ -252,7 +243,7 @@ func (c *Controller) setOwnerReferenceToOffshoots(px *api.PerconaXtraDB, ref *co
 			api.SchemeGroupVersion.WithResource(api.ResourcePluralSnapshot),
 			px.Namespace,
 			selector,
-			ref); err != nil {
+			px); err != nil {
 			return err
 		}
 		if err := dynamic_util.RemoveOwnerReferenceForItems(
@@ -260,7 +251,7 @@ func (c *Controller) setOwnerReferenceToOffshoots(px *api.PerconaXtraDB, ref *co
 			core.SchemeGroupVersion.WithResource("secrets"),
 			px.Namespace,
 			px.Spec.GetSecrets(),
-			ref); err != nil {
+			px); err != nil {
 			return err
 		}
 	}
@@ -270,10 +261,10 @@ func (c *Controller) setOwnerReferenceToOffshoots(px *api.PerconaXtraDB, ref *co
 		core.SchemeGroupVersion.WithResource("persistentvolumeclaims"),
 		px.Namespace,
 		selector,
-		ref)
+		owner)
 }
 
-func (c *Controller) removeOwnerReferenceFromOffshoots(px *api.PerconaXtraDB, ref *core.ObjectReference) error {
+func (c *Controller) removeOwnerReferenceFromOffshoots(px *api.PerconaXtraDB) error {
 	// First, Get LabelSelector for Other Components
 	labelSelector := labels.SelectorFromSet(px.OffshootSelectors())
 
@@ -282,7 +273,7 @@ func (c *Controller) removeOwnerReferenceFromOffshoots(px *api.PerconaXtraDB, re
 		api.SchemeGroupVersion.WithResource(api.ResourcePluralSnapshot),
 		px.Namespace,
 		labelSelector,
-		ref); err != nil {
+		px); err != nil {
 		return err
 	}
 	if err := dynamic_util.RemoveOwnerReferenceForSelector(
@@ -290,7 +281,7 @@ func (c *Controller) removeOwnerReferenceFromOffshoots(px *api.PerconaXtraDB, re
 		core.SchemeGroupVersion.WithResource("persistentvolumeclaims"),
 		px.Namespace,
 		labelSelector,
-		ref); err != nil {
+		px); err != nil {
 		return err
 	}
 	if err := dynamic_util.RemoveOwnerReferenceForItems(
@@ -298,7 +289,7 @@ func (c *Controller) removeOwnerReferenceFromOffshoots(px *api.PerconaXtraDB, re
 		core.SchemeGroupVersion.WithResource("secrets"),
 		px.Namespace,
 		px.Spec.GetSecrets(),
-		ref); err != nil {
+		px); err != nil {
 		return err
 	}
 	return nil
