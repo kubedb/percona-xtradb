@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	kutil "kmodules.xyz/client-go"
 	appcat_api "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
+	ofst "kmodules.xyz/offshoot-api/api/v1"
 	"stash.appscode.dev/stash/apis/stash/v1alpha1"
 	stashV1alpha1 "stash.appscode.dev/stash/apis/stash/v1alpha1"
 	stashv1beta1 "stash.appscode.dev/stash/apis/stash/v1beta1"
@@ -168,9 +169,9 @@ func (f *Invocation) RestoreSession(meta, oldMeta metav1.ObjectMeta, replicas *i
 						MountPath: "/var/lib/mysql",
 					},
 				},
-				VolumeClaimTemplates: []corev1.PersistentVolumeClaim{
+				VolumeClaimTemplates: []ofst.PersistentVolumeClaim{
 					{
-						ObjectMeta: metav1.ObjectMeta{
+						PartialObjectMeta: ofst.PartialObjectMeta{
 							Name: fmt.Sprintf("data-%s-${POD_ORDINAL}", meta.Name),
 							Annotations: map[string]string{
 								"volume.beta.kubernetes.io/storage-class": "standard",

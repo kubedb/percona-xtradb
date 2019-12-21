@@ -23,7 +23,6 @@ import (
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 
 	"github.com/appscode/go/crypto/rand"
-	jsonTypes "github.com/appscode/go/encoding/json/types"
 	"github.com/appscode/go/types"
 	"github.com/appscode/go/wait"
 	. "github.com/onsi/gomega"
@@ -51,7 +50,7 @@ func (f *Invocation) PerconaXtraDB() *api.PerconaXtraDB {
 		},
 		Spec: api.PerconaXtraDBSpec{
 			Replicas:    types.Int32P(api.PerconaXtraDBDefaultClusterSize),
-			Version:     jsonTypes.StrYo(DBCatalogName),
+			Version:     DBCatalogName,
 			StorageType: api.StorageTypeDurable,
 			Storage: &core.PersistentVolumeClaimSpec{
 				Resources: core.ResourceRequirements{
