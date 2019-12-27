@@ -223,6 +223,7 @@ func upsertCustomConfig(
 			}
 			if replicas > 1 {
 				configVolumeMount.MountPath = api.PerconaXtraDBClusterCustomConfigMountPath
+				//configVolumeMount.MountPath = "/etc/percona-xtradb-cluster.conf.d/"
 			}
 			volumeMounts := container.VolumeMounts
 			volumeMounts = core_util.UpsertVolumeMount(volumeMounts, configVolumeMount)
