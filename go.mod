@@ -24,11 +24,11 @@ require (
 	kmodules.xyz/client-go v0.0.0-20191219184245-880ab4b0e5db
 	kmodules.xyz/constants v0.0.0-20191024095500-cd4313df4aa6
 	kmodules.xyz/custom-resources v0.0.0-20191130062942-f41b54f62419
-	kmodules.xyz/monitoring-agent-api v0.0.0-20191209232713-25b3711f847f
+	kmodules.xyz/monitoring-agent-api v0.0.0-20191223205013-784042d6a958
 	kmodules.xyz/objectstore-api v0.0.0-20191127144749-5881939b57f0
 	kmodules.xyz/offshoot-api v0.0.0-20191204032627-ee9a85c51ab3
 	kmodules.xyz/webhook-runtime v0.0.0-20191127075323-d4bfdee6974d
-	kubedb.dev/apimachinery v0.13.0-rc.2.0.20191220230220-1c9ad3d0bfbe
+	kubedb.dev/apimachinery v0.13.0-rc.2.0.20191227083244-2c5287491195
 	stash.appscode.dev/stash v0.9.0-rc.2.0.20191220142029-ca6885400de1
 )
 

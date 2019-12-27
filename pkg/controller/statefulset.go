@@ -223,7 +223,6 @@ func upsertCustomConfig(
 			}
 			if replicas > 1 {
 				configVolumeMount.MountPath = api.PerconaXtraDBClusterCustomConfigMountPath
-				//configVolumeMount.MountPath = "/etc/percona-xtradb-cluster.conf.d/"
 			}
 			volumeMounts := container.VolumeMounts
 			volumeMounts = core_util.UpsertVolumeMount(volumeMounts, configVolumeMount)
@@ -295,8 +294,7 @@ func (c *Controller) ensureStatefulSet(
 			core.Container{
 				Name:            opts.conatainerName,
 				Image:           opts.image,
-				//ImagePullPolicy: core.PullIfNotPresent,
-				ImagePullPolicy: core.PullAlways,
+				ImagePullPolicy: core.PullIfNotPresent,
 				Command:         opts.cmd,
 				Args:            opts.args,
 				Ports:           opts.ports,
