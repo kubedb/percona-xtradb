@@ -198,7 +198,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 
 	var CheckDBVersionForXtraDBCluster = func() {
 		if framework.DBCatalogName != "5.7" {
-			Skip("For XtraDB Cluster, currently supported DB version is '5.7'")
+			Skip("For XtraDB Cluster, currently supported DB version is '5.7-cluster'")
 		}
 	}
 
