@@ -22,6 +22,7 @@ import (
 
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 
+	shell "github.com/codeskyblue/go-sh"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -108,4 +109,37 @@ func (f *Framework) WaitUntilPodRunningBySelector(namespace string, selectors ma
 		},
 		replicas,
 	)
+}
+
+func (f *Framework) PrintDebugHelpers() {
+	sh := shell.NewSession()
+	fmt.Println("\n======================================[ Describe Job ]===================================================")
+	if err := sh.Command("/usr/bin/kubectl", "describe", "job", "-n", f.Namespace()).Run(); err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("\n======================================[ Describe Pod ]===================================================")
+	if err := sh.Command("/usr/bin/kubectl", "describe", "po", "-n", f.Namespace()).Run(); err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("\n======================================[ Describe PerconaXtraDB ]===================================================")
+	if err := sh.Command("/usr/bin/kubectl", "describe", "px", "-n", f.Namespace()).Run(); err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("\n======================================[ Describe BackupSession ]==========================================")
+	if err := sh.Command("/usr/bin/kubectl", "describe", "backupsession", "-n", f.Namespace()).Run(); err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("\n======================================[ Describe RestoreSession ]==========================================")
+	if err := sh.Command("/usr/bin/kubectl", "describe", "restoresession", "-n", f.Namespace()).Run(); err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("\n======================================[ Describe Nodes ]===================================================")
+	if err := sh.Command("/usr/bin/kubectl", "describe", "nodes").Run(); err != nil {
+		fmt.Println(err)
+	}
 }

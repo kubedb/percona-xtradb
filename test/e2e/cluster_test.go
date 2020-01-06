@@ -212,6 +212,12 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		CheckDBVersionForXtraDBCluster()
 	})
 
+	JustAfterEach(func() {
+		if CurrentGinkgoTestDescription().Failed {
+			f.PrintDebugHelpers()
+		}
+	})
+
 	Context("Behaviour tests", func() {
 
 		AfterEach(func() {
