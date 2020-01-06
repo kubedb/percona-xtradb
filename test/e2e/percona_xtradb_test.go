@@ -258,6 +258,12 @@ var _ = Describe("PerconaXtraDB", func() {
 		f.CleanWorkloadLeftOvers()
 	})
 
+	JustAfterEach(func() {
+		if CurrentGinkgoTestDescription().Failed {
+			f.PrintDebugHelpers()
+		}
+	})
+
 	Describe("Test", func() {
 		BeforeEach(func() {
 			if *perconaxtradb.Spec.Replicas > 1 {
