@@ -78,7 +78,7 @@ func (c *Controller) ensurePerconaXtraDB(px *api.PerconaXtraDB) (kutil.VerbType,
 			Command: []string{
 				"rm",
 				"-rf",
-				api.PerconaXtraDBDataLostFoundPath,
+				"/var/lib/mysql/lost+found",
 			},
 			VolumeMounts: []core.VolumeMount{
 				{
@@ -122,7 +122,7 @@ func (c *Controller) ensurePerconaXtraDB(px *api.PerconaXtraDB) (kutil.VerbType,
 	var volumes []core.Volume
 	var volumeMounts []core.VolumeMount
 
-	if px.Spec.Init != nil && px.Spec.Init.ScriptSource != nil {
+	if !px.IsCluster() && px.Spec.Init != nil && px.Spec.Init.ScriptSource != nil {
 		volumes = append(volumes, core.Volume{
 			Name:         "initial-script",
 			VolumeSource: px.Spec.Init.ScriptSource.VolumeSource,

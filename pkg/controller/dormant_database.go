@@ -128,11 +128,10 @@ func (c *Controller) createDormantDatabase(px *api.PerconaXtraDB) (*api.DormantD
 		Spec: api.DormantDatabaseSpec{
 			Origin: api.Origin{
 				PartialObjectMeta: ofst.PartialObjectMeta{
-					Name:              px.Name,
-					Namespace:         px.Namespace,
-					Labels:            px.Labels,
-					Annotations:       px.Annotations,
-					CreationTimestamp: px.CreationTimestamp,
+					Name:        px.Name,
+					Namespace:   px.Namespace,
+					Labels:      px.Labels,
+					Annotations: px.Annotations,
 				},
 				Spec: api.OriginSpec{
 					PerconaXtraDB: &px.Spec,

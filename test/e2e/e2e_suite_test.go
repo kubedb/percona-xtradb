@@ -31,7 +31,6 @@ import (
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 	kext_cs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
-	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/client-go/kubernetes"
 	clientSetScheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -66,7 +65,6 @@ func init() {
 	flag.StringVar(&storageClass, "storageclass", storageClass, "Kubernetes StorageClass name")
 	flag.StringVar(&framework.DBCatalogName, "db-catalog", framework.DBCatalogName, "PerconaXtraDB version")
 	flag.StringVar(&framework.DockerRegistry, "docker-registry", framework.DockerRegistry, "User provided docker repository")
-	flag.BoolVar(&framework.SelfHostedOperator, "selfhosted-operator", framework.SelfHostedOperator, "Enable this for provided controller")
 }
 
 const (
@@ -116,22 +114,11 @@ var _ = BeforeSuite(func() {
 	err = root.CreateNamespace()
 	Expect(err).NotTo(HaveOccurred())
 
-	if !framework.SelfHostedOperator {
-		stopCh := genericapiserver.SetupSignalHandler()
-		go root.RunOperatorAndServer(config, kubeconfigPath, stopCh)
-	}
-
 	root.EventuallyCRD().Should(Succeed())
-	root.EventuallyAPIServiceReady().Should(Succeed())
 })
 
 var _ = AfterSuite(func() {
-
 	By("Cleanup Left Overs")
-	if !framework.SelfHostedOperator {
-		By("Delete Admission Controller Configs")
-		root.CleanAdmissionConfigs()
-	}
 	By("Delete left over PerconaXtraDB objects")
 	root.CleanPerconaXtraDB()
 	By("Delete left over Dormant Database objects")
