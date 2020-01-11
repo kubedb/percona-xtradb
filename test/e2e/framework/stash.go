@@ -31,10 +31,10 @@ import (
 	kutil "kmodules.xyz/client-go"
 	appcat_api "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
 	ofst "kmodules.xyz/offshoot-api/api/v1"
+	"stash.appscode.dev/stash/apis"
 	"stash.appscode.dev/stash/apis/stash/v1alpha1"
 	stashV1alpha1 "stash.appscode.dev/stash/apis/stash/v1alpha1"
 	stashv1beta1 "stash.appscode.dev/stash/apis/stash/v1beta1"
-	"stash.appscode.dev/stash/pkg/util"
 )
 
 var (
@@ -90,7 +90,8 @@ func (f *Framework) WaitUntilBackkupSessionBeCreated(bcMeta metav1.ObjectMeta) (
 	err = wait.PollImmediate(kutil.RetryInterval, kutil.ReadinessTimeout, func() (bool, error) {
 		bsList, err := f.stashClient.StashV1beta1().BackupSessions(bcMeta.Namespace).List(metav1.ListOptions{
 			LabelSelector: labels.Set{
-				util.LabelBackupConfiguration: bcMeta.Name,
+				apis.LabelInvokerType: "BackupConfiguration",
+				apis.LabelInvokerName: bcMeta.Name,
 			}.String(),
 		})
 		if err != nil {
@@ -176,7 +177,6 @@ func (f *Invocation) RestoreSession(meta, oldMeta metav1.ObjectMeta, replicas *i
 							Annotations: map[string]string{
 								"volume.beta.kubernetes.io/storage-class": "standard",
 							},
-							CreationTimestamp: metav1.Now(),
 						},
 						Spec: corev1.PersistentVolumeClaimSpec{
 							AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},

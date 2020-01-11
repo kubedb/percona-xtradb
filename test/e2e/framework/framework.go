@@ -28,9 +28,8 @@ import (
 )
 
 var (
-	DockerRegistry     = "kubedbci"
-	SelfHostedOperator = true
-	DBCatalogName      = "5.7"
+	DockerRegistry = "kubedbci"
+	DBCatalogName  = "5.7"
 
 	// for proxysql integration
 	ProxySQLTest        = false
