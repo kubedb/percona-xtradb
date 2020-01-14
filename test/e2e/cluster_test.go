@@ -209,12 +209,15 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		dbName = "mysql"
 		dbNameKubedb = "kubedb"
 
+		By("Ensure the apiservices are ready")
+		f.EnsureAPIServiceReady().Should(Succeed())
+
 		CheckDBVersionForXtraDBCluster()
 	})
 
 	JustAfterEach(func() {
 		if CurrentGinkgoTestDescription().Failed {
-			f.PrintDebugHelpers()
+			f.PrintDebugHelpers(px.Name, int(*px.Spec.Replicas))
 		}
 	})
 
@@ -232,7 +235,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				storeWsClusterStats()
 			})
 
-			It("should be possible to create a basic 3 member cluster", func() {
+			FIt("should be possible to create a basic 3 member cluster", func() {
 				for i := 0; i < api.PerconaXtraDBDefaultClusterSize; i++ {
 					By(fmt.Sprintf("Checking the cluster stats from Pod '%s-%d'", px.Name, i))
 					f.EventuallyCheckCluster(px.ObjectMeta, dbName, i, wsClusterStats).
