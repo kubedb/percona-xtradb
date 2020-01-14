@@ -273,6 +273,21 @@ func (c *Controller) ensureStatefulSet(
 		livenessProbe = nil
 	}
 
+	if readinessProbe != nil {
+		readinessProbe.InitialDelaySeconds = 60
+		readinessProbe.PeriodSeconds = 10
+		readinessProbe.TimeoutSeconds = 50
+		readinessProbe.SuccessThreshold = 1
+		readinessProbe.FailureThreshold = 3
+	}
+	if livenessProbe != nil {
+		livenessProbe.InitialDelaySeconds = 60
+		livenessProbe.PeriodSeconds = 10
+		livenessProbe.TimeoutSeconds = 50
+		livenessProbe.SuccessThreshold = 1
+		livenessProbe.FailureThreshold = 3
+	}
+
 	statefulSet, vt, err := app_util.CreateOrPatchStatefulSet(c.Client, statefulSetMeta, func(in *apps.StatefulSet) *apps.StatefulSet {
 		in.Labels = opts.labels
 		in.Annotations = pt.Controller.Annotations

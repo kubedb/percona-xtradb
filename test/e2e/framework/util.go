@@ -45,32 +45,6 @@ func deleteInForeground() *metav1.DeleteOptions {
 	return &metav1.DeleteOptions{PropagationPolicy: &policy}
 }
 
-func (f *Invocation) GetCustomConfig(configs []string) *core.ConfigMap {
-	configs = append([]string{"[mysqld]"}, configs...)
-	return &core.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      f.app,
-			Namespace: f.namespace,
-		},
-		Data: map[string]string{
-			"my-custom.cnf": strings.Join(configs, "\n"),
-		},
-	}
-}
-
-func (f *Invocation) CreateConfigMap(obj *core.ConfigMap) error {
-	_, err := f.kubeClient.CoreV1().ConfigMaps(obj.Namespace).Create(obj)
-	return err
-}
-
-func (f *Framework) DeleteConfigMap(meta metav1.ObjectMeta) error {
-	err := f.kubeClient.CoreV1().ConfigMaps(meta.Namespace).Delete(meta.Name, deleteInForeground())
-	if !kerr.IsNotFound(err) {
-		return err
-	}
-	return nil
-}
-
 func (f *Framework) CleanWorkloadLeftOvers() {
 	// delete statefulset
 	if err := f.kubeClient.AppsV1().StatefulSets(f.namespace).DeleteCollection(deleteInForeground(), metav1.ListOptions{
@@ -111,10 +85,67 @@ func (f *Framework) WaitUntilPodRunningBySelector(namespace string, selectors ma
 	)
 }
 
-func (f *Framework) PrintDebugHelpers() {
+func isDebugTarget(containers []core.Container) (bool, []string) {
+	for _, c := range containers {
+		if c.Name == "stash" || c.Name == "stash-init" {
+			return true, []string{"-c", c.Name}
+		} else if strings.HasPrefix(c.Name, "update-status") {
+			return true, []string{"--all-containers"}
+		}
+	}
+	return false, nil
+}
+
+func (f *Framework) PrintDebugHelpers(pxName string, replicas int) {
+	fmt.Println("\n============================== mysql replicas ========================")
+	fmt.Println("\n=================================", replicas, "==============================")
+	fmt.Println("\n======================================================================")
+
 	sh := shell.NewSession()
+
+	fmt.Println("\n======================================[ Apiservices ]===================================================")
+	if err := sh.Command("/usr/bin/kubectl", "get", "apiservice", "v1alpha1.mutators.kubedb.com", "-o=jsonpath=\"{.status}\"").Run(); err != nil {
+		fmt.Println(err)
+	}
+	if err := sh.Command("/usr/bin/kubectl", "get", "apiservice", "v1alpha1.validators.kubedb.com", "-o=jsonpath=\"{.status}\"").Run(); err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("\n======================================[ Describe Pod in kube-system namespace ]===================================================")
+	if err := sh.Command("/usr/bin/kubectl", "describe", "pod", "-n", "kube-system").Run(); err != nil {
+		fmt.Println(err)
+	}
+
 	fmt.Println("\n======================================[ Describe Job ]===================================================")
 	if err := sh.Command("/usr/bin/kubectl", "describe", "job", "-n", f.Namespace()).Run(); err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("\n===============[ Debug info for Stash sidecar/init-container/backup job/restore job ]===================")
+	if pods, err := f.kubeClient.CoreV1().Pods(f.Namespace()).List(metav1.ListOptions{}); err == nil {
+		for _, pod := range pods.Items {
+			debugTarget, containerArgs := isDebugTarget(append(pod.Spec.InitContainers, pod.Spec.Containers...))
+			if debugTarget {
+				fmt.Printf("\n--------------- Describe Pod: %s -------------------\n", pod.Name)
+				if err := sh.Command("/usr/bin/kubectl", "describe", "po", "-n", f.Namespace(), pod.Name).Run(); err != nil {
+					fmt.Println(err)
+				}
+
+				fmt.Printf("\n---------------- Log from Pod: %s ------------------\n", pod.Name)
+				logArgs := []interface{}{"logs", "-n", f.Namespace(), pod.Name}
+				for i := range containerArgs {
+					logArgs = append(logArgs, containerArgs[i])
+				}
+				err = sh.Command("/usr/bin/kubectl", logArgs...).
+					Command("cut", "-f", "4-", "-d ").
+					Command("awk", `{$2=$2;print}`).
+					Command("uniq").Run()
+				if err != nil {
+					fmt.Println(err)
+				}
+			}
+		}
+	} else {
 		fmt.Println(err)
 	}
 
@@ -126,6 +157,13 @@ func (f *Framework) PrintDebugHelpers() {
 	fmt.Println("\n======================================[ Describe PerconaXtraDB ]===================================================")
 	if err := sh.Command("/usr/bin/kubectl", "describe", "px", "-n", f.Namespace()).Run(); err != nil {
 		fmt.Println(err)
+	}
+
+	fmt.Println("\n======================================[ Percona Server Log ]===================================================")
+	for i := 0; i < replicas; i++ {
+		if err := sh.Command("/usr/bin/kubectl", "logs", fmt.Sprintf("%s-%d", pxName, i), "-n", f.Namespace()).Run(); err != nil {
+			fmt.Println(err)
+		}
 	}
 
 	fmt.Println("\n======================================[ Describe BackupSession ]==========================================")

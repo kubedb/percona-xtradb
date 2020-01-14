@@ -115,6 +115,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	root.EventuallyCRD().Should(Succeed())
+	root.EventuallyAPIServiceReady().Should(Succeed())
 })
 
 var _ = AfterSuite(func() {
