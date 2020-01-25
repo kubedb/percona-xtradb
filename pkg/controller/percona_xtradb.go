@@ -64,9 +64,10 @@ func (c *Controller) create(px *api.PerconaXtraDB) error {
 		px.Status = perconaxtradb.Status
 	}
 
+	// For Percona XtraDB Cluster (px.spec.replicas > 1),
 	// Set status as "Initializing" until specified restoresession object be succeeded, if provided
 	if _, err := meta_util.GetString(px.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
-		px.Spec.Init != nil && px.Spec.Init.StashRestoreSession != nil {
+		px.IsCluster() && px.Spec.Init != nil && px.Spec.Init.StashRestoreSession != nil {
 
 		if px.Status.Phase == api.DatabasePhaseInitializing {
 			return nil
@@ -129,6 +130,35 @@ func (c *Controller) create(px *api.PerconaXtraDB) error {
 		)
 	}
 
+	_, err = c.ensureAppBinding(px)
+	if err != nil {
+		log.Errorln(err)
+		return err
+	}
+
+	// For Standalone Percona XtraDB (px.spec.replicas = 1),
+	// Set status as "Initializing" until specified restoresession object be succeeded, if provided
+	if _, err := meta_util.GetString(px.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
+		!px.IsCluster() && px.Spec.Init != nil && px.Spec.Init.StashRestoreSession != nil {
+
+		if px.Status.Phase == api.DatabasePhaseInitializing {
+			return nil
+		}
+
+		// add phase that database is being initialized
+		perconaxtradb, err := util.UpdatePerconaXtraDBStatus(c.ExtClient.KubedbV1alpha1(), px, func(in *api.PerconaXtraDBStatus) *api.PerconaXtraDBStatus {
+			in.Phase = api.DatabasePhaseInitializing
+			return in
+		})
+		if err != nil {
+			return err
+		}
+		px.Status = perconaxtradb.Status
+
+		log.Debugf("PerconaXtraDB %v/%v is waiting for restoreSession to be succeeded", px.Namespace, px.Name)
+		return nil
+	}
+
 	per, err := util.UpdatePerconaXtraDBStatus(c.ExtClient.KubedbV1alpha1(), px, func(in *api.PerconaXtraDBStatus) *api.PerconaXtraDBStatus {
 		in.Phase = api.DatabasePhaseRunning
 		in.ObservedGeneration = px.Generation
@@ -162,12 +192,6 @@ func (c *Controller) create(px *api.PerconaXtraDB) error {
 		)
 		log.Errorln(err)
 		return nil
-	}
-
-	_, err = c.ensureAppBinding(px)
-	if err != nil {
-		log.Errorln(err)
-		return err
 	}
 
 	return nil

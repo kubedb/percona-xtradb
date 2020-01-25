@@ -97,10 +97,6 @@ func isDebugTarget(containers []core.Container) (bool, []string) {
 }
 
 func (f *Framework) PrintDebugHelpers(pxName string, replicas int) {
-	fmt.Println("\n============================== mysql replicas ========================")
-	fmt.Println("\n=================================", replicas, "==============================")
-	fmt.Println("\n======================================================================")
-
 	sh := shell.NewSession()
 
 	fmt.Println("\n======================================[ Apiservices ]===================================================")
@@ -108,11 +104,6 @@ func (f *Framework) PrintDebugHelpers(pxName string, replicas int) {
 		fmt.Println(err)
 	}
 	if err := sh.Command("/usr/bin/kubectl", "get", "apiservice", "v1alpha1.validators.kubedb.com", "-o=jsonpath=\"{.status}\"").Run(); err != nil {
-		fmt.Println(err)
-	}
-
-	fmt.Println("\n======================================[ Describe Pod in kube-system namespace ]===================================================")
-	if err := sh.Command("/usr/bin/kubectl", "describe", "pod", "-n", "kube-system").Run(); err != nil {
 		fmt.Println(err)
 	}
 
@@ -173,11 +164,6 @@ func (f *Framework) PrintDebugHelpers(pxName string, replicas int) {
 
 	fmt.Println("\n======================================[ Describe RestoreSession ]==========================================")
 	if err := sh.Command("/usr/bin/kubectl", "describe", "restoresession", "-n", f.Namespace()).Run(); err != nil {
-		fmt.Println(err)
-	}
-
-	fmt.Println("\n======================================[ Describe Nodes ]===================================================")
-	if err := sh.Command("/usr/bin/kubectl", "describe", "nodes").Run(); err != nil {
 		fmt.Println(err)
 	}
 }
