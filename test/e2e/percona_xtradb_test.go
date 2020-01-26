@@ -17,6 +17,7 @@ package e2e_test
 
 import (
 	"fmt"
+	"os"
 
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
@@ -28,7 +29,11 @@ import (
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	meta_util "kmodules.xyz/client-go/meta"
+	store "kmodules.xyz/objectstore-api/api/v1"
+	stashV1alpha1 "stash.appscode.dev/stash/apis/stash/v1alpha1"
+	stashV1beta1 "stash.appscode.dev/stash/apis/stash/v1beta1"
 )
 
 const (
@@ -40,31 +45,41 @@ const (
 	MYSQL_ROOT_PASSWORD  = "MYSQL_ROOT_PASSWORD"
 )
 
+const (
+	googleProjectIDKey          = "GOOGLE_PROJECT_ID"
+	googleServiceAccountJsonKey = "GOOGLE_SERVICE_ACCOUNT_JSON_KEY"
+	googleBucketNameKey         = "GCS_BUCKET_NAME"
+)
+
 var _ = Describe("PerconaXtraDB", func() {
 	var (
 		err                  error
 		f                    *framework.Invocation
 		perconaxtradb        *api.PerconaXtraDB
 		garbagePerconaXtraDB *api.PerconaXtraDBList
-		//snapshot             *api.Snapshot
-		secret      *core.Secret
-		skipMessage string
-		//skipDataChecking     bool
-		dbName string
+		secret               *core.Secret
+		skipMessage          string
+		dbName               string
+		dbNameKubedb         string
 	)
 
 	BeforeEach(func() {
 		f = root.Invoke()
 		perconaxtradb = f.PerconaXtraDB()
 		garbagePerconaXtraDB = new(api.PerconaXtraDBList)
-		//snapshot = f.Snapshot()
 		skipMessage = ""
-		//skipDataChecking = true
 		dbName = "mysql"
+		dbNameKubedb = "kubedb"
 
 		By("Ensure the apiservices are ready")
 		f.EnsureAPIServiceReady().Should(Succeed())
 	})
+
+	var isSetEnv = func(key string) bool {
+		_, set := os.LookupEnv(key)
+
+		return set
+	}
 
 	var createAndWaitForRunning = func() {
 		By("Create PerconaXtraDB: " + perconaxtradb.Name)
@@ -83,6 +98,24 @@ var _ = Describe("PerconaXtraDB", func() {
 
 		By("Waiting for database to be ready")
 		f.EventuallyDatabaseReady(perconaxtradb.ObjectMeta, dbName, 0).Should(BeTrue())
+	}
+
+	var create_Database_N_Table = func(meta metav1.ObjectMeta, podIndex int) {
+		By("Create Database")
+		f.EventuallyCreateDatabase(meta, dbName, podIndex).Should(BeTrue())
+
+		By("Create Table")
+		f.EventuallyCreateTable(meta, dbNameKubedb, podIndex).Should(BeTrue())
+	}
+
+	var countRows = func(meta metav1.ObjectMeta, podIndex, expectedRowCnt int) {
+		By(fmt.Sprintf("Read row from member '%s-%d'", meta.Name, podIndex))
+		f.EventuallyCountRow(meta, dbNameKubedb, podIndex).Should(Equal(expectedRowCnt))
+	}
+
+	var insertRows = func(meta metav1.ObjectMeta, podIndex, rowCntToInsert int) {
+		By(fmt.Sprintf("Insert row on member '%s-%d'", meta.Name, podIndex))
+		f.EventuallyInsertRow(meta, dbNameKubedb, podIndex, rowCntToInsert).Should(BeTrue())
 	}
 
 	var testGeneralBehaviour = func() {
@@ -124,27 +157,6 @@ var _ = Describe("PerconaXtraDB", func() {
 
 	}
 
-	//var shouldTakeSnapshot = func() {
-	//	// Create and wait for running PerconaXtraDB
-	//	createAndWaitForRunning()
-	//
-	//	By("Create Secret")
-	//	err := f.CreateSecret(secret)
-	//	Expect(err).NotTo(HaveOccurred())
-	//
-	//	By("Create Snapshot")
-	//	err = f.CreateSnapshot(snapshot)
-	//	Expect(err).NotTo(HaveOccurred())
-	//
-	//	By("Check for Succeed snapshot")
-	//	f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
-	//
-	//	if !skipDataChecking {
-	//		By("Check for snapshot data")
-	//		f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-	//	}
-	//}
-
 	var shouldInsertData = func() {
 		// Create and wait for running PerconaXtraDB
 		createAndWaitForRunning()
@@ -162,17 +174,6 @@ var _ = Describe("PerconaXtraDB", func() {
 		err := f.CreateSecret(secret)
 		Expect(err).NotTo(HaveOccurred())
 
-		//By("Create Snapshot")
-		//err = f.CreateSnapshot(snapshot)
-		//Expect(err).NotTo(HaveOccurred())
-		//
-		//By("Check for Succeed snapshot")
-		//f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
-		//
-		//if !skipDataChecking {
-		//	By("Check for snapshot data")
-		//	f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-		//}
 	}
 
 	var deleteTestResource = func() {
@@ -221,27 +222,16 @@ var _ = Describe("PerconaXtraDB", func() {
 		f.EventuallyWipedOut(perconaxtradb.ObjectMeta).Should(Succeed())
 	}
 
-	//var deleteSnapshot = func() {
-	//
-	//	By("Deleting Snapshot: " + snapshot.Name)
-	//	err = f.DeleteSnapshot(snapshot.ObjectMeta)
-	//	if err != nil && !kerr.IsNotFound(err) {
-	//		Expect(err).NotTo(HaveOccurred())
-	//	}
-	//
-	//	if !skipDataChecking {
-	//		// do not try to check snapshot data if secret does not exist
-	//		_, err = f.GetSecret(secret.ObjectMeta)
-	//		if err != nil && kerr.IsNotFound(err) {
-	//			log.Infof("Skipping checking snapshot data. Reason: secret %s not found", secret.Name)
-	//			return
-	//		}
-	//		Expect(err).NotTo(HaveOccurred())
-	//
-	//		By("Checking Snapshot's data wiped out from backend")
-	//		f.EventuallySnapshotDataFound(snapshot).Should(BeFalse())
-	//	}
-	//}
+	var deleteLeftOverStuffs = func() {
+		// old PerconaXtraDB are in garbagePerconaXtraDB list. delete their resources.
+		for _, p := range garbagePerconaXtraDB.Items {
+			*perconaxtradb = p
+			deleteTestResource()
+		}
+
+		By("Delete left over workloads if exists any")
+		f.CleanWorkloadLeftOvers()
+	}
 
 	AfterEach(func() {
 		// delete resources for current PerconaXtraDB
@@ -264,552 +254,13 @@ var _ = Describe("PerconaXtraDB", func() {
 	})
 
 	Describe("Test", func() {
-		// TODO: delete this BeforeEach
-		BeforeEach(func() {
-			if *perconaxtradb.Spec.Replicas > 1 {
-				Skip("This test is not for clustered percona xtradb")
-			}
-		})
-
 		Context("General", func() {
 			Context("-", func() {
 				It("should run successfully", testGeneralBehaviour)
 			})
 		})
 
-		//Context("Snapshot", func() {
-		//
-		//	BeforeEach(func() {
-		//		skipDataChecking = false
-		//		snapshot.Spec.DatabaseName = perconaxtradb.Name
-		//	})
-		//
-		//	AfterEach(func() {
-		//		// delete snapshot and check for data wipeOut
-		//		deleteSnapshot()
-		//
-		//		By("Deleting secret: " + secret.Name)
-		//		err := f.DeleteSecret(secret.ObjectMeta)
-		//		if err != nil && !kerr.IsNotFound(err) {
-		//			Expect(err).NotTo(HaveOccurred())
-		//		}
-		//	})
-		//
-		//	Context("In Local", func() {
-		//
-		//		BeforeEach(func() {
-		//			skipDataChecking = true
-		//			secret = f.SecretForLocalBackend()
-		//			snapshot.Spec.StorageSecretName = secret.Name
-		//		})
-		//
-		//		Context("With EmptyDir as Snapshot's backend", func() {
-		//			BeforeEach(func() {
-		//				snapshot.Spec.Local = &store.LocalSpec{
-		//					MountPath: "/repo",
-		//					VolumeSource: core.VolumeSource{
-		//						EmptyDir: &core.EmptyDirVolumeSource{},
-		//					},
-		//				}
-		//			})
-		//
-		//			It("should take Snapshot successfully", shouldTakeSnapshot)
-		//		})
-		//
-		//		Context("With PVC as Snapshot's backend", func() {
-		//			var snapPVC *core.PersistentVolumeClaim
-		//
-		//			BeforeEach(func() {
-		//				snapPVC = f.GetPersistentVolumeClaim()
-		//				err := f.CreatePersistentVolumeClaim(snapPVC)
-		//				Expect(err).NotTo(HaveOccurred())
-		//
-		//				snapshot.Spec.Local = &store.LocalSpec{
-		//					MountPath: "/repo",
-		//					VolumeSource: core.VolumeSource{
-		//						PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-		//							ClaimName: snapPVC.Name,
-		//						},
-		//					},
-		//				}
-		//			})
-		//
-		//			AfterEach(func() {
-		//				err := f.DeletePersistentVolumeClaim(snapPVC.ObjectMeta)
-		//				Expect(err).NotTo(HaveOccurred())
-		//			})
-		//
-		//			It("should delete Snapshot successfully", func() {
-		//				shouldTakeSnapshot()
-		//
-		//				By("Deleting Snapshot")
-		//				err := f.DeleteSnapshot(snapshot.ObjectMeta)
-		//				Expect(err).NotTo(HaveOccurred())
-		//
-		//				By("Waiting for Snapshot to be deleted")
-		//				f.EventuallySnapshot(snapshot.ObjectMeta).Should(BeFalse())
-		//			})
-		//		})
-		//	})
-		//
-		//	Context("In S3", func() {
-		//		BeforeEach(func() {
-		//			secret = f.SecretForS3Backend()
-		//			snapshot.Spec.StorageSecretName = secret.Name
-		//			snapshot.Spec.S3 = &store.S3Spec{
-		//				Bucket: os.Getenv(S3_BUCKET_NAME),
-		//			}
-		//		})
-		//
-		//		It("should take Snapshot successfully", shouldInsertData)
-		//
-		//		Context("faulty snapshot", func() {
-		//			BeforeEach(func() {
-		//				skipDataChecking = true
-		//				snapshot.Spec.StorageSecretName = secret.Name
-		//				snapshot.Spec.S3 = &store.S3Spec{
-		//					Bucket: "nonexisting",
-		//				}
-		//			})
-		//
-		//			It("snapshot should fail", func() {
-		//				// Create and wait for running db
-		//				createAndWaitForRunning()
-		//
-		//				By("Create Secret")
-		//				err := f.CreateSecret(secret)
-		//				Expect(err).NotTo(HaveOccurred())
-		//
-		//				By("Create Snapshot")
-		//				err = f.CreateSnapshot(snapshot)
-		//				Expect(err).NotTo(HaveOccurred())
-		//
-		//				By("Check for failed snapshot")
-		//				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseFailed))
-		//			})
-		//		})
-		//
-		//		Context("Delete One Snapshot keeping others", func() {
-		//			BeforeEach(func() {
-		//				perconaxtradb.Spec.Init = &api.InitSpec{
-		//					ScriptSource: &api.ScriptSourceSpec{
-		//						VolumeSource: core.VolumeSource{
-		//							GitRepo: &core.GitRepoVolumeSource{
-		//								Repository: "https://kubedb.dev/percona-xtradb-init-scripts.git",
-		//								Directory:  ".",
-		//							},
-		//						},
-		//					},
-		//				}
-		//			})
-		//
-		//			It("Delete One Snapshot keeping others", func() {
-		//				// Create PerconaXtraDB and take Snapshot
-		//				shouldTakeSnapshot()
-		//
-		//				oldSnapshot := snapshot.DeepCopy()
-		//
-		//				// New snapshot that has old snapshot's name in prefix
-		//				snapshot.Name += "-2"
-		//
-		//				By(fmt.Sprintf("Create Snapshot %v", snapshot.Name))
-		//				err = f.CreateSnapshot(snapshot)
-		//				Expect(err).NotTo(HaveOccurred())
-		//
-		//				By("Check for Succeeded snapshot")
-		//				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
-		//
-		//				if !skipDataChecking {
-		//					By("Check for snapshot data")
-		//					f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-		//				}
-		//
-		//				// delete old snapshot
-		//				By(fmt.Sprintf("Delete old Snapshot %v", oldSnapshot.Name))
-		//				err = f.DeleteSnapshot(oldSnapshot.ObjectMeta)
-		//				Expect(err).NotTo(HaveOccurred())
-		//
-		//				By("Waiting for old Snapshot to be deleted")
-		//				f.EventuallySnapshot(oldSnapshot.ObjectMeta).Should(BeFalse())
-		//				if !skipDataChecking {
-		//					By(fmt.Sprintf("Check data for old snapshot %v", oldSnapshot.Name))
-		//					f.EventuallySnapshotDataFound(oldSnapshot).Should(BeFalse())
-		//				}
-		//
-		//				// check remaining snapshot
-		//				By(fmt.Sprintf("Checking another Snapshot %v still exists", snapshot.Name))
-		//				_, err = f.GetSnapshot(snapshot.ObjectMeta)
-		//				Expect(err).NotTo(HaveOccurred())
-		//
-		//				if !skipDataChecking {
-		//					By(fmt.Sprintf("Check data for remaining snapshot %v", snapshot.Name))
-		//					f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-		//				}
-		//			})
-		//		})
-		//	})
-		//
-		//	Context("In GCS", func() {
-		//		BeforeEach(func() {
-		//			secret = f.SecretForGCSBackend()
-		//			snapshot.Spec.StorageSecretName = secret.Name
-		//			snapshot.Spec.GCS = &store.GCSSpec{
-		//				Bucket: os.Getenv(GCS_BUCKET_NAME),
-		//			}
-		//		})
-		//
-		//		Context("Without Init", func() {
-		//			It("should take Snapshot successfully", shouldInsertData)
-		//		})
-		//
-		//		Context("With Init", func() {
-		//			BeforeEach(func() {
-		//				perconaxtradb.Spec.Init = &api.InitSpec{
-		//					ScriptSource: &api.ScriptSourceSpec{
-		//						VolumeSource: core.VolumeSource{
-		//							GitRepo: &core.GitRepoVolumeSource{
-		//								Repository: "https://kubedb.dev/percona-xtradb-init-scripts.git",
-		//								Directory:  ".",
-		//							},
-		//						},
-		//					},
-		//				}
-		//			})
-		//
-		//			It("should take Snapshot successfully", shouldTakeSnapshot)
-		//		})
-		//
-		//		Context("Delete One Snapshot keeping others", func() {
-		//			BeforeEach(func() {
-		//				perconaxtradb.Spec.Init = &api.InitSpec{
-		//					ScriptSource: &api.ScriptSourceSpec{
-		//						VolumeSource: core.VolumeSource{
-		//							GitRepo: &core.GitRepoVolumeSource{
-		//								Repository: "https://kubedb.dev/percona-xtradb-init-scripts.git",
-		//								Directory:  ".",
-		//							},
-		//						},
-		//					},
-		//				}
-		//			})
-		//
-		//			It("Delete One Snapshot keeping others", func() {
-		//				// Create PerconaXtraDB and take Snapshot
-		//				shouldTakeSnapshot()
-		//
-		//				oldSnapshot := snapshot.DeepCopy()
-		//
-		//				// New snapshot that has old snapshot's name in prefix
-		//				snapshot.Name += "-2"
-		//
-		//				By(fmt.Sprintf("Create Snapshot %v", snapshot.Name))
-		//				err = f.CreateSnapshot(snapshot)
-		//				Expect(err).NotTo(HaveOccurred())
-		//
-		//				By("Check for Succeeded snapshot")
-		//				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
-		//
-		//				if !skipDataChecking {
-		//					By("Check for snapshot data")
-		//					f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-		//				}
-		//
-		//				// delete old snapshot
-		//				By(fmt.Sprintf("Delete old Snapshot %v", oldSnapshot.Name))
-		//				err = f.DeleteSnapshot(oldSnapshot.ObjectMeta)
-		//				Expect(err).NotTo(HaveOccurred())
-		//
-		//				By("Waiting for old Snapshot to be deleted")
-		//				f.EventuallySnapshot(oldSnapshot.ObjectMeta).Should(BeFalse())
-		//				if !skipDataChecking {
-		//					By(fmt.Sprintf("Check data for old snapshot %v", oldSnapshot.Name))
-		//					f.EventuallySnapshotDataFound(oldSnapshot).Should(BeFalse())
-		//				}
-		//
-		//				// check remaining snapshot
-		//				By(fmt.Sprintf("Checking another Snapshot %v still exists", snapshot.Name))
-		//				_, err = f.GetSnapshot(snapshot.ObjectMeta)
-		//				Expect(err).NotTo(HaveOccurred())
-		//
-		//				if !skipDataChecking {
-		//					By(fmt.Sprintf("Check data for remaining snapshot %v", snapshot.Name))
-		//					f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-		//				}
-		//			})
-		//		})
-		//
-		//	})
-		//
-		//	Context("In Azure", func() {
-		//		BeforeEach(func() {
-		//			secret = f.SecretForAzureBackend()
-		//			snapshot.Spec.StorageSecretName = secret.Name
-		//			snapshot.Spec.Azure = &store.AzureSpec{
-		//				Container: os.Getenv(AZURE_CONTAINER_NAME),
-		//			}
-		//		})
-		//
-		//		It("should take Snapshot successfully", shouldInsertData)
-		//
-		//		Context("Delete One Snapshot keeping others", func() {
-		//			BeforeEach(func() {
-		//				perconaxtradb.Spec.Init = &api.InitSpec{
-		//					ScriptSource: &api.ScriptSourceSpec{
-		//						VolumeSource: core.VolumeSource{
-		//							GitRepo: &core.GitRepoVolumeSource{
-		//								Repository: "https://kubedb.dev/percona-xtradb-init-scripts.git",
-		//								Directory:  ".",
-		//							},
-		//						},
-		//					},
-		//				}
-		//			})
-		//
-		//			It("Delete One Snapshot keeping others", func() {
-		//				// Create PerconaXtraDB and take Snapshot
-		//				shouldTakeSnapshot()
-		//
-		//				oldSnapshot := snapshot.DeepCopy()
-		//
-		//				// New snapshot that has old snapshot's name in prefix
-		//				snapshot.Name += "-2"
-		//
-		//				By(fmt.Sprintf("Create Snapshot %v", snapshot.Name))
-		//				err = f.CreateSnapshot(snapshot)
-		//				Expect(err).NotTo(HaveOccurred())
-		//
-		//				By("Check for Succeeded snapshot")
-		//				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
-		//
-		//				if !skipDataChecking {
-		//					By("Check for snapshot data")
-		//					f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-		//				}
-		//
-		//				// delete old snapshot
-		//				By(fmt.Sprintf("Delete old Snapshot %v", oldSnapshot.Name))
-		//				err = f.DeleteSnapshot(oldSnapshot.ObjectMeta)
-		//				Expect(err).NotTo(HaveOccurred())
-		//
-		//				By("Waiting for old Snapshot to be deleted")
-		//				f.EventuallySnapshot(oldSnapshot.ObjectMeta).Should(BeFalse())
-		//				if !skipDataChecking {
-		//					By(fmt.Sprintf("Check data for old snapshot %v", oldSnapshot.Name))
-		//					f.EventuallySnapshotDataFound(oldSnapshot).Should(BeFalse())
-		//				}
-		//
-		//				// check remaining snapshot
-		//				By(fmt.Sprintf("Checking another Snapshot %v still exists", snapshot.Name))
-		//				_, err = f.GetSnapshot(snapshot.ObjectMeta)
-		//				Expect(err).NotTo(HaveOccurred())
-		//
-		//				if !skipDataChecking {
-		//					By(fmt.Sprintf("Check data for remaining snapshot %v", snapshot.Name))
-		//					f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-		//				}
-		//			})
-		//		})
-		//	})
-		//
-		//	Context("In Swift", func() {
-		//		BeforeEach(func() {
-		//			secret = f.SecretForSwiftBackend()
-		//			snapshot.Spec.StorageSecretName = secret.Name
-		//			snapshot.Spec.Swift = &store.SwiftSpec{
-		//				Container: os.Getenv(SWIFT_CONTAINER_NAME),
-		//			}
-		//		})
-		//
-		//		It("should take Snapshot successfully", shouldInsertData)
-		//	})
-		//
-		//	Context("Snapshot PodVolume Template - In S3", func() {
-		//
-		//		BeforeEach(func() {
-		//			secret = f.SecretForS3Backend()
-		//			snapshot.Spec.StorageSecretName = secret.Name
-		//			snapshot.Spec.S3 = &store.S3Spec{
-		//				Bucket: os.Getenv(S3_BUCKET_NAME),
-		//			}
-		//		})
-		//
-		//		var shouldHandleJobVolumeSuccessfully = func() {
-		//			// Create and wait for running PerconaXtraDB
-		//			createAndWaitForRunning()
-		//
-		//			By("Get PerconaXtraDB")
-		//			es, err := f.GetPerconaXtraDB(perconaxtradb.ObjectMeta)
-		//			Expect(err).NotTo(HaveOccurred())
-		//			perconaxtradb.Spec = es.Spec
-		//
-		//			By("Create Secret")
-		//			err = f.CreateSecret(secret)
-		//			Expect(err).NotTo(HaveOccurred())
-		//
-		//			// determine pvcSpec and storageType for job
-		//			// start
-		//			pvcSpec := snapshot.Spec.PodVolumeClaimSpec
-		//			if pvcSpec == nil {
-		//				pvcSpec = perconaxtradb.Spec.Storage
-		//			}
-		//			st := snapshot.Spec.StorageType
-		//			if st == nil {
-		//				st = &perconaxtradb.Spec.StorageType
-		//			}
-		//			Expect(st).NotTo(BeNil())
-		//			// end
-		//
-		//			By("Create Snapshot")
-		//			err = f.CreateSnapshot(snapshot)
-		//			if *st == api.StorageTypeDurable && pvcSpec == nil {
-		//				By("Create Snapshot should have failed")
-		//				Expect(err).Should(HaveOccurred())
-		//				return
-		//			} else {
-		//				Expect(err).NotTo(HaveOccurred())
-		//			}
-		//
-		//			By("Get Snapshot")
-		//			snap, err := f.GetSnapshot(snapshot.ObjectMeta)
-		//			Expect(err).NotTo(HaveOccurred())
-		//			snapshot.Spec = snap.Spec
-		//
-		//			if *st == api.StorageTypeEphemeral {
-		//				storageSize := "0"
-		//				if pvcSpec != nil {
-		//					if sz, found := pvcSpec.Resources.Requests[core.ResourceStorage]; found {
-		//						storageSize = sz.String()
-		//					}
-		//				}
-		//				By(fmt.Sprintf("Check for Job Empty volume size: %v", storageSize))
-		//				f.EventuallyJobVolumeEmptyDirSize(snapshot.ObjectMeta).Should(Equal(storageSize))
-		//			} else if *st == api.StorageTypeDurable {
-		//				sz, found := pvcSpec.Resources.Requests[core.ResourceStorage]
-		//				Expect(found).NotTo(BeFalse())
-		//
-		//				By("Check for Job PVC Volume size from snapshot")
-		//				f.EventuallyJobPVCSize(snapshot.ObjectMeta).Should(Equal(sz.String()))
-		//			}
-		//
-		//			By("Check for succeeded snapshot")
-		//			f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
-		//
-		//			if !skipDataChecking {
-		//				By("Check for snapshot data")
-		//				f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-		//			}
-		//		}
-		//
-		//		// db StorageType Scenarios
-		//		// ==============> Start
-		//		var dbStorageTypeScenarios = func() {
-		//			Context("DBStorageType - Durable", func() {
-		//				BeforeEach(func() {
-		//					perconaxtradb.Spec.StorageType = api.StorageTypeDurable
-		//					perconaxtradb.Spec.Storage = &core.PersistentVolumeClaimSpec{
-		//						Resources: core.ResourceRequirements{
-		//							Requests: core.ResourceList{
-		//								core.ResourceStorage: resource.MustParse(framework.DBPvcStorageSize),
-		//							},
-		//						},
-		//						StorageClassName: types.StringP(root.StorageClass),
-		//					}
-		//
-		//				})
-		//
-		//				It("should Handle Job Volume Successfully", shouldHandleJobVolumeSuccessfully)
-		//			})
-		//
-		//			Context("DBStorageType - Ephemeral", func() {
-		//				BeforeEach(func() {
-		//					perconaxtradb.Spec.StorageType = api.StorageTypeEphemeral
-		//					perconaxtradb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
-		//				})
-		//
-		//				Context("DBPvcSpec is nil", func() {
-		//					BeforeEach(func() {
-		//						perconaxtradb.Spec.Storage = nil
-		//					})
-		//
-		//					It("should Handle Job Volume Successfully", shouldHandleJobVolumeSuccessfully)
-		//				})
-		//
-		//				Context("DBPvcSpec is given [not nil]", func() {
-		//					BeforeEach(func() {
-		//						perconaxtradb.Spec.Storage = &core.PersistentVolumeClaimSpec{
-		//							Resources: core.ResourceRequirements{
-		//								Requests: core.ResourceList{
-		//									core.ResourceStorage: resource.MustParse(framework.DBPvcStorageSize),
-		//								},
-		//							},
-		//							StorageClassName: types.StringP(root.StorageClass),
-		//						}
-		//					})
-		//
-		//					It("should Handle Job Volume Successfully", shouldHandleJobVolumeSuccessfully)
-		//				})
-		//			})
-		//		}
-		//		// End <==============
-		//
-		//		// Snapshot PVC Scenarios
-		//		// ==============> Start
-		//		var snapshotPvcScenarios = func() {
-		//			Context("Snapshot PVC is given [not nil]", func() {
-		//				BeforeEach(func() {
-		//					snapshot.Spec.PodVolumeClaimSpec = &core.PersistentVolumeClaimSpec{
-		//						Resources: core.ResourceRequirements{
-		//							Requests: core.ResourceList{
-		//								core.ResourceStorage: resource.MustParse(framework.JobPvcStorageSize),
-		//							},
-		//						},
-		//						StorageClassName: types.StringP(root.StorageClass),
-		//					}
-		//				})
-		//
-		//				dbStorageTypeScenarios()
-		//			})
-		//
-		//			Context("Snapshot PVC is nil", func() {
-		//				BeforeEach(func() {
-		//					snapshot.Spec.PodVolumeClaimSpec = nil
-		//				})
-		//
-		//				dbStorageTypeScenarios()
-		//			})
-		//		}
-		//		// End <==============
-		//
-		//		Context("Snapshot StorageType is nil", func() {
-		//			BeforeEach(func() {
-		//				snapshot.Spec.StorageType = nil
-		//			})
-		//
-		//			snapshotPvcScenarios()
-		//		})
-		//
-		//		Context("Snapshot StorageType is Ephemeral", func() {
-		//			BeforeEach(func() {
-		//				ephemeral := api.StorageTypeEphemeral
-		//				snapshot.Spec.StorageType = &ephemeral
-		//			})
-		//
-		//			snapshotPvcScenarios()
-		//		})
-		//
-		//		Context("Snapshot StorageType is Durable", func() {
-		//			BeforeEach(func() {
-		//				durable := api.StorageTypeDurable
-		//				snapshot.Spec.StorageType = &durable
-		//			})
-		//
-		//			snapshotPvcScenarios()
-		//		})
-		//	})
-		//})
-
 		Context("Initialize", func() {
-
 			Context("With Script", func() {
 				var initScriptConfigmap *core.ConfigMap
 
@@ -846,104 +297,149 @@ var _ = Describe("PerconaXtraDB", func() {
 				})
 			})
 
-			//Context("With Snapshot", func() {
-			//
-			//	AfterEach(func() {
-			//		// delete snapshot and check for data wipeOut
-			//		deleteSnapshot()
-			//
-			//		By("Deleting secret: " + secret.Name)
-			//		err := f.DeleteSecret(secret.ObjectMeta)
-			//		if err != nil && !kerr.IsNotFound(err) {
-			//			Expect(err).NotTo(HaveOccurred())
-			//		}
-			//	})
-			//
-			//	var shouldInitializeFromSnapshot = func() {
-			//		// Create PerconaXtraDB and take Snapshot
-			//		shouldInsertData()
-			//
-			//		oldPerconaXtraDB, err := f.GetPerconaXtraDB(perconaxtradb.ObjectMeta)
-			//		Expect(err).NotTo(HaveOccurred())
-			//		garbagePerconaXtraDB.Items = append(garbagePerconaXtraDB.Items, *oldPerconaXtraDB)
-			//
-			//		By("Create PerconaXtraDB from snapshot")
-			//		perconaxtradb = f.PerconaXtraDB()
-			//		perconaxtradb.Spec.Init = &api.InitSpec{
-			//			SnapshotSource: &api.SnapshotSourceSpec{
-			//				Namespace: snapshot.Namespace,
-			//				Name:      snapshot.Name,
-			//			},
-			//		}
-			//
-			//		By("Creating init Snapshot Mysql without secret name" + perconaxtradb.Name)
-			//		err = f.CreatePerconaXtraDB(perconaxtradb)
-			//		Expect(err).Should(HaveOccurred())
-			//
-			//		// for snapshot init, user have to use older secret,
-			//		// because the username & password  will be replaced to
-			//		perconaxtradb.Spec.DatabaseSecret = oldPerconaXtraDB.Spec.DatabaseSecret
-			//
-			//		// Create and wait for running PerconaXtraDB
-			//		createAndWaitForRunning()
-			//
-			//		By("Checking Row Count of Table")
-			//		f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
-			//	}
-			//
-			//	Context("From Local backend", func() {
-			//		var snapPVC *core.PersistentVolumeClaim
-			//
-			//		BeforeEach(func() {
-			//
-			//			skipDataChecking = true
-			//			snapPVC = f.GetPersistentVolumeClaim()
-			//			err := f.CreatePersistentVolumeClaim(snapPVC)
-			//			Expect(err).NotTo(HaveOccurred())
-			//
-			//			secret = f.SecretForLocalBackend()
-			//			snapshot.Spec.DatabaseName = perconaxtradb.Name
-			//			snapshot.Spec.StorageSecretName = secret.Name
-			//
-			//			snapshot.Spec.Local = &store.LocalSpec{
-			//				MountPath: "/repo",
-			//				VolumeSource: core.VolumeSource{
-			//					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-			//						ClaimName: snapPVC.Name,
-			//					},
-			//				},
-			//			}
-			//		})
-			//
-			//		AfterEach(func() {
-			//			err := f.DeletePersistentVolumeClaim(snapPVC.ObjectMeta)
-			//			Expect(err).NotTo(HaveOccurred())
-			//		})
-			//
-			//		It("should initialize successfully", shouldInitializeFromSnapshot)
-			//	})
-			//
-			//	Context("From GCS backend", func() {
-			//
-			//		BeforeEach(func() {
-			//
-			//			skipDataChecking = false
-			//			secret = f.SecretForGCSBackend()
-			//			snapshot.Spec.StorageSecretName = secret.Name
-			//			snapshot.Spec.DatabaseName = perconaxtradb.Name
-			//
-			//			snapshot.Spec.GCS = &store.GCSSpec{
-			//				Bucket: os.Getenv(GCS_BUCKET_NAME),
-			//			}
-			//		})
-			//
-			//		It("should initialize successfully", shouldInitializeFromSnapshot)
-			//	})
-			//})
+			// To run this test,
+			// 1st: Deploy stash latest operator
+			// 2nd: create mysql related tasks and functions either
+			//	 or	from helm chart in `stash.appscode.dev/percona-xtradb/chart/stash-percona-xtradb`
+			Context("With Stash/Restic", func() {
+				var bc *stashV1beta1.BackupConfiguration
+				var bs *stashV1beta1.BackupSession
+				var rs *stashV1beta1.RestoreSession
+				var repo *stashV1alpha1.Repository
+
+				BeforeEach(func() {
+					if !f.FoundStashCRDs() {
+						Skip("Skipping tests for stash integration. reason: stash operator is not running.")
+					}
+
+					if !isSetEnv(googleProjectIDKey) ||
+						!isSetEnv(googleServiceAccountJsonKey) ||
+						!isSetEnv(googleBucketNameKey) {
+
+						Skip("Skipping tests for stash integration. reason: " +
+							fmt.Sprintf("env vars %q, %q and %q are required",
+								googleProjectIDKey, googleServiceAccountJsonKey, googleBucketNameKey))
+					}
+				})
+
+				AfterEach(func() {
+					By("Deleting BackupConfiguration")
+					err := f.DeleteBackupConfiguration(bc.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Deleting RestoreSessionForCluster")
+					err = f.DeleteRestoreSession(rs.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Deleting Repository")
+					err = f.DeleteRepository(repo.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					deleteTestResource()
+					deleteLeftOverStuffs()
+				})
+
+				var createAndWaitForInitializing = func() {
+					By("Creating PerconaXtraDB: " + perconaxtradb.Name)
+					err = f.CreatePerconaXtraDB(perconaxtradb)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Wait for Initializing perconaxtradb")
+					f.EventuallyPerconaXtraDBPhase(perconaxtradb.ObjectMeta).Should(Equal(api.DatabasePhaseInitializing))
+				}
+
+				var shouldInitializeFromStash = func() {
+					// Create and wait for running MySQL
+					createAndWaitForRunning()
+
+					create_Database_N_Table(perconaxtradb.ObjectMeta, 0)
+					insertRows(perconaxtradb.ObjectMeta, 0, 3)
+					countRows(perconaxtradb.ObjectMeta, 0, 3)
+
+					By("Create Secret")
+					err = f.CreateSecret(secret)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Create Repositories")
+					err = f.CreateRepository(repo)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Create BackupConfiguration")
+					err = f.CreateBackupConfiguration(bc)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Wait until BackupSession be created")
+					bs, err = f.WaitUntilBackkupSessionBeCreated(bc.ObjectMeta)
+
+					// eventually backupsession succeeded
+					By("Check for Succeeded backupsession")
+					f.EventuallyBackupSessionPhase(bs.ObjectMeta).Should(Equal(stashV1beta1.BackupSessionSucceeded))
+
+					oldPerconaXtraDB, err := f.GetPerconaXtraDB(perconaxtradb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					garbagePerconaXtraDB.Items = append(garbagePerconaXtraDB.Items, *oldPerconaXtraDB)
+
+					By("Create PerconaXtraDB for initializing from stash")
+					*perconaxtradb = *f.PerconaXtraDB()
+					rs = f.RestoreSessionForStandalone(perconaxtradb.ObjectMeta, oldPerconaXtraDB.ObjectMeta)
+					perconaxtradb.Spec.DatabaseSecret = oldPerconaXtraDB.Spec.DatabaseSecret
+					perconaxtradb.Spec.Init = &api.InitSpec{
+						StashRestoreSession: &core.LocalObjectReference{
+							Name: rs.Name,
+						},
+					}
+
+					// Create and wait for running MySQL
+					createAndWaitForInitializing()
+
+					By("Create RestoreSessionForCluster")
+					err = f.CreateRestoreSession(rs)
+					Expect(err).NotTo(HaveOccurred())
+
+					// eventually restoresession succeeded
+					By("Check for Succeeded restoreSession")
+					f.EventuallyRestoreSessionPhase(rs.ObjectMeta).Should(Equal(stashV1beta1.RestoreSessionSucceeded))
+
+					By("Wait for Running perconaxtradb")
+					f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
+
+					By("Wait for AppBinding to create")
+					f.EventuallyAppBinding(perconaxtradb.ObjectMeta).Should(BeTrue())
+
+					By("Check valid AppBinding Specs")
+					err = f.CheckAppBindingSpec(perconaxtradb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Waiting for database to be ready")
+					f.EventuallyDatabaseReady(perconaxtradb.ObjectMeta, dbName, 0).Should(BeTrue())
+
+					countRows(perconaxtradb.ObjectMeta, 0, 3)
+				}
+
+				Context("From GCS backend", func() {
+
+					BeforeEach(func() {
+						secret = f.SecretForGCSBackend()
+						secret = f.PatchSecretForRestic(secret)
+						bc = f.BackupConfiguration(perconaxtradb.ObjectMeta)
+						repo = f.Repository(perconaxtradb.ObjectMeta, secret.Name)
+
+						repo.Spec.Backend = store.Backend{
+							GCS: &store.GCSSpec{
+								Bucket: os.Getenv(googleBucketNameKey),
+								Prefix: fmt.Sprintf("stash/%v/%v", perconaxtradb.Namespace, perconaxtradb.Name),
+							},
+							StorageSecretName: secret.Name,
+						}
+					})
+
+					It("should run successfully", shouldInitializeFromStash)
+				})
+			})
 		})
 
 		Context("Resume", func() {
-
 			Context("Super Fast User - Create-Delete-Create-Delete-Create ", func() {
 				It("should resume DormantDatabase successfully", func() {
 					// Create and wait for running PerconaXtraDB
@@ -1096,92 +592,6 @@ var _ = Describe("PerconaXtraDB", func() {
 				})
 			})
 
-			//Context("With Snapshot Init", func() {
-			//
-			//	AfterEach(func() {
-			//		// delete snapshot and check for data wipeOut
-			//		deleteSnapshot()
-			//
-			//		By("Deleting secret: " + secret.Name)
-			//		err := f.DeleteSecret(secret.ObjectMeta)
-			//		if err != nil && !kerr.IsNotFound(err) {
-			//			Expect(err).NotTo(HaveOccurred())
-			//		}
-			//	})
-			//
-			//	BeforeEach(func() {
-			//		skipDataChecking = false
-			//		secret = f.SecretForGCSBackend()
-			//		snapshot.Spec.StorageSecretName = secret.Name
-			//		snapshot.Spec.GCS = &store.GCSSpec{
-			//			Bucket: os.Getenv(GCS_BUCKET_NAME),
-			//		}
-			//		snapshot.Spec.DatabaseName = perconaxtradb.Name
-			//	})
-			//
-			//	It("should resume successfully", func() {
-			//		// Create PerconaXtraDB and take Snapshot
-			//		shouldInsertData()
-			//
-			//		oldPerconaXtraDB, err := f.GetPerconaXtraDB(perconaxtradb.ObjectMeta)
-			//		Expect(err).NotTo(HaveOccurred())
-			//
-			//		garbagePerconaXtraDB.Items = append(garbagePerconaXtraDB.Items, *oldPerconaXtraDB)
-			//
-			//		By("Create PerconaXtraDB from snapshot")
-			//		perconaxtradb = f.PerconaXtraDB()
-			//		perconaxtradb.Spec.Init = &api.InitSpec{
-			//			SnapshotSource: &api.SnapshotSourceSpec{
-			//				Namespace: snapshot.Namespace,
-			//				Name:      snapshot.Name,
-			//			},
-			//		}
-			//
-			//		By("Creating PerconaXtraDB without secret name to init from Snapshot: " + perconaxtradb.Name)
-			//		err = f.CreatePerconaXtraDB(perconaxtradb)
-			//		Expect(err).Should(HaveOccurred())
-			//
-			//		// for snapshot init, user have to use older secret,
-			//		// because the username & password  will be replaced to
-			//		perconaxtradb.Spec.DatabaseSecret = oldPerconaXtraDB.Spec.DatabaseSecret
-			//
-			//		// Create and wait for running PerconaXtraDB
-			//		createAndWaitForRunning()
-			//
-			//		By("Checking Row Count of Table")
-			//		f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
-			//
-			//		By("Delete PerconaXtraDB")
-			//		err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
-			//		Expect(err).NotTo(HaveOccurred())
-			//
-			//		By("Wait for PerconaXtraDB to be paused")
-			//		f.EventuallyDormantDatabaseStatus(perconaxtradb.ObjectMeta).Should(matcher.HavePaused())
-			//
-			//		// Create PerconaXtraDB object again to resume it
-			//		By("Create PerconaXtraDB: " + perconaxtradb.Name)
-			//		err = f.CreatePerconaXtraDB(perconaxtradb)
-			//		Expect(err).NotTo(HaveOccurred())
-			//
-			//		By("Wait for DormantDatabase to be deleted")
-			//		f.EventuallyDormantDatabase(perconaxtradb.ObjectMeta).Should(BeFalse())
-			//
-			//		By("Wait for Running PerconaXtraDB")
-			//		f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
-			//
-			//		By("Checking Row Count of Table")
-			//		f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
-			//
-			//		perconaxtradb, err = f.GetPerconaXtraDB(perconaxtradb.ObjectMeta)
-			//		Expect(err).NotTo(HaveOccurred())
-			//		Expect(perconaxtradb.Spec.Init).ShouldNot(BeNil())
-			//
-			//		By("Checking PerconaXtraDB has kubedb.com/initialized annotation")
-			//		_, err = meta_util.GetString(perconaxtradb.Annotations, api.AnnotationInitialized)
-			//		Expect(err).NotTo(HaveOccurred())
-			//	})
-			//})
-
 			Context("Multiple times with init", func() {
 				var initScriptConfigmap *core.ConfigMap
 
@@ -1252,226 +662,6 @@ var _ = Describe("PerconaXtraDB", func() {
 			})
 		})
 
-		//Context("SnapshotScheduler", func() {
-		//
-		//	BeforeEach(func() {
-		//		skipDataChecking = false
-		//	})
-		//
-		//	AfterEach(func() {
-		//		snapshotList, err := f.GetSnapshotList(perconaxtradb.ObjectMeta)
-		//		Expect(err).NotTo(HaveOccurred())
-		//
-		//		for _, snap := range snapshotList.Items {
-		//			snapshot = &snap
-		//
-		//			// delete snapshot and check for data wipeOut
-		//			deleteSnapshot()
-		//		}
-		//
-		//		By("Deleting secret: " + secret.Name)
-		//		err = f.DeleteSecret(secret.ObjectMeta)
-		//		if err != nil && !kerr.IsNotFound(err) {
-		//			Expect(err).NotTo(HaveOccurred())
-		//		}
-		//	})
-		//
-		//	Context("With Startup", func() {
-		//
-		//		var shouldStartupSchedular = func() {
-		//			By("Create Secret")
-		//			err := f.CreateSecret(secret)
-		//			Expect(err).NotTo(HaveOccurred())
-		//
-		//			// Create and wait for running PerconaXtraDB
-		//			createAndWaitForRunning()
-		//
-		//			By("Count multiple Snapshot Object")
-		//			f.EventuallySnapshotCount(perconaxtradb.ObjectMeta).Should(matcher.MoreThan(3))
-		//
-		//			By("Remove Backup Scheduler from PerconaXtraDB")
-		//			_, err = f.PatchPerconaXtraDB(perconaxtradb.ObjectMeta, func(in *api.PerconaXtraDB) *api.PerconaXtraDB{
-		//				in.Spec.BackupSchedule = nil
-		//				return in
-		//			})
-		//			Expect(err).NotTo(HaveOccurred())
-		//
-		//			By("Verify multiple Succeeded Snapshot")
-		//			f.EventuallyMultipleSnapshotFinishedProcessing(perconaxtradb.ObjectMeta).Should(Succeed())
-		//		}
-		//
-		//		Context("with local", func() {
-		//			BeforeEach(func() {
-		//				skipDataChecking = true
-		//				secret = f.SecretForLocalBackend()
-		//				perconaxtradb.Spec.BackupSchedule = &api.BackupScheduleSpec{
-		//					CronExpression: "@every 20s",
-		//					Backend: store.Backend{
-		//						StorageSecretName: secret.Name,
-		//						Local: &store.LocalSpec{
-		//							MountPath: "/repo",
-		//							VolumeSource: core.VolumeSource{
-		//								EmptyDir: &core.EmptyDirVolumeSource{},
-		//							},
-		//						},
-		//					},
-		//				}
-		//			})
-		//
-		//			It("should run scheduler successfully", shouldStartupSchedular)
-		//		})
-		//
-		//		Context("with GCS", func() {
-		//			BeforeEach(func() {
-		//				secret = f.SecretForGCSBackend()
-		//				perconaxtradb.Spec.BackupSchedule = &api.BackupScheduleSpec{
-		//					CronExpression: "@every 1m",
-		//					Backend: store.Backend{
-		//						StorageSecretName: secret.Name,
-		//						GCS: &store.GCSSpec{
-		//							Bucket: os.Getenv(GCS_BUCKET_NAME),
-		//						},
-		//					},
-		//				}
-		//			})
-		//
-		//			It("should run scheduler successfully", shouldStartupSchedular)
-		//		})
-		//	})
-		//
-		//	Context("With Update - with Local", func() {
-		//
-		//		BeforeEach(func() {
-		//			skipDataChecking = true
-		//			secret = f.SecretForLocalBackend()
-		//		})
-		//
-		//		It("should run scheduler successfully", func() {
-		//			// Create and wait for running PerconaXtraDB
-		//			createAndWaitForRunning()
-		//
-		//			By("Create Secret")
-		//			err := f.CreateSecret(secret)
-		//			Expect(err).NotTo(HaveOccurred())
-		//
-		//			By("Update PerconaXtraDB")
-		//			_, err = f.PatchPerconaXtraDB(perconaxtradb.ObjectMeta, func(in *api.PerconaXtraDB) *api.PerconaXtraDB{
-		//				in.Spec.BackupSchedule = &api.BackupScheduleSpec{
-		//					CronExpression: "@every 20s",
-		//					Backend: store.Backend{
-		//						StorageSecretName: secret.Name,
-		//						Local: &store.LocalSpec{
-		//							MountPath: "/repo",
-		//							VolumeSource: core.VolumeSource{
-		//								EmptyDir: &core.EmptyDirVolumeSource{},
-		//							},
-		//						},
-		//					},
-		//				}
-		//				return in
-		//			})
-		//			Expect(err).NotTo(HaveOccurred())
-		//
-		//			By("Count multiple Snapshot Object")
-		//			f.EventuallySnapshotCount(perconaxtradb.ObjectMeta).Should(matcher.MoreThan(3))
-		//
-		//			By("Remove Backup Scheduler from PerconaXtraDB")
-		//			_, err = f.PatchPerconaXtraDB(perconaxtradb.ObjectMeta, func(in *api.PerconaXtraDB) *api.PerconaXtraDB{
-		//				in.Spec.BackupSchedule = nil
-		//				return in
-		//			})
-		//			Expect(err).NotTo(HaveOccurred())
-		//
-		//			By("Verify multiple Succeeded Snapshot")
-		//			f.EventuallyMultipleSnapshotFinishedProcessing(perconaxtradb.ObjectMeta).Should(Succeed())
-		//		})
-		//	})
-		//
-		//	Context("Re-Use DormantDatabase's scheduler", func() {
-		//
-		//		BeforeEach(func() {
-		//			skipDataChecking = true
-		//			secret = f.SecretForLocalBackend()
-		//		})
-		//
-		//		It("should re-use scheduler successfully", func() {
-		//			// Create and wait for running PerconaXtraDB
-		//			createAndWaitForRunning()
-		//
-		//			By("Create Secret")
-		//			err := f.CreateSecret(secret)
-		//			Expect(err).NotTo(HaveOccurred())
-		//
-		//			By("Update PerconaXtraDB")
-		//			_, err = f.PatchPerconaXtraDB(perconaxtradb.ObjectMeta, func(in *api.PerconaXtraDB) *api.PerconaXtraDB{
-		//				in.Spec.BackupSchedule = &api.BackupScheduleSpec{
-		//					CronExpression: "@every 20s",
-		//					Backend: store.Backend{
-		//						StorageSecretName: secret.Name,
-		//						Local: &store.LocalSpec{
-		//							MountPath: "/repo",
-		//							VolumeSource: core.VolumeSource{
-		//								EmptyDir: &core.EmptyDirVolumeSource{},
-		//							},
-		//						},
-		//					},
-		//				}
-		//				return in
-		//			})
-		//			Expect(err).NotTo(HaveOccurred())
-		//
-		//			By("Creating Table")
-		//			f.EventuallyCreateTable(perconaxtradb.ObjectMeta, false, dbName, 0).Should(BeTrue())
-		//
-		//			By("Inserting Row")
-		//			f.EventuallyInsertRow(perconaxtradb.ObjectMeta, false, dbName, 0, 3).Should(BeTrue())
-		//
-		//			By("Checking Row Count of Table")
-		//			f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
-		//
-		//			By("Count multiple Snapshot Object")
-		//			f.EventuallySnapshotCount(perconaxtradb.ObjectMeta).Should(matcher.MoreThan(3))
-		//
-		//			By("Verify multiple Succeeded Snapshot")
-		//			f.EventuallyMultipleSnapshotFinishedProcessing(perconaxtradb.ObjectMeta).Should(Succeed())
-		//
-		//			By("Delete PerconaXtraDB")
-		//			err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
-		//			Expect(err).NotTo(HaveOccurred())
-		//
-		//			By("Wait for PerconaXtraDB to be paused")
-		//			f.EventuallyDormantDatabaseStatus(perconaxtradb.ObjectMeta).Should(matcher.HavePaused())
-		//
-		//			// Create PerconaXtraDB object again to resume it
-		//			By("Create PerconaXtraDB: " + perconaxtradb.Name)
-		//			err = f.CreatePerconaXtraDB(perconaxtradb)
-		//			Expect(err).NotTo(HaveOccurred())
-		//
-		//			By("Wait for DormantDatabase to be deleted")
-		//			f.EventuallyDormantDatabase(perconaxtradb.ObjectMeta).Should(BeFalse())
-		//
-		//			By("Wait for Running PerconaXtraDB")
-		//			f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
-		//
-		//			By("Checking Row Count of Table")
-		//			f.EventuallyCountRow(perconaxtradb.ObjectMeta, false, dbName, 0).Should(Equal(3))
-		//
-		//			By("Count multiple Snapshot Object")
-		//			f.EventuallySnapshotCount(perconaxtradb.ObjectMeta).Should(matcher.MoreThan(5))
-		//
-		//			By("Remove Backup Scheduler from PerconaXtraDB")
-		//			_, err = f.PatchPerconaXtraDB(perconaxtradb.ObjectMeta, func(in *api.PerconaXtraDB) *api.PerconaXtraDB{
-		//				in.Spec.BackupSchedule = nil
-		//				return in
-		//			})
-		//			Expect(err).NotTo(HaveOccurred())
-		//
-		//			By("Verify multiple Succeeded Snapshot")
-		//			f.EventuallyMultipleSnapshotFinishedProcessing(perconaxtradb.ObjectMeta).Should(Succeed())
-		//		})
-		//	})
-		//})
-
 		Context("Termination Policy", func() {
 
 			BeforeEach(func() {
@@ -1516,9 +706,6 @@ var _ = Describe("PerconaXtraDB", func() {
 			Context("with TerminationPolicyPause (default)", func() {
 
 				AfterEach(func() {
-					//// delete snapshot and check for data wipeOut
-					//deleteSnapshot()
-
 					By("Deleting secret: " + secret.Name)
 					err := f.DeleteSecret(secret.ObjectMeta)
 					if err != nil && !kerr.IsNotFound(err) {
@@ -1544,14 +731,6 @@ var _ = Describe("PerconaXtraDB", func() {
 					By("Checking Secret hasn't been deleted")
 					f.EventuallyDBSecretCount(perconaxtradb.ObjectMeta).Should(Equal(1))
 
-					//By("Checking snapshot hasn't been deleted")
-					//f.EventuallySnapshot(snapshot.ObjectMeta).Should(BeTrue())
-					//
-					//if !skipDataChecking {
-					//	By("Check for snapshot data")
-					//	f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-					//}
-
 					// Create PerconaXtraDB object again to resume it
 					By("Create (resume) PerconaXtraDB: " + perconaxtradb.Name)
 					err = f.CreatePerconaXtraDB(perconaxtradb)
@@ -1575,9 +754,6 @@ var _ = Describe("PerconaXtraDB", func() {
 				})
 
 				AfterEach(func() {
-					//// delete snapshot and check for data wipeOut
-					//deleteSnapshot()
-
 					By("Deleting secret: " + secret.Name)
 					err := f.DeleteSecret(secret.ObjectMeta)
 					if err != nil && !kerr.IsNotFound(err) {
@@ -1604,14 +780,6 @@ var _ = Describe("PerconaXtraDB", func() {
 
 					By("Checking Secret hasn't been deleted")
 					f.EventuallyDBSecretCount(perconaxtradb.ObjectMeta).Should(Equal(1))
-
-					//By("Checking Snapshot hasn't been deleted")
-					//f.EventuallySnapshot(snapshot.ObjectMeta).Should(BeTrue())
-					//
-					//if !skipDataChecking {
-					//	By("Check for intact snapshot data")
-					//	f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-					//}
 				})
 			})
 
@@ -1637,20 +805,12 @@ var _ = Describe("PerconaXtraDB", func() {
 
 					By("Checking PVCs has been deleted")
 					f.EventuallyPVCCount(perconaxtradb.ObjectMeta).Should(Equal(0))
-
-					//By("Checking Snapshots has been deleted")
-					//f.EventuallySnapshot(snapshot.ObjectMeta).Should(BeFalse())
-					//
-					//By("Checking Secrets has been deleted")
-					//f.EventuallyDBSecretCount(perconaxtradb.ObjectMeta).Should(Equal(0))
 				})
 			})
 		})
 
 		Context("EnvVars", func() {
-
 			Context("Database Name as EnvVar", func() {
-
 				It("should create DB with name provided in EvnVar", func() {
 					if skipMessage != "" {
 						Skip(skipMessage)
@@ -1669,7 +829,6 @@ var _ = Describe("PerconaXtraDB", func() {
 			})
 
 			Context("Root Password as EnvVar", func() {
-
 				It("should reject to create PerconaXtraDB CRD", func() {
 					if skipMessage != "" {
 						Skip(skipMessage)
@@ -1688,7 +847,6 @@ var _ = Describe("PerconaXtraDB", func() {
 			})
 
 			Context("Update EnvVar", func() {
-
 				It("should not reject to update EvnVar", func() {
 					if skipMessage != "" {
 						Skip(skipMessage)
@@ -1769,9 +927,7 @@ var _ = Describe("PerconaXtraDB", func() {
 		})
 
 		Context("StorageType ", func() {
-
 			var shouldRunSuccessfully = func() {
-
 				if skipMessage != "" {
 					Skip(skipMessage)
 				}
@@ -1790,9 +946,7 @@ var _ = Describe("PerconaXtraDB", func() {
 			}
 
 			Context("Ephemeral", func() {
-
 				Context("General Behaviour", func() {
-
 					BeforeEach(func() {
 						perconaxtradb.Spec.StorageType = api.StorageTypeEphemeral
 						perconaxtradb.Spec.Storage = nil
@@ -1803,7 +957,6 @@ var _ = Describe("PerconaXtraDB", func() {
 				})
 
 				Context("With TerminationPolicyPause", func() {
-
 					BeforeEach(func() {
 						perconaxtradb.Spec.StorageType = api.StorageTypeEphemeral
 						perconaxtradb.Spec.Storage = nil

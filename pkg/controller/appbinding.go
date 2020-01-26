@@ -70,24 +70,6 @@ func (c *Controller) ensureAppBinding(db *api.PerconaXtraDB) (kutil.VerbType, er
 		return kutil.VerbUnchanged, err
 	}
 
-	//var peers []string
-	//for i := 0; i < int(*db.Spec.Replicas); i += 1 {
-	//	peers = append(peers, db.PeerName(i))
-	//}
-	//
-	//garbdCnfJson, err := json.Marshal(config_api.GaleraArbitratorConfiguration{
-	//	TypeMeta: metav1.TypeMeta{
-	//		APIVersion: config_api.SchemeGroupVersion.String(),
-	//		Kind:       config_api.ResourceKindGaleraArbitratorConfiguration,
-	//	},
-	//	Address:   fmt.Sprintf("gcomm://%s", strings.Join(peers, ",")),
-	//	Group:     db.Name,
-	//	SSTMethod: config_api.GarbdXtrabackupSSTMethod,
-	//})
-	//if err != nil {
-	//	return kutil.VerbUnchanged, err
-	//}
-
 	pxVersion, err := c.ExtClient.CatalogV1alpha1().PerconaXtraDBVersions().Get(string(db.Spec.Version), metav1.GetOptions{})
 	if err != nil {
 		return kutil.VerbUnchanged, fmt.Errorf("failed to get PerconaXtraDBVersion %v for %v/%v. Reason: %v", db.Spec.Version, db.Namespace, db.Name, err)

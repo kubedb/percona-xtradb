@@ -235,7 +235,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				storeWsClusterStats()
 			})
 
-			FIt("should be possible to create a basic 3 member cluster", func() {
+			It("should be possible to create a basic 3 member cluster", func() {
 				for i := 0; i < api.PerconaXtraDBDefaultClusterSize; i++ {
 					By(fmt.Sprintf("Checking the cluster stats from Pod '%s-%d'", px.Name, i))
 					f.EventuallyCheckCluster(px.ObjectMeta, dbName, i, wsClusterStats).
@@ -399,7 +399,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				err := f.DeleteBackupConfiguration(bc.ObjectMeta)
 				Expect(err).NotTo(HaveOccurred())
 
-				By("Deleting RestoreSession")
+				By("Deleting RestoreSessionForCluster")
 				err = f.DeleteRestoreSession(rs.ObjectMeta)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -412,11 +412,11 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 			})
 
 			var createAndWaitForInitializing = func() {
-				By("Creating MySQL: " + px.Name)
+				By("Creating PerconaXtraDB: " + px.Name)
 				err = f.CreatePerconaXtraDB(px)
 				Expect(err).NotTo(HaveOccurred())
 
-				By("Wait for Initializing mysql")
+				By("Wait for Initializing perconaxtradb")
 				f.EventuallyPerconaXtraDBPhase(px.ObjectMeta).Should(Equal(api.DatabasePhaseInitializing))
 			}
 
@@ -454,7 +454,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 
 				By("Create PerconaXtraDB for initializing from stash")
 				*px = *f.PerconaXtraDBCluster()
-				rs = f.RestoreSession(px.ObjectMeta, oldPerconaXtraDB.ObjectMeta, oldPerconaXtraDB.Spec.Replicas)
+				rs = f.RestoreSessionForCluster(px.ObjectMeta, oldPerconaXtraDB.ObjectMeta, oldPerconaXtraDB.Spec.Replicas)
 				px.Spec.DatabaseSecret = oldPerconaXtraDB.Spec.DatabaseSecret
 				px.Spec.Init = &api.InitSpec{
 					StashRestoreSession: &corev1.LocalObjectReference{
@@ -465,7 +465,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				// Create and wait for running MySQL
 				createAndWaitForInitializing()
 
-				By("Create RestoreSession")
+				By("Create RestoreSessionForCluster")
 				err = f.CreateRestoreSession(rs)
 				Expect(err).NotTo(HaveOccurred())
 

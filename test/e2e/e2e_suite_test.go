@@ -124,8 +124,6 @@ var _ = AfterSuite(func() {
 	root.CleanPerconaXtraDB()
 	By("Delete left over Dormant Database objects")
 	root.CleanDormantDatabase()
-	By("Delete left over Snapshot objects")
-	root.CleanSnapshot()
 	By("Delete Namespace")
 	err := root.DeleteNamespace()
 	Expect(err).NotTo(HaveOccurred())

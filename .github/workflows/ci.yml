@@ -47,17 +47,17 @@ jobs:
         docker login --username ${USERNAME} --password ${DOCKER_TOKEN}
         make push
 
-    - name: Check out Stash operator and build
-      env:
-        REGISTRY: kubedbci
-        DOCKER_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-        USERNAME: 1gtm
-      run: |
-        docker login --username ${USERNAME} --password ${DOCKER_TOKEN}
-        cd ../.. && mkdir -p stash.appscode.dev && cd stash.appscode.dev
-        git clone https://github.com/stashed/stash
-        cd stash && git checkout master
-        make push
+#    - name: Check out Stash operator and build
+#      env:
+#        REGISTRY: kubedbci
+#        DOCKER_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+#        USERNAME: 1gtm
+#      run: |
+#        docker login --username ${USERNAME} --password ${DOCKER_TOKEN}
+#        cd ../.. && mkdir -p stash.appscode.dev && cd stash.appscode.dev
+#        git clone https://github.com/stashed/stash
+#        cd stash && git checkout master
+#        make push
 
   kubernetes:
     name: Kubernetes
@@ -94,7 +94,7 @@ jobs:
         echo
         echo "installing local-path provisioner ..."
         kubectl delete storageclass --all
-        kubectl apply -f https://github.com/kmodules/local-path-provisioner/raw/k-1.11/deploy/local-path-storage.yaml
+        kubectl apply -f https://github.com/rancher/local-path-provisioner/raw/v0.0.12/deploy/local-path-storage.yaml
         kubectl wait --for=condition=Ready pods -n local-path-storage --all --timeout=5m
         kubectl apply -f hack/kubernetes/storageclass/standard.yaml
         echo
@@ -111,18 +111,18 @@ jobs:
         cd installer
         git checkout master
 
-    - name: Check out Stash operator and installer
-      run: |
-        cd ../.. && mkdir -p stash.appscode.dev && cd stash.appscode.dev
-        git clone https://github.com/stashed/installer
-        cd installer && git checkout master
-        cd ..
-        git clone https://github.com/stashed/stash
-        cd stash && git checkout master
+#    - name: Check out Stash operator and installer
+#      run: |
+#        cd ../.. && mkdir -p stash.appscode.dev && cd stash.appscode.dev
+#        git clone https://github.com/stashed/installer
+#        cd installer && git checkout master
+#        cd ..
+#        git clone https://github.com/stashed/stash
+#        cd stash && git checkout master
 
     - name: Install stash and addons
-      env:
-        REGISTRY: kubedbci
+#      env:
+#        REGISTRY: kubedbci
       run: |
         #export KUBECONFIG="$(kind get kubeconfig-path)"
         make stash-install
@@ -141,8 +141,6 @@ jobs:
         echo "GOOGLE_SERVICE_ACCOUNT_JSON_KEY=$(echo $GOOGLE_SERVICE_ACCOUNT_JSON_KEY)" >> hack/config/.env
         make install
         kubectl get pxversion
-        kubectl patch -p '{"spec":{"db":{"image":"kubedb/percona-xtradb-cluster:v5.7-cluster"}}}' --type="merge" pxversion 5.7-cluster
-        kubectl patch -p '{"spec":{"db":{"image":"kubedb/percona:v5.7"}}}' --type="merge" pxversion 5.7
         echo
         #make e2e-parallel TEST_ARGS="--db-catalog=${{ matrix.db }}"|| (kubectl describe deployment -n kube-system kubedb; kubectl logs -n kube-system deployment/kubedb; kubectl describe deployment -n kube-system stash; kubectl logs -n kube-system deployment/stash operator; exit 1;)
-        make e2e-tests GINKGO_ARGS="-p -stream --flakeAttempts=2" TEST_ARGS="--db-catalog=${{ matrix.db }}"|| (kubectl describe deployment -n kube-system kubedb; kubectl logs -n kube-system deployment/kubedb; kubectl describe deployment -n kube-system stash; kubectl logs -n kube-system deployment/stash operator; exit 1;)
+        make e2e-tests GINKGO_ARGS="--flakeAttempts=2" TEST_ARGS="--db-catalog=${{ matrix.db }}"|| (kubectl describe deployment -n kube-system kubedb; kubectl logs -n kube-system deployment/kubedb; kubectl describe deployment -n kube-system stash-operator; kubectl logs -n kube-system deployment/stash-operator operator; exit 1;)

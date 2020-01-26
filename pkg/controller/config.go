@@ -87,7 +87,7 @@ func (c *OperatorConfig) New() (*Controller, error) {
 
 	ctrl.DrmnInformer = dormantdatabase.NewController(ctrl.Controller, ctrl, ctrl.Config, tweakListOptions, recorder).InitInformer()
 
-	// Initialize RestoreSession informer.
+	// Initialize RestoreSessionForCluster informer.
 	ctrl.RSInformer = restoresession.NewController(ctrl.Controller, ctrl, ctrl.Config, tweakListOptions, recorder).InitInformer()
 
 	if err := ctrl.EnsureCustomResourceDefinitions(); err != nil {
