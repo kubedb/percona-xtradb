@@ -25,7 +25,7 @@ stash-install:
 		--namespace kube-system; \
 	kubectl wait --for=condition=Ready pods -n kube-system -l app=stash --timeout=5m; \
 	kubectl wait --for=condition=Available apiservice -l app=stash --timeout=5m
-	curl -fsSL https://github.com/stashed/catalog/raw/v0.2.0/deploy/script.sh | bash -s -- --catalog=stash-percona-xtradb --docker-registry=stashed --xtradb-backup-args="--all-databases"
+	curl -fsSL https://github.com/stashed/catalog/raw/v0.2.0/deploy/script.sh | bash -s -- --catalog=stash-percona-xtradb --docker-registry=stashed
 
 .PHONY: stash-uninstall
 stash-uninstall:
@@ -33,6 +33,5 @@ stash-uninstall:
 	helm uninstall stash --namespace=kube-system || true
 
 .PHONY: stash-purge
-stash-purge:
-	@cd /tmp
-	@curl -fsSL https://github.com/stashed/installer/raw/master/deploy/stash.sh | bash -s -- --uninstall --purge
+stash-purge: stash-uninstall
+	kubectl delete crds -l app=stash
