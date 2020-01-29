@@ -99,20 +99,8 @@ jobs:
         cd installer
         git checkout master
 
-#    - name: Check out Stash operator and installer
-#      run: |
-#        cd ../.. && mkdir -p stash.appscode.dev && cd stash.appscode.dev
-#        git clone https://github.com/stashed/installer
-#        cd installer && git checkout master
-#        cd ..
-#        git clone https://github.com/stashed/stash
-#        cd stash && git checkout master
-
     - name: Install stash and addons
-#      env:
-#        REGISTRY: kubedbci
       run: |
-        #export KUBECONFIG="$(kind get kubeconfig-path)"
         make stash-install
 
     - name: Run e2e tests
