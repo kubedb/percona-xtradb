@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
-	"kubedb.dev/apimachinery/pkg/admission/dormantdatabase"
 	"kubedb.dev/apimachinery/pkg/admission/namespace"
 	"kubedb.dev/apimachinery/pkg/eventer"
 	pxAdmsn "kubedb.dev/percona-xtradb/pkg/admission"
@@ -137,7 +136,6 @@ func (c completedConfig) New() (*PerconaXtraDBServer, error) {
 		c.ExtraConfig.AdmissionHooks = append(c.ExtraConfig.AdmissionHooks,
 			&pxAdmsn.PerconaXtraDBValidator{},
 			//&snapshot.SnapshotValidator{},
-			&dormantdatabase.DormantDatabaseValidator{},
 			&namespace.NamespaceValidator{
 				Resources: []string{api.ResourcePluralPerconaXtraDB},
 			},

@@ -138,7 +138,7 @@ func (f *Framework) DeleteRepository(meta metav1.ObjectMeta) error {
 	return err
 }
 
-func (f *Invocation) RestoreSession(meta, oldMeta metav1.ObjectMeta, replicas *int32) *stashv1beta1.RestoreSession {
+func (f *Invocation) RestoreSessionForCluster(meta, oldMeta metav1.ObjectMeta, replicas *int32) *stashv1beta1.RestoreSession {
 	return &stashv1beta1.RestoreSession{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      meta.Name,
@@ -188,6 +188,39 @@ func (f *Invocation) RestoreSession(meta, oldMeta metav1.ObjectMeta, replicas *i
 							},
 						},
 					},
+				},
+			},
+		},
+	}
+}
+
+func (f *Invocation) RestoreSessionForStandalone(meta, oldMeta metav1.ObjectMeta) *stashv1beta1.RestoreSession {
+	return &stashv1beta1.RestoreSession{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      meta.Name,
+			Namespace: f.namespace,
+			Labels: map[string]string{
+				"app":                 f.app,
+				api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
+			},
+		},
+		Spec: stashv1beta1.RestoreSessionSpec{
+			Task: stashv1beta1.TaskRef{
+				Name: StashPerconaXtraDBRestoreTask,
+			},
+			Repository: corev1.LocalObjectReference{
+				Name: oldMeta.Name,
+			},
+			Rules: []stashv1beta1.Rule{
+				{
+					Snapshots: []string{"latest"},
+				},
+			},
+			Target: &stashv1beta1.RestoreTarget{
+				Ref: stashv1beta1.TargetRef{
+					APIVersion: appcat_api.SchemeGroupVersion.String(),
+					Kind:       appcat_api.ResourceKindApp,
+					Name:       meta.Name,
 				},
 			},
 		},

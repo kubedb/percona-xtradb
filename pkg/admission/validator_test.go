@@ -269,10 +269,20 @@ var cases = []struct {
 		"foo",
 		"default",
 		admission.Create,
-		sampleXtraDBCluster(),
+		sampleValidXtraDBCluster(),
 		api.PerconaXtraDB{},
 		false,
 		true,
+	},
+	{"Create an invalid PerconaXtraDB Cluster containing initscript",
+		requestKind,
+		"foo",
+		"default",
+		admission.Create,
+		sampleXtraDBClusterContainingInitsript(),
+		api.PerconaXtraDB{},
+		false,
+		false,
 	},
 	{"Create PerconaXtraDB Cluster with insufficient node replicas",
 		requestKind,
@@ -370,7 +380,9 @@ func editSpecMonitor(old api.PerconaXtraDB) api.PerconaXtraDB {
 	old.Spec.Monitor = &mona.AgentSpec{
 		Agent: mona.AgentPrometheusBuiltin,
 		Prometheus: &mona.PrometheusSpec{
-			Port: 1289,
+			Exporter: &mona.PrometheusExporterSpec{
+				Port: 1289,
+			},
 		},
 	}
 	return old
@@ -379,32 +391,42 @@ func editSpecMonitor(old api.PerconaXtraDB) api.PerconaXtraDB {
 // should be failed because more fields required for COreOS Monitoring
 func editSpecInvalidMonitor(old api.PerconaXtraDB) api.PerconaXtraDB {
 	old.Spec.Monitor = &mona.AgentSpec{
-		Agent: mona.AgentCoreOSPrometheus,
+		Agent: mona.AgentPrometheusOperator,
 	}
 	return old
 }
 
 func pauseDatabase(old api.PerconaXtraDB) api.PerconaXtraDB {
-	old.Spec.TerminationPolicy = api.TerminationPolicyPause
+	old.Spec.TerminationPolicy = api.TerminationPolicyHalt
 	return old
 }
 
-func sampleXtraDBCluster() api.PerconaXtraDB {
+func sampleXtraDBClusterContainingInitsript() api.PerconaXtraDB {
 	perconaxtradb := samplePerconaXtraDB()
-	perconaxtradb.Spec.Replicas = types.Int32P(3)
+	perconaxtradb.Spec.Replicas = types.Int32P(api.PerconaXtraDBDefaultClusterSize)
+
+	return perconaxtradb
+}
+
+func sampleValidXtraDBCluster() api.PerconaXtraDB {
+	perconaxtradb := samplePerconaXtraDB()
+	perconaxtradb.Spec.Replicas = types.Int32P(api.PerconaXtraDBDefaultClusterSize)
+	if perconaxtradb.Spec.Init != nil {
+		perconaxtradb.Spec.Init.ScriptSource = nil
+	}
 
 	return perconaxtradb
 }
 
 func insufficientNodeReplicas() api.PerconaXtraDB {
-	perconaxtradb := sampleXtraDBCluster()
+	perconaxtradb := sampleValidXtraDBCluster()
 	perconaxtradb.Spec.Replicas = types.Int32P(2)
 
 	return perconaxtradb
 }
 
 func largerClusterNameThanRecommended() api.PerconaXtraDB {
-	perconaxtradb := sampleXtraDBCluster()
+	perconaxtradb := sampleValidXtraDBCluster()
 	perconaxtradb.Name = "aaaaa-aaaaa-aaaaa-aaaaa-aaaaa-aaaaa"
 
 	return perconaxtradb

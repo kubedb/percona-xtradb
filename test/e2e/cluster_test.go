@@ -22,7 +22,6 @@ import (
 
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/percona-xtradb/test/e2e/framework"
-	"kubedb.dev/percona-xtradb/test/e2e/matcher"
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
@@ -86,44 +85,34 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 			return
 		}
 
-		By("Check if PerconaXtraDB " + px.Name + " exists.")
+		By("Check if perconaxtradb " + px.Name + " exists.")
 		perconaxtradb, err := f.GetPerconaXtraDB(px.ObjectMeta)
-		if err != nil {
-			if kerr.IsNotFound(err) {
-				// PerconaXtraDB was not created. Hence, rest of cleanup is not necessary.
-				return
-			}
-			Expect(err).NotTo(HaveOccurred())
+		if err != nil && kerr.IsNotFound(err) {
+			// PerconaXtraDB was not created. Hence, rest of cleanup is not necessary.
+			return
 		}
+		Expect(err).NotTo(HaveOccurred())
 
-		By("Delete PerconaXtraDB")
-		err = f.DeletePerconaXtraDB(px.ObjectMeta)
-		if err != nil {
-			if kerr.IsNotFound(err) {
-				log.Infoln("Skipping rest of the cleanup. Reason: PerconaXtraDB does not exist.")
-				return
-			}
-			Expect(err).NotTo(HaveOccurred())
+		By("Update perconaxtradb to set spec.terminationPolicy = WipeOut")
+		_, err = f.PatchPerconaXtraDB(px.ObjectMeta, func(in *api.PerconaXtraDB) *api.PerconaXtraDB {
+			in.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
+			return in
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Delete perconaxtradb")
+		err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
+		if err != nil && kerr.IsNotFound(err) {
+			// PerconaXtraDB was not created. Hence, rest of cleanup is not necessary.
+			return
 		}
+		Expect(err).NotTo(HaveOccurred())
 
-		if perconaxtradb.Spec.TerminationPolicy == api.TerminationPolicyPause {
-			By("Wait for PerconaXtraDB to be paused")
-			f.EventuallyDormantDatabaseStatus(px.ObjectMeta).Should(matcher.HavePaused())
-
-			By("WipeOut PerconaXtraDB")
-			_, err := f.PatchDormantDatabase(px.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
-				in.Spec.WipeOut = true
-				return in
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Delete Dormant Database")
-			err = f.DeleteDormantDatabase(px.ObjectMeta)
-			Expect(err).NotTo(HaveOccurred())
-		}
+		By("Wait for perconaxtradb to be deleted")
+		f.EventuallyPerconaXtraDB(perconaxtradb.ObjectMeta).Should(BeFalse())
 
 		By("Wait for perconaxtradb resources to be wipedOut")
-		f.EventuallyWipedOut(px.ObjectMeta).Should(Succeed())
+		f.EventuallyWipedOut(perconaxtradb.ObjectMeta).Should(Succeed())
 	}
 
 	var deleteTestResource = func() {
@@ -197,7 +186,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 	}
 
 	var CheckDBVersionForXtraDBCluster = func() {
-		if framework.DBCatalogName != "5.7" {
+		if framework.DBCatalogName != "5.7-cluster" {
 			Skip("For XtraDB Cluster, currently supported DB version is '5.7-cluster'")
 		}
 	}
@@ -210,6 +199,12 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		dbNameKubedb = "kubedb"
 
 		CheckDBVersionForXtraDBCluster()
+	})
+
+	JustAfterEach(func() {
+		if CurrentGinkgoTestDescription().Failed {
+			f.PrintDebugHelpers(px.Name, int(*px.Spec.Replicas))
+		}
 	})
 
 	Context("Behaviour tests", func() {
@@ -390,7 +385,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				err := f.DeleteBackupConfiguration(bc.ObjectMeta)
 				Expect(err).NotTo(HaveOccurred())
 
-				By("Deleting RestoreSession")
+				By("Deleting RestoreSessionForCluster")
 				err = f.DeleteRestoreSession(rs.ObjectMeta)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -403,11 +398,11 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 			})
 
 			var createAndWaitForInitializing = func() {
-				By("Creating MySQL: " + px.Name)
+				By("Creating PerconaXtraDB: " + px.Name)
 				err = f.CreatePerconaXtraDB(px)
 				Expect(err).NotTo(HaveOccurred())
 
-				By("Wait for Initializing mysql")
+				By("Wait for Initializing perconaxtradb")
 				f.EventuallyPerconaXtraDBPhase(px.ObjectMeta).Should(Equal(api.DatabasePhaseInitializing))
 			}
 
@@ -445,7 +440,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 
 				By("Create PerconaXtraDB for initializing from stash")
 				*px = *f.PerconaXtraDBCluster()
-				rs = f.RestoreSession(px.ObjectMeta, oldPerconaXtraDB.ObjectMeta, oldPerconaXtraDB.Spec.Replicas)
+				rs = f.RestoreSessionForCluster(px.ObjectMeta, oldPerconaXtraDB.ObjectMeta, oldPerconaXtraDB.Spec.Replicas)
 				px.Spec.DatabaseSecret = oldPerconaXtraDB.Spec.DatabaseSecret
 				px.Spec.Init = &api.InitSpec{
 					StashRestoreSession: &corev1.LocalObjectReference{
@@ -456,7 +451,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				// Create and wait for running MySQL
 				createAndWaitForInitializing()
 
-				By("Create RestoreSession")
+				By("Create RestoreSessionForCluster")
 				err = f.CreateRestoreSession(rs)
 				Expect(err).NotTo(HaveOccurred())
 
