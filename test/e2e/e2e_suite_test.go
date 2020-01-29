@@ -115,15 +115,12 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	root.EventuallyCRD().Should(Succeed())
-	root.EventuallyAPIServiceReady().Should(Succeed())
 })
 
 var _ = AfterSuite(func() {
 	By("Cleanup Left Overs")
 	By("Delete left over PerconaXtraDB objects")
 	root.CleanPerconaXtraDB()
-	By("Delete left over Dormant Database objects")
-	root.CleanDormantDatabase()
 	By("Delete Namespace")
 	err := root.DeleteNamespace()
 	Expect(err).NotTo(HaveOccurred())

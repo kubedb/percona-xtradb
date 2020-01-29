@@ -22,7 +22,6 @@ import (
 
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/percona-xtradb/test/e2e/framework"
-	"kubedb.dev/percona-xtradb/test/e2e/matcher"
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
@@ -86,44 +85,34 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 			return
 		}
 
-		By("Check if PerconaXtraDB " + px.Name + " exists.")
+		By("Check if perconaxtradb " + px.Name + " exists.")
 		perconaxtradb, err := f.GetPerconaXtraDB(px.ObjectMeta)
-		if err != nil {
-			if kerr.IsNotFound(err) {
-				// PerconaXtraDB was not created. Hence, rest of cleanup is not necessary.
-				return
-			}
-			Expect(err).NotTo(HaveOccurred())
+		if err != nil && kerr.IsNotFound(err) {
+			// PerconaXtraDB was not created. Hence, rest of cleanup is not necessary.
+			return
 		}
+		Expect(err).NotTo(HaveOccurred())
 
-		By("Delete PerconaXtraDB")
-		err = f.DeletePerconaXtraDB(px.ObjectMeta)
-		if err != nil {
-			if kerr.IsNotFound(err) {
-				log.Infoln("Skipping rest of the cleanup. Reason: PerconaXtraDB does not exist.")
-				return
-			}
-			Expect(err).NotTo(HaveOccurred())
+		By("Update perconaxtradb to set spec.terminationPolicy = WipeOut")
+		_, err = f.PatchPerconaXtraDB(px.ObjectMeta, func(in *api.PerconaXtraDB) *api.PerconaXtraDB {
+			in.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
+			return in
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Delete perconaxtradb")
+		err = f.DeletePerconaXtraDB(perconaxtradb.ObjectMeta)
+		if err != nil && kerr.IsNotFound(err) {
+			// PerconaXtraDB was not created. Hence, rest of cleanup is not necessary.
+			return
 		}
+		Expect(err).NotTo(HaveOccurred())
 
-		if perconaxtradb.Spec.TerminationPolicy == api.TerminationPolicyPause {
-			By("Wait for PerconaXtraDB to be paused")
-			f.EventuallyDormantDatabaseStatus(px.ObjectMeta).Should(matcher.HavePaused())
-
-			By("WipeOut PerconaXtraDB")
-			_, err := f.PatchDormantDatabase(px.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
-				in.Spec.WipeOut = true
-				return in
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Delete Dormant Database")
-			err = f.DeleteDormantDatabase(px.ObjectMeta)
-			Expect(err).NotTo(HaveOccurred())
-		}
+		By("Wait for perconaxtradb to be deleted")
+		f.EventuallyPerconaXtraDB(perconaxtradb.ObjectMeta).Should(BeFalse())
 
 		By("Wait for perconaxtradb resources to be wipedOut")
-		f.EventuallyWipedOut(px.ObjectMeta).Should(Succeed())
+		f.EventuallyWipedOut(perconaxtradb.ObjectMeta).Should(Succeed())
 	}
 
 	var deleteTestResource = func() {
@@ -208,9 +197,6 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		garbagePerconaXtraDB = new(api.PerconaXtraDBList)
 		dbName = "mysql"
 		dbNameKubedb = "kubedb"
-
-		By("Ensure the apiservices are ready")
-		f.EnsureAPIServiceReady().Should(Succeed())
 
 		CheckDBVersionForXtraDBCluster()
 	})

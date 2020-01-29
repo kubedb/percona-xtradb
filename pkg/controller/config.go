@@ -18,9 +18,7 @@ package controller
 import (
 	cs "kubedb.dev/apimachinery/client/clientset/versioned"
 	amc "kubedb.dev/apimachinery/pkg/controller"
-	"kubedb.dev/apimachinery/pkg/controller/dormantdatabase"
 	"kubedb.dev/apimachinery/pkg/controller/restoresession"
-	snapc "kubedb.dev/apimachinery/pkg/controller/snapshot"
 	"kubedb.dev/apimachinery/pkg/eventer"
 
 	pcm "github.com/coreos/prometheus-operator/pkg/client/versioned/typed/monitoring/v1"
@@ -51,7 +49,6 @@ type OperatorConfig struct {
 	DynamicClient    dynamic.Interface
 	AppCatalogClient appcat_cs.Interface
 	PromClient       pcm.MonitoringV1Interface
-	CronController   snapc.CronControllerInterface
 }
 
 func NewOperatorConfig(clientConfig *rest.Config) *OperatorConfig {
@@ -76,7 +73,6 @@ func (c *OperatorConfig) New() (*Controller, error) {
 		c.DynamicClient,
 		c.AppCatalogClient,
 		c.PromClient,
-		c.CronController,
 		c.Config,
 		recorder,
 	)
@@ -84,8 +80,6 @@ func (c *OperatorConfig) New() (*Controller, error) {
 	tweakListOptions := func(options *metav1.ListOptions) {
 		options.LabelSelector = ctrl.selector.String()
 	}
-
-	ctrl.DrmnInformer = dormantdatabase.NewController(ctrl.Controller, ctrl, ctrl.Config, tweakListOptions, recorder).InitInformer()
 
 	// Initialize RestoreSessionForCluster informer.
 	ctrl.RSInformer = restoresession.NewController(ctrl.Controller, ctrl, ctrl.Config, tweakListOptions, recorder).InitInformer()

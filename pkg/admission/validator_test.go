@@ -380,7 +380,9 @@ func editSpecMonitor(old api.PerconaXtraDB) api.PerconaXtraDB {
 	old.Spec.Monitor = &mona.AgentSpec{
 		Agent: mona.AgentPrometheusBuiltin,
 		Prometheus: &mona.PrometheusSpec{
-			Port: 1289,
+			Exporter: &mona.PrometheusExporterSpec{
+				Port: 1289,
+			},
 		},
 	}
 	return old
@@ -389,13 +391,13 @@ func editSpecMonitor(old api.PerconaXtraDB) api.PerconaXtraDB {
 // should be failed because more fields required for COreOS Monitoring
 func editSpecInvalidMonitor(old api.PerconaXtraDB) api.PerconaXtraDB {
 	old.Spec.Monitor = &mona.AgentSpec{
-		Agent: mona.AgentCoreOSPrometheus,
+		Agent: mona.AgentPrometheusOperator,
 	}
 	return old
 }
 
 func pauseDatabase(old api.PerconaXtraDB) api.PerconaXtraDB {
-	old.Spec.TerminationPolicy = api.TerminationPolicyPause
+	old.Spec.TerminationPolicy = api.TerminationPolicyHalt
 	return old
 }
 

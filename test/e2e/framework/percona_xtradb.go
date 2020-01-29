@@ -63,7 +63,7 @@ func (f *Invocation) PerconaXtraDB() *api.PerconaXtraDB {
 			UpdateStrategy: appsv1.StatefulSetUpdateStrategy{
 				Type: appsv1.RollingUpdateStatefulSetStrategyType,
 			},
-			TerminationPolicy: api.TerminationPolicyPause,
+			TerminationPolicy: api.TerminationPolicyHalt,
 		},
 	}
 }
