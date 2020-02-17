@@ -31,10 +31,10 @@ import (
 	kutil "kmodules.xyz/client-go"
 	appcat_api "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
 	ofst "kmodules.xyz/offshoot-api/api/v1"
-	"stash.appscode.dev/stash/apis"
-	"stash.appscode.dev/stash/apis/stash/v1alpha1"
-	stashV1alpha1 "stash.appscode.dev/stash/apis/stash/v1alpha1"
-	stashv1beta1 "stash.appscode.dev/stash/apis/stash/v1beta1"
+	"stash.appscode.dev/apimachinery/apis"
+	"stash.appscode.dev/apimachinery/apis/stash/v1alpha1"
+	stashV1alpha1 "stash.appscode.dev/apimachinery/apis/stash/v1alpha1"
+	stashv1beta1 "stash.appscode.dev/apimachinery/apis/stash/v1beta1"
 )
 
 var (
