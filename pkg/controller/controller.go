@@ -192,7 +192,7 @@ func (c *Controller) pushFailureEvent(px *api.PerconaXtraDB, reason string) {
 		reason,
 	)
 
-	perconaXtraDB, err := util.UpdatePerconaXtraDBStatus(c.ExtClient.KubedbV1alpha1(), px, func(in *api.PerconaXtraDBStatus) *api.PerconaXtraDBStatus {
+	perconaXtraDB, err := util.UpdatePerconaXtraDBStatus(c.ExtClient.KubedbV1alpha1(), px.ObjectMeta, func(in *api.PerconaXtraDBStatus) *api.PerconaXtraDBStatus {
 		in.Phase = api.DatabasePhaseFailed
 		in.Reason = reason
 		in.ObservedGeneration = px.Generation
