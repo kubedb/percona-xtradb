@@ -16,6 +16,7 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -28,13 +29,13 @@ func (f *Framework) EventuallyCRD() GomegaAsyncAssertion {
 	return Eventually(
 		func() error {
 			// Check PerconaXtraDB TPR
-			if _, err := f.dbClient.KubedbV1alpha1().PerconaXtraDBs(core.NamespaceAll).List(metav1.ListOptions{}); err != nil {
+			if _, err := f.dbClient.KubedbV1alpha1().PerconaXtraDBs(core.NamespaceAll).List(context.TODO(), metav1.ListOptions{}); err != nil {
 				return errors.New("CRD PerconaXtraDB is not ready")
 			}
 
 			// Check ProxySQL CRD
 			if ProxySQLTest {
-				if _, err := f.dbClient.KubedbV1alpha1().ProxySQLs(core.NamespaceAll).List(metav1.ListOptions{}); err != nil {
+				if _, err := f.dbClient.KubedbV1alpha1().ProxySQLs(core.NamespaceAll).List(context.TODO(), metav1.ListOptions{}); err != nil {
 					return errors.New("CRD ProxySQL is not ready")
 				}
 			}
