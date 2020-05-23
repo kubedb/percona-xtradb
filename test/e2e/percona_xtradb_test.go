@@ -16,6 +16,7 @@ limitations under the License.
 package e2e_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -825,7 +826,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					testGeneralBehaviour()
 
 					By("Patching EnvVar")
-					_, _, err = util.PatchPerconaXtraDB(f.ExtClient().KubedbV1alpha1(), perconaxtradb, func(in *api.PerconaXtraDB) *api.PerconaXtraDB {
+					_, _, err = util.PatchPerconaXtraDB(context.TODO(), f.ExtClient().KubedbV1alpha1(), perconaxtradb, func(in *api.PerconaXtraDB) *api.PerconaXtraDB {
 						in.Spec.PodTemplate.Spec.Env = []core.EnvVar{
 							{
 								Name:  MYSQL_DATABASE,
@@ -833,7 +834,7 @@ var _ = Describe("PerconaXtraDB", func() {
 							},
 						}
 						return in
-					})
+					}, metav1.PatchOptions{})
 					Expect(err).NotTo(HaveOccurred())
 				})
 			})

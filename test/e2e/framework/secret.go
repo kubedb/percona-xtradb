@@ -16,6 +16,7 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -31,6 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	v1 "kmodules.xyz/client-go/core/v1"
+	meta_util "kmodules.xyz/client-go/meta"
 	"kmodules.xyz/constants/aws"
 	"kmodules.xyz/constants/azure"
 	"kmodules.xyz/constants/google"
@@ -148,19 +150,19 @@ func (i *Invocation) PatchSecretForRestic(secret *core.Secret) *core.Secret {
 // TODO: Add more methods for Swift, Backblaze B2, Rest server backend.
 
 func (f *Framework) CreateSecret(obj *core.Secret) error {
-	_, err := f.kubeClient.CoreV1().Secrets(obj.Namespace).Create(obj)
+	_, err := f.kubeClient.CoreV1().Secrets(obj.Namespace).Create(context.TODO(), obj, metav1.CreateOptions{})
 	return err
 }
 
 func (f *Framework) UpdateSecret(meta metav1.ObjectMeta, transformer func(core.Secret) core.Secret) error {
 	attempt := 0
 	for ; attempt < maxAttempts; attempt = attempt + 1 {
-		cur, err := f.kubeClient.CoreV1().Secrets(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+		cur, err := f.kubeClient.CoreV1().Secrets(meta.Namespace).Get(context.TODO(), meta.Name, metav1.GetOptions{})
 		if kerr.IsNotFound(err) {
 			return nil
 		} else if err == nil {
 			modified := transformer(*cur)
-			_, err = f.kubeClient.CoreV1().Secrets(cur.Namespace).Update(&modified)
+			_, err = f.kubeClient.CoreV1().Secrets(cur.Namespace).Update(context.TODO(), &modified, metav1.UpdateOptions{})
 			if err == nil {
 				return nil
 			}
@@ -172,7 +174,7 @@ func (f *Framework) UpdateSecret(meta metav1.ObjectMeta, transformer func(core.S
 }
 
 func (f *Framework) GetMySQLRootPassword(px *api.PerconaXtraDB) (string, error) {
-	secret, err := f.kubeClient.CoreV1().Secrets(px.Namespace).Get(px.Spec.DatabaseSecret.SecretName, metav1.GetOptions{})
+	secret, err := f.kubeClient.CoreV1().Secrets(px.Namespace).Get(context.TODO(), px.Spec.DatabaseSecret.SecretName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -181,7 +183,7 @@ func (f *Framework) GetMySQLRootPassword(px *api.PerconaXtraDB) (string, error) 
 }
 
 func (f *Framework) GetSecretCred(secretMeta metav1.ObjectMeta, key string) (string, error) {
-	secret, err := f.kubeClient.CoreV1().Secrets(secretMeta.Namespace).Get(secretMeta.Name, metav1.GetOptions{})
+	secret, err := f.kubeClient.CoreV1().Secrets(secretMeta.Namespace).Get(context.TODO(), secretMeta.Name, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -190,11 +192,11 @@ func (f *Framework) GetSecretCred(secretMeta metav1.ObjectMeta, key string) (str
 }
 
 func (f *Framework) GetSecret(meta metav1.ObjectMeta) (*core.Secret, error) {
-	return f.kubeClient.CoreV1().Secrets(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+	return f.kubeClient.CoreV1().Secrets(meta.Namespace).Get(context.TODO(), meta.Name, metav1.GetOptions{})
 }
 
 func (f *Framework) DeleteSecret(meta metav1.ObjectMeta) error {
-	return f.kubeClient.CoreV1().Secrets(meta.Namespace).Delete(meta.Name, deleteInForeground())
+	return f.kubeClient.CoreV1().Secrets(meta.Namespace).Delete(context.TODO(), meta.Name, meta_util.DeleteInForeground())
 }
 
 func (f *Framework) EventuallyDBSecretCount(meta metav1.ObjectMeta) GomegaAsyncAssertion {
@@ -206,6 +208,7 @@ func (f *Framework) EventuallyDBSecretCount(meta metav1.ObjectMeta) GomegaAsyncA
 	return Eventually(
 		func() int {
 			secretList, err := f.kubeClient.CoreV1().Secrets(meta.Namespace).List(
+				context.TODO(),
 				metav1.ListOptions{
 					LabelSelector: labelSelector.String(),
 				},

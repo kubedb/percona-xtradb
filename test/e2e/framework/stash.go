@@ -16,6 +16,7 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"fmt"
 
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
@@ -29,6 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kutil "kmodules.xyz/client-go"
+	meta_util "kmodules.xyz/client-go/meta"
 	appcat_api "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
 	ofst "kmodules.xyz/offshoot-api/api/v1"
 	"stash.appscode.dev/apimachinery/apis"
@@ -78,17 +80,17 @@ func (f *Invocation) BackupConfiguration(meta metav1.ObjectMeta) *stashv1beta1.B
 }
 
 func (f *Framework) CreateBackupConfiguration(backupCfg *stashv1beta1.BackupConfiguration) error {
-	_, err := f.stashClient.StashV1beta1().BackupConfigurations(backupCfg.Namespace).Create(backupCfg)
+	_, err := f.stashClient.StashV1beta1().BackupConfigurations(backupCfg.Namespace).Create(context.TODO(), backupCfg, metav1.CreateOptions{})
 	return err
 }
 
 func (f *Framework) DeleteBackupConfiguration(meta metav1.ObjectMeta) error {
-	return f.stashClient.StashV1beta1().BackupConfigurations(meta.Namespace).Delete(meta.Name, &metav1.DeleteOptions{})
+	return f.stashClient.StashV1beta1().BackupConfigurations(meta.Namespace).Delete(context.TODO(), meta.Name, metav1.DeleteOptions{})
 }
 
 func (f *Framework) WaitUntilBackkupSessionBeCreated(bcMeta metav1.ObjectMeta) (bs *stashv1beta1.BackupSession, err error) {
 	err = wait.PollImmediate(kutil.RetryInterval, kutil.ReadinessTimeout, func() (bool, error) {
-		bsList, err := f.stashClient.StashV1beta1().BackupSessions(bcMeta.Namespace).List(metav1.ListOptions{
+		bsList, err := f.stashClient.StashV1beta1().BackupSessions(bcMeta.Namespace).List(context.TODO(), metav1.ListOptions{
 			LabelSelector: labels.Set{
 				apis.LabelInvokerType: "BackupConfiguration",
 				apis.LabelInvokerName: bcMeta.Name,
@@ -112,7 +114,7 @@ func (f *Framework) WaitUntilBackkupSessionBeCreated(bcMeta metav1.ObjectMeta) (
 func (f *Framework) EventuallyBackupSessionPhase(meta metav1.ObjectMeta) GomegaAsyncAssertion {
 	return Eventually(
 		func() (phase stashv1beta1.BackupSessionPhase) {
-			bs, err := f.stashClient.StashV1beta1().BackupSessions(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+			bs, err := f.stashClient.StashV1beta1().BackupSessions(meta.Namespace).Get(context.TODO(), meta.Name, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			return bs.Status.Phase
 		},
@@ -129,12 +131,12 @@ func (f *Invocation) Repository(meta metav1.ObjectMeta, secretName string) *stas
 }
 
 func (f *Framework) CreateRepository(repo *stashV1alpha1.Repository) error {
-	_, err := f.stashClient.StashV1alpha1().Repositories(repo.Namespace).Create(repo)
+	_, err := f.stashClient.StashV1alpha1().Repositories(repo.Namespace).Create(context.TODO(), repo, metav1.CreateOptions{})
 	return err
 }
 
 func (f *Framework) DeleteRepository(meta metav1.ObjectMeta) error {
-	err := f.stashClient.StashV1alpha1().Repositories(meta.Namespace).Delete(meta.Name, deleteInBackground())
+	err := f.stashClient.StashV1alpha1().Repositories(meta.Namespace).Delete(context.TODO(), meta.Name, meta_util.DeleteInBackground())
 	return err
 }
 
@@ -228,18 +230,18 @@ func (f *Invocation) RestoreSessionForStandalone(meta, oldMeta metav1.ObjectMeta
 }
 
 func (f *Framework) CreateRestoreSession(restoreSession *stashv1beta1.RestoreSession) error {
-	_, err := f.stashClient.StashV1beta1().RestoreSessions(restoreSession.Namespace).Create(restoreSession)
+	_, err := f.stashClient.StashV1beta1().RestoreSessions(restoreSession.Namespace).Create(context.TODO(), restoreSession, metav1.CreateOptions{})
 	return err
 }
 
 func (f *Framework) DeleteRestoreSession(meta metav1.ObjectMeta) error {
-	err := f.stashClient.StashV1beta1().RestoreSessions(meta.Namespace).Delete(meta.Name, &metav1.DeleteOptions{})
+	err := f.stashClient.StashV1beta1().RestoreSessions(meta.Namespace).Delete(context.TODO(), meta.Name, metav1.DeleteOptions{})
 	return err
 }
 
 func (f *Framework) EventuallyRestoreSessionPhase(meta metav1.ObjectMeta) GomegaAsyncAssertion {
 	return Eventually(func() stashv1beta1.RestoreSessionPhase {
-		restoreSession, err := f.stashClient.StashV1beta1().RestoreSessions(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+		restoreSession, err := f.stashClient.StashV1beta1().RestoreSessions(meta.Namespace).Get(context.TODO(), meta.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		return restoreSession.Status.Phase
 	})
