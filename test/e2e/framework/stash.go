@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
-	"kubedb.dev/apimachinery/pkg/controller"
 
 	"github.com/appscode/go/types"
 	"github.com/appscode/go/wait"
@@ -30,11 +29,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kutil "kmodules.xyz/client-go"
+	"kmodules.xyz/client-go/discovery"
 	meta_util "kmodules.xyz/client-go/meta"
-	appcat_api "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
+	appcat "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
 	ofst "kmodules.xyz/offshoot-api/api/v1"
 	"stash.appscode.dev/apimachinery/apis"
-	"stash.appscode.dev/apimachinery/apis/stash/v1alpha1"
+	"stash.appscode.dev/apimachinery/apis/stash"
 	stashV1alpha1 "stash.appscode.dev/apimachinery/apis/stash/v1alpha1"
 	stashv1beta1 "stash.appscode.dev/apimachinery/apis/stash/v1beta1"
 )
@@ -45,7 +45,7 @@ var (
 )
 
 func (f *Framework) FoundStashCRDs() bool {
-	return controller.FoundStashCRDs(f.apiExtKubeClient)
+	return discovery.ExistsGroupKind(f.kubeClient.Discovery(), stash.GroupName, stashv1beta1.ResourceKindRestoreSession)
 }
 
 func (f *Invocation) BackupConfiguration(meta metav1.ObjectMeta) *stashv1beta1.BackupConfiguration {
@@ -59,7 +59,7 @@ func (f *Invocation) BackupConfiguration(meta metav1.ObjectMeta) *stashv1beta1.B
 				Name: meta.Name,
 			},
 			Schedule: "*/3 * * * *",
-			RetentionPolicy: v1alpha1.RetentionPolicy{
+			RetentionPolicy: stashV1alpha1.RetentionPolicy{
 				KeepLast: 5,
 				Prune:    true,
 			},
@@ -69,8 +69,8 @@ func (f *Invocation) BackupConfiguration(meta metav1.ObjectMeta) *stashv1beta1.B
 				},
 				Target: &stashv1beta1.BackupTarget{
 					Ref: stashv1beta1.TargetRef{
-						APIVersion: appcat_api.SchemeGroupVersion.String(),
-						Kind:       appcat_api.ResourceKindApp,
+						APIVersion: appcat.SchemeGroupVersion.String(),
+						Kind:       appcat.ResourceKindApp,
 						Name:       meta.Name,
 					},
 				},
@@ -220,8 +220,8 @@ func (f *Invocation) RestoreSessionForStandalone(meta, oldMeta metav1.ObjectMeta
 			},
 			Target: &stashv1beta1.RestoreTarget{
 				Ref: stashv1beta1.TargetRef{
-					APIVersion: appcat_api.SchemeGroupVersion.String(),
-					Kind:       appcat_api.ResourceKindApp,
+					APIVersion: appcat.SchemeGroupVersion.String(),
+					Kind:       appcat.ResourceKindApp,
 					Name:       meta.Name,
 				},
 			},
