@@ -385,7 +385,7 @@ var _ = Describe("PerconaXtraDB", func() {
 
 					// eventually restoresession succeeded
 					By("Check for Succeeded restoreSession")
-					f.EventuallyRestoreSessionPhase(rs.ObjectMeta).Should(Equal(stashV1beta1.RestoreSessionSucceeded))
+					f.EventuallyRestoreSessionPhase(rs.ObjectMeta).Should(Equal(stashV1beta1.RestoreSucceeded))
 
 					By("Wait for Running perconaxtradb")
 					f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())

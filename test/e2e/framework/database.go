@@ -21,12 +21,11 @@ import (
 	"strings"
 	"time"
 
-	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
-
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/go-xorm/xorm"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"kmodules.xyz/client-go/tools/portforward"
 )
@@ -65,12 +64,12 @@ func (f *Framework) getPerconaXtraDBClient(meta metav1.ObjectMeta, tunnel *portf
 		Namespace: px.Namespace,
 	}
 
-	user, userErr = f.GetSecretCred(secretMeta, api.MySQLUserKey)
+	user, userErr = f.GetSecretCred(secretMeta, core.BasicAuthUsernameKey)
 	if userErr != nil {
 		return nil, userErr
 	}
 
-	pass, passErr = f.GetSecretCred(secretMeta, api.MySQLPasswordKey)
+	pass, passErr = f.GetSecretCred(secretMeta, core.BasicAuthPasswordKey)
 	if passErr != nil {
 		return nil, passErr
 	}

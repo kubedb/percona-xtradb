@@ -152,41 +152,43 @@ func (f *Invocation) RestoreSessionForCluster(meta, oldMeta metav1.ObjectMeta, r
 			},
 		},
 		Spec: stashv1beta1.RestoreSessionSpec{
-			Task: stashv1beta1.TaskRef{
-				Name: StashPerconaXtraDBRestoreTask,
-			},
 			Repository: corev1.LocalObjectReference{
 				Name: oldMeta.Name,
 			},
-			Rules: []stashv1beta1.Rule{
-				{
-					Snapshots:   []string{"latest"},
-					TargetHosts: []string{},
-					SourceHost:  "host-0",
+			RestoreTargetSpec: stashv1beta1.RestoreTargetSpec{
+				Task: stashv1beta1.TaskRef{
+					Name: StashPerconaXtraDBRestoreTask,
 				},
-			},
-			Target: &stashv1beta1.RestoreTarget{
-				Replicas: replicas,
-				VolumeMounts: []corev1.VolumeMount{
-					{
-						Name:      fmt.Sprintf("data-%s", meta.Name),
-						MountPath: "/var/lib/mysql",
-					},
-				},
-				VolumeClaimTemplates: []ofst.PersistentVolumeClaim{
-					{
-						PartialObjectMeta: ofst.PartialObjectMeta{
-							Name: fmt.Sprintf("data-%s-${POD_ORDINAL}", meta.Name),
-							Annotations: map[string]string{
-								"volume.beta.kubernetes.io/storage-class": "standard",
-							},
+				Target: &stashv1beta1.RestoreTarget{
+					Replicas: replicas,
+					Rules: []stashv1beta1.Rule{
+						{
+							Snapshots:   []string{"latest"},
+							TargetHosts: []string{},
+							SourceHost:  "host-0",
 						},
-						Spec: corev1.PersistentVolumeClaimSpec{
-							AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-							StorageClassName: types.StringP("standard"),
-							Resources: corev1.ResourceRequirements{
-								Requests: corev1.ResourceList{
-									corev1.ResourceStorage: resource.MustParse(DBPvcStorageSize),
+					},
+					VolumeMounts: []corev1.VolumeMount{
+						{
+							Name:      fmt.Sprintf("data-%s", meta.Name),
+							MountPath: "/var/lib/mysql",
+						},
+					},
+					VolumeClaimTemplates: []ofst.PersistentVolumeClaim{
+						{
+							PartialObjectMeta: ofst.PartialObjectMeta{
+								Name: fmt.Sprintf("data-%s-${POD_ORDINAL}", meta.Name),
+								Annotations: map[string]string{
+									"volume.beta.kubernetes.io/storage-class": "standard",
+								},
+							},
+							Spec: corev1.PersistentVolumeClaimSpec{
+								AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+								StorageClassName: types.StringP("standard"),
+								Resources: corev1.ResourceRequirements{
+									Requests: corev1.ResourceList{
+										corev1.ResourceStorage: resource.MustParse(DBPvcStorageSize),
+									},
 								},
 							},
 						},
@@ -208,22 +210,24 @@ func (f *Invocation) RestoreSessionForStandalone(meta, oldMeta metav1.ObjectMeta
 			},
 		},
 		Spec: stashv1beta1.RestoreSessionSpec{
-			Task: stashv1beta1.TaskRef{
-				Name: StashPerconaXtraDBRestoreTask,
-			},
 			Repository: corev1.LocalObjectReference{
 				Name: oldMeta.Name,
 			},
-			Rules: []stashv1beta1.Rule{
-				{
-					Snapshots: []string{"latest"},
+			RestoreTargetSpec: stashv1beta1.RestoreTargetSpec{
+				Task: stashv1beta1.TaskRef{
+					Name: StashPerconaXtraDBRestoreTask,
 				},
-			},
-			Target: &stashv1beta1.RestoreTarget{
-				Ref: stashv1beta1.TargetRef{
-					APIVersion: appcat.SchemeGroupVersion.String(),
-					Kind:       appcat.ResourceKindApp,
-					Name:       meta.Name,
+				Target: &stashv1beta1.RestoreTarget{
+					Ref: stashv1beta1.TargetRef{
+						APIVersion: appcat.SchemeGroupVersion.String(),
+						Kind:       appcat.ResourceKindApp,
+						Name:       meta.Name,
+					},
+					Rules: []stashv1beta1.Rule{
+						{
+							Snapshots: []string{"latest"},
+						},
+					},
 				},
 			},
 		},
@@ -241,7 +245,7 @@ func (f *Framework) DeleteRestoreSession(meta metav1.ObjectMeta) error {
 }
 
 func (f *Framework) EventuallyRestoreSessionPhase(meta metav1.ObjectMeta) GomegaAsyncAssertion {
-	return Eventually(func() stashv1beta1.RestoreSessionPhase {
+	return Eventually(func() stashv1beta1.RestorePhase {
 		restoreSession, err := f.stashClient.StashV1beta1().RestoreSessions(meta.Namespace).Get(context.TODO(), meta.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		return restoreSession.Status.Phase
