@@ -64,7 +64,7 @@ func (c *Controller) create(px *api.PerconaXtraDB) error {
 	// For Percona XtraDB Cluster (px.spec.replicas > 1),
 	// Set status as "Initializing" until specified restoresession object be succeeded, if provided
 	if _, err := meta_util.GetString(px.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
-		px.IsCluster() && px.Spec.Init != nil && px.Spec.Init.StashRestoreSession != nil {
+		px.IsCluster() && px.Spec.Init != nil && px.Spec.Init.Initializer != nil {
 
 		if px.Status.Phase == api.DatabasePhaseInitializing {
 			return nil
@@ -136,7 +136,7 @@ func (c *Controller) create(px *api.PerconaXtraDB) error {
 	// For Standalone Percona XtraDB (px.spec.replicas = 1),
 	// Set status as "Initializing" until specified restoresession object be succeeded, if provided
 	if _, err := meta_util.GetString(px.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
-		!px.IsCluster() && px.Spec.Init != nil && px.Spec.Init.StashRestoreSession != nil {
+		!px.IsCluster() && px.Spec.Init != nil && px.Spec.Init.Initializer != nil {
 
 		if px.Status.Phase == api.DatabasePhaseInitializing {
 			return nil
@@ -152,7 +152,7 @@ func (c *Controller) create(px *api.PerconaXtraDB) error {
 		}
 		px.Status = perconaxtradb.Status
 
-		log.Debugf("PerconaXtraDB %v/%v is waiting for restoreSession to be succeeded", px.Namespace, px.Name)
+		log.Debugf("PerconaXtraDB %v/%v is waiting for the initializer to complete it's initialization", px.Namespace, px.Name)
 		return nil
 	}
 

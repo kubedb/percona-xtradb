@@ -333,7 +333,7 @@ func samplePerconaXtraDB() api.PerconaXtraDB {
 				},
 			},
 			Init: &api.InitSpec{
-				ScriptSource: &api.ScriptSourceSpec{
+				Script: &api.ScriptSourceSpec{
 					VolumeSource: core.VolumeSource{
 						GitRepo: &core.GitRepoVolumeSource{
 							Repository: "https://kubedb.dev/percona-xtradb-init-scripts.git",
@@ -410,7 +410,7 @@ func sampleValidXtraDBCluster() api.PerconaXtraDB {
 	perconaxtradb := samplePerconaXtraDB()
 	perconaxtradb.Spec.Replicas = types.Int32P(api.PerconaXtraDBDefaultClusterSize)
 	if perconaxtradb.Spec.Init != nil {
-		perconaxtradb.Spec.Init.ScriptSource = nil
+		perconaxtradb.Spec.Init.Script = nil
 	}
 
 	return perconaxtradb
