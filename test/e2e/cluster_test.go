@@ -29,6 +29,7 @@ import (
 	"github.com/appscode/go/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	core "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -445,8 +446,10 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				rs = f.RestoreSessionForCluster(px.ObjectMeta, oldPerconaXtraDB.ObjectMeta, oldPerconaXtraDB.Spec.Replicas)
 				px.Spec.DatabaseSecret = oldPerconaXtraDB.Spec.DatabaseSecret
 				px.Spec.Init = &api.InitSpec{
-					StashRestoreSession: &corev1.LocalObjectReference{
-						Name: rs.Name,
+					Initializer: &core.TypedLocalObjectReference{
+						APIGroup: types.StringP(stashV1beta1.SchemeGroupVersion.Group),
+						Kind:     rs.Kind,
+						Name:     rs.Name,
 					},
 				}
 

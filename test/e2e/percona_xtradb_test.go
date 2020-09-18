@@ -27,6 +27,7 @@ import (
 	"kubedb.dev/percona-xtradb/test/e2e/matcher"
 
 	"github.com/appscode/go/log"
+	"github.com/appscode/go/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
@@ -257,7 +258,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					Expect(f.CreateConfigMap(initScriptConfigmap)).ShouldNot(HaveOccurred())
 
 					perconaxtradb.Spec.Init = &api.InitSpec{
-						ScriptSource: &api.ScriptSourceSpec{
+						Script: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
@@ -371,8 +372,10 @@ var _ = Describe("PerconaXtraDB", func() {
 					rs = f.RestoreSessionForStandalone(perconaxtradb.ObjectMeta, oldPerconaXtraDB.ObjectMeta)
 					perconaxtradb.Spec.DatabaseSecret = oldPerconaXtraDB.Spec.DatabaseSecret
 					perconaxtradb.Spec.Init = &api.InitSpec{
-						StashRestoreSession: &core.LocalObjectReference{
-							Name: rs.Name,
+						Initializer: &core.TypedLocalObjectReference{
+							APIGroup: types.StringP(stashV1beta1.SchemeGroupVersion.Group),
+							Kind:     rs.Kind,
+							Name:     rs.Name,
 						},
 					}
 
@@ -517,7 +520,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					Expect(f.CreateConfigMap(initScriptConfigmap)).ShouldNot(HaveOccurred())
 
 					perconaxtradb.Spec.Init = &api.InitSpec{
-						ScriptSource: &api.ScriptSourceSpec{
+						Script: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
@@ -579,7 +582,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					Expect(f.CreateConfigMap(initScriptConfigmap)).ShouldNot(HaveOccurred())
 
 					perconaxtradb.Spec.Init = &api.InitSpec{
-						ScriptSource: &api.ScriptSourceSpec{
+						Script: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
