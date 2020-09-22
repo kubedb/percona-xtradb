@@ -372,7 +372,7 @@ func (c *Controller) ensureStatefulSet(px *api.PerconaXtraDB, opts workloadOptio
 		if err := c.checkStatefulSetPodStatus(statefulSet); err != nil {
 			return kutil.VerbUnchanged, err
 		}
-		c.recorder.Eventf(
+		c.Recorder.Eventf(
 			px,
 			core.EventTypeNormal,
 			eventer.EventReasonSuccessful,
