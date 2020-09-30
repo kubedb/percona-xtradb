@@ -33,7 +33,7 @@ import (
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	meta_util "kmodules.xyz/client-go/meta"
+	kmapi "kmodules.xyz/client-go/api/v1"
 	store "kmodules.xyz/objectstore-api/api/v1"
 	stashV1alpha1 "stash.appscode.dev/apimachinery/apis/stash/v1alpha1"
 	stashV1beta1 "stash.appscode.dev/apimachinery/apis/stash/v1beta1"
@@ -566,9 +566,8 @@ var _ = Describe("PerconaXtraDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(perconaxtradb.Spec.Init).NotTo(BeNil())
 
-					By("Checking PerconaXtraDB crd does not have kubedb.com/initialized annotation")
-					_, err = meta_util.GetString(perconaxtradb.Annotations, api.AnnotationInitialized)
-					Expect(err).To(HaveOccurred())
+					By("Checking PerconaXtraDB crd does not have Initialized condition")
+					Expect(kmapi.HasCondition(perconaxtradb.Status.Conditions, api.DatabaseInitialized)).To(BeFalse())
 				})
 			})
 
@@ -631,9 +630,8 @@ var _ = Describe("PerconaXtraDB", func() {
 						Expect(err).NotTo(HaveOccurred())
 						Expect(perconaxtradb.Spec.Init).ShouldNot(BeNil())
 
-						By("Checking PerconaXtraDB crd does not have kubedb.com/initialized annotation")
-						_, err = meta_util.GetString(perconaxtradb.Annotations, api.AnnotationInitialized)
-						Expect(err).To(HaveOccurred())
+						By("Checking PerconaXtraDB crd does not have Initialized condition")
+						Expect(kmapi.HasCondition(perconaxtradb.Status.Conditions, api.DatabaseInitialized)).To(BeFalse())
 					}
 				})
 			})

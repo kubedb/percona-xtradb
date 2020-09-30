@@ -339,9 +339,10 @@ lint: $(BUILD_DIRS)
 $(BUILD_DIRS):
 	@mkdir -p $@
 
-REGISTRY_SECRET ?=
-KUBE_NAMESPACE  ?=
-LICENSE_FILE    ?=
+REGISTRY_SECRET 	?=
+KUBE_NAMESPACE  	?=
+LICENSE_FILE    	?=
+IMAGE_PULL_POLICY 	?= Always
 
 ifeq ($(strip $(REGISTRY_SECRET)),)
 	IMAGE_PULL_SECRETS =
@@ -358,7 +359,7 @@ install:
 		--set operator.registry=$(REGISTRY)               \
 		--set operator.repository=percona-xtradb-operator \
 		--set operator.tag=$(TAG)                         \
-		--set imagePullPolicy=Always                      \
+		--set imagePullPolicy=$(IMAGE_PULL_POLICY)		  \
 		$(IMAGE_PULL_SECRETS);                            \
 	kubectl wait --for=condition=Available apiservice -l 'app.kubernetes.io/name=kubedb,app.kubernetes.io/instance=kubedb' --timeout=5m; \
 	until kubectl get crds perconaxtradbversions.catalog.kubedb.com -o=jsonpath='{.items[0].metadata.name}' &> /dev/null; do sleep 1; done; \
@@ -462,3 +463,8 @@ release:
 .PHONY: clean
 clean:
 	rm -rf .go bin
+
+push-to-kind: container
+	@echo "Loading docker image into kind cluster...."
+	@kind load docker-image $(IMAGE):$(TAG)
+	@echo "Image has been pushed successfully into kind cluster."
