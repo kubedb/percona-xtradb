@@ -29,7 +29,6 @@ import (
 	"github.com/appscode/go/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	core "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -69,7 +68,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Wait for Running PerconaXtraDB")
-		f.EventuallyPerconaXtraDBRunning(px.ObjectMeta).Should(BeTrue())
+		f.EventuallyPerconaXtraDBReady(px.ObjectMeta).Should(BeTrue())
 
 		By("Wait for AppBinding to create")
 		f.EventuallyAppBinding(px.ObjectMeta).Should(BeTrue())
@@ -405,8 +404,8 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				err = f.CreatePerconaXtraDB(px)
 				Expect(err).NotTo(HaveOccurred())
 
-				By("Wait for Initializing perconaxtradb")
-				f.EventuallyPerconaXtraDBPhase(px.ObjectMeta).Should(Equal(api.DatabasePhaseInitializing))
+				By("Wait for restoring perconaxtradb")
+				f.EventuallyPerconaXtraDBPhase(px.ObjectMeta).Should(Equal(api.DatabasePhaseDataRestoring))
 			}
 
 			var shouldInitializeFromStash = func() {
@@ -446,11 +445,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				rs = f.RestoreSessionForCluster(px.ObjectMeta, oldPerconaXtraDB.ObjectMeta, oldPerconaXtraDB.Spec.Replicas)
 				px.Spec.DatabaseSecret = oldPerconaXtraDB.Spec.DatabaseSecret
 				px.Spec.Init = &api.InitSpec{
-					Initializer: &core.TypedLocalObjectReference{
-						APIGroup: types.StringP(stashV1beta1.SchemeGroupVersion.Group),
-						Kind:     rs.Kind,
-						Name:     rs.Name,
-					},
+					WaitForInitialRestore: true,
 				}
 
 				// Create and wait for running MySQL
@@ -465,7 +460,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				f.EventuallyRestoreSessionPhase(rs.ObjectMeta).Should(Equal(stashV1beta1.RestoreSucceeded))
 
 				By("Wait for Running mysql")
-				f.EventuallyPerconaXtraDBRunning(px.ObjectMeta).Should(BeTrue())
+				f.EventuallyPerconaXtraDBReady(px.ObjectMeta).Should(BeTrue())
 
 				By("Wait for AppBinding to create")
 				f.EventuallyAppBinding(px.ObjectMeta).Should(BeTrue())

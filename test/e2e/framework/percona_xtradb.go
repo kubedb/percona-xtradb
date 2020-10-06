@@ -125,12 +125,12 @@ func (f *Framework) EventuallyPerconaXtraDBPhase(meta metav1.ObjectMeta) GomegaA
 	)
 }
 
-func (f *Framework) EventuallyPerconaXtraDBRunning(meta metav1.ObjectMeta) GomegaAsyncAssertion {
+func (f *Framework) EventuallyPerconaXtraDBReady(meta metav1.ObjectMeta) GomegaAsyncAssertion {
 	return Eventually(
 		func() bool {
 			px, err := f.dbClient.KubedbV1alpha1().PerconaXtraDBs(meta.Namespace).Get(context.TODO(), meta.Name, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			return px.Status.Phase == api.DatabasePhaseRunning
+			return px.Status.Phase == api.DatabasePhaseReady
 		},
 		time.Minute*5,
 		time.Second*5,
