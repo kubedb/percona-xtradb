@@ -119,8 +119,8 @@ func (c *Controller) createService(px *api.PerconaXtraDB) (kutil.VerbType, error
 
 func (c *Controller) ensureStatsService(px *api.PerconaXtraDB) (kutil.VerbType, error) {
 	// return if monitoring is not prometheus
-	if px.GetMonitoringVendor() != mona.VendorPrometheus {
-		log.Infoln("spec.monitor.agent is not coreos-operator or builtin.")
+	if px.Spec.Monitor == nil || px.Spec.Monitor.Agent.Vendor() != mona.VendorPrometheus {
+		log.Infoln("spec.monitor.agent is not provided by prometheus.io")
 		return kutil.VerbUnchanged, nil
 	}
 
@@ -142,10 +142,10 @@ func (c *Controller) ensureStatsService(px *api.PerconaXtraDB) (kutil.VerbType, 
 		in.Spec.Selector = px.OffshootSelectors()
 		in.Spec.Ports = core_util.MergeServicePorts(in.Spec.Ports, []core.ServicePort{
 			{
-				Name:       api.PrometheusExporterPortName,
+				Name:       mona.PrometheusExporterPortName,
 				Protocol:   core.ProtocolTCP,
 				Port:       px.Spec.Monitor.Prometheus.Exporter.Port,
-				TargetPort: intstr.FromString(api.PrometheusExporterPortName),
+				TargetPort: intstr.FromString(mona.PrometheusExporterPortName),
 			},
 		})
 		return in
