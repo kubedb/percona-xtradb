@@ -37,6 +37,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	clientSetScheme "k8s.io/client-go/kubernetes/scheme"
+	kmapi "kmodules.xyz/client-go/api/v1"
 	"kmodules.xyz/client-go/meta"
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
 )
@@ -305,6 +306,26 @@ var cases = []struct {
 		false,
 		false,
 	},
+	{"Edit spec.Init before provisioning complete",
+		requestKind,
+		"foo",
+		"default",
+		admission.Update,
+		updateInit(samplePerconaXtraDB()),
+		samplePerconaXtraDB(),
+		true,
+		true,
+	},
+	{"Edit spec.Init after provisioning complete",
+		requestKind,
+		"foo",
+		"default",
+		admission.Update,
+		updateInit(completeProvisioning(samplePerconaXtraDB())),
+		samplePerconaXtraDB(),
+		true,
+		false,
+	},
 }
 
 func samplePerconaXtraDB() api.PerconaXtraDB {
@@ -333,14 +354,7 @@ func samplePerconaXtraDB() api.PerconaXtraDB {
 				},
 			},
 			Init: &api.InitSpec{
-				Script: &api.ScriptSourceSpec{
-					VolumeSource: core.VolumeSource{
-						GitRepo: &core.GitRepoVolumeSource{
-							Repository: "https://kubedb.dev/percona-xtradb-init-scripts.git",
-							Directory:  ".",
-						},
-					},
-				},
+				WaitForInitialRestore: true,
 			},
 			TerminationPolicy: api.TerminationPolicyDoNotTerminate,
 		},
@@ -369,7 +383,7 @@ func editNonExistingSecret(old api.PerconaXtraDB) api.PerconaXtraDB {
 
 func editStatus(old api.PerconaXtraDB) api.PerconaXtraDB {
 	old.Status = api.PerconaXtraDBStatus{
-		Phase: api.DatabasePhaseCreating,
+		Phase: api.DatabasePhaseReady,
 	}
 	return old
 }
@@ -402,6 +416,16 @@ func pauseDatabase(old api.PerconaXtraDB) api.PerconaXtraDB {
 func sampleXtraDBClusterContainingInitsript() api.PerconaXtraDB {
 	perconaxtradb := samplePerconaXtraDB()
 	perconaxtradb.Spec.Replicas = types.Int32P(api.PerconaXtraDBDefaultClusterSize)
+	perconaxtradb.Spec.Init = &api.InitSpec{
+		Script: &api.ScriptSourceSpec{
+			VolumeSource: core.VolumeSource{
+				GitRepo: &core.GitRepoVolumeSource{
+					Repository: "https://kubedb.dev/percona-xtradb-init-scripts.git",
+					Directory:  ".",
+				},
+			},
+		},
+	}
 
 	return perconaxtradb
 }
@@ -428,4 +452,19 @@ func largerClusterNameThanRecommended() api.PerconaXtraDB {
 	perconaxtradb.Name = "aaaaa-aaaaa-aaaaa-aaaaa-aaaaa-aaaaa"
 
 	return perconaxtradb
+}
+
+func completeProvisioning(old api.PerconaXtraDB) api.PerconaXtraDB {
+	old.Status.Conditions = []kmapi.Condition{
+		{
+			Type:   api.DatabaseProvisioned,
+			Status: kmapi.ConditionTrue,
+		},
+	}
+	return old
+}
+
+func updateInit(old api.PerconaXtraDB) api.PerconaXtraDB {
+	old.Spec.Init.WaitForInitialRestore = false
+	return old
 }

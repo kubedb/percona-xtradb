@@ -27,13 +27,12 @@ import (
 	"kubedb.dev/percona-xtradb/test/e2e/matcher"
 
 	"github.com/appscode/go/log"
-	"github.com/appscode/go/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	meta_util "kmodules.xyz/client-go/meta"
+	kmapi "kmodules.xyz/client-go/api/v1"
 	store "kmodules.xyz/objectstore-api/api/v1"
 	stashV1alpha1 "stash.appscode.dev/apimachinery/apis/stash/v1alpha1"
 	stashV1beta1 "stash.appscode.dev/apimachinery/apis/stash/v1beta1"
@@ -87,7 +86,7 @@ var _ = Describe("PerconaXtraDB", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Wait for Running PerconaXtraDB")
-		f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
+		f.EventuallyPerconaXtraDBReady(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 		By("Wait for AppBinding to create")
 		f.EventuallyAppBinding(perconaxtradb.ObjectMeta).Should(BeTrue())
@@ -147,7 +146,7 @@ var _ = Describe("PerconaXtraDB", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Wait for Running PerconaXtraDB")
-		f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
+		f.EventuallyPerconaXtraDBReady(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 		By("Checking Row Count of Table")
 		f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
@@ -331,8 +330,8 @@ var _ = Describe("PerconaXtraDB", func() {
 					err = f.CreatePerconaXtraDB(perconaxtradb)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Wait for Initializing perconaxtradb")
-					f.EventuallyPerconaXtraDBPhase(perconaxtradb.ObjectMeta).Should(Equal(api.DatabasePhaseInitializing))
+					By("Wait for restoring perconaxtradb")
+					f.EventuallyPerconaXtraDBPhase(perconaxtradb.ObjectMeta).Should(Equal(api.DatabasePhaseDataRestoring))
 				}
 
 				var shouldInitializeFromStash = func() {
@@ -372,11 +371,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					rs = f.RestoreSessionForStandalone(perconaxtradb.ObjectMeta, oldPerconaXtraDB.ObjectMeta)
 					perconaxtradb.Spec.DatabaseSecret = oldPerconaXtraDB.Spec.DatabaseSecret
 					perconaxtradb.Spec.Init = &api.InitSpec{
-						Initializer: &core.TypedLocalObjectReference{
-							APIGroup: types.StringP(stashV1beta1.SchemeGroupVersion.Group),
-							Kind:     rs.Kind,
-							Name:     rs.Name,
-						},
+						WaitForInitialRestore: true,
 					}
 
 					// Create and wait for running MySQL
@@ -391,7 +386,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					f.EventuallyRestoreSessionPhase(rs.ObjectMeta).Should(Equal(stashV1beta1.RestoreSucceeded))
 
 					By("Wait for Running perconaxtradb")
-					f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
+					f.EventuallyPerconaXtraDBReady(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Wait for AppBinding to create")
 					f.EventuallyAppBinding(perconaxtradb.ObjectMeta).Should(BeTrue())
@@ -469,7 +464,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for Running PerconaXtraDB")
-					f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
+					f.EventuallyPerconaXtraDBReady(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
 					f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
@@ -503,7 +498,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for Running PerconaXtraDB")
-					f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
+					f.EventuallyPerconaXtraDBReady(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
 					f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
@@ -557,7 +552,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for Running PerconaXtraDB")
-					f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
+					f.EventuallyPerconaXtraDBReady(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Checking Row Count of Table")
 					f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
@@ -566,9 +561,8 @@ var _ = Describe("PerconaXtraDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(perconaxtradb.Spec.Init).NotTo(BeNil())
 
-					By("Checking PerconaXtraDB crd does not have kubedb.com/initialized annotation")
-					_, err = meta_util.GetString(perconaxtradb.Annotations, api.AnnotationInitialized)
-					Expect(err).To(HaveOccurred())
+					By("Checking PerconaXtraDB crd does not have DataRestored condition")
+					Expect(kmapi.HasCondition(perconaxtradb.Status.Conditions, api.DatabaseDataRestored)).To(BeFalse())
 				})
 			})
 
@@ -622,7 +616,7 @@ var _ = Describe("PerconaXtraDB", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						By("Wait for Running PerconaXtraDB")
-						f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
+						f.EventuallyPerconaXtraDBReady(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 						By("Checking Row Count of Table")
 						f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
@@ -631,9 +625,8 @@ var _ = Describe("PerconaXtraDB", func() {
 						Expect(err).NotTo(HaveOccurred())
 						Expect(perconaxtradb.Spec.Init).ShouldNot(BeNil())
 
-						By("Checking PerconaXtraDB crd does not have kubedb.com/initialized annotation")
-						_, err = meta_util.GetString(perconaxtradb.Annotations, api.AnnotationInitialized)
-						Expect(err).To(HaveOccurred())
+						By("Checking PerconaXtraDB crd does not have DataRestored condition")
+						Expect(kmapi.HasCondition(perconaxtradb.Status.Conditions, api.DatabaseDataRestored)).To(BeFalse())
 					}
 				})
 			})
@@ -669,7 +662,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					f.EventuallyPerconaXtraDB(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Check for Running PerconaXtraDB")
-					f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
+					f.EventuallyPerconaXtraDBReady(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Update PerconaXtraDB to set spec.terminationPolicy = Pause")
 					_, err := f.PatchPerconaXtraDB(perconaxtradb.ObjectMeta, func(in *api.PerconaXtraDB) *api.PerconaXtraDB {
@@ -713,7 +706,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for Running PerconaXtraDB")
-					f.EventuallyPerconaXtraDBRunning(perconaxtradb.ObjectMeta).Should(BeTrue())
+					f.EventuallyPerconaXtraDBReady(perconaxtradb.ObjectMeta).Should(BeTrue())
 
 					By("Checking row count of table")
 					f.EventuallyCountRow(perconaxtradb.ObjectMeta, dbName, 0).Should(Equal(3))
