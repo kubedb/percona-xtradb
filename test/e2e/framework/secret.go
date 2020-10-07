@@ -23,7 +23,7 @@ import (
 	"os"
 	"time"
 
-	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha2"
 
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/log"
