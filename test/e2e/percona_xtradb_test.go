@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"os"
 
-	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
-	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha2"
+	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha2/util"
 	"kubedb.dev/percona-xtradb/test/e2e/framework"
 	"kubedb.dev/percona-xtradb/test/e2e/matcher"
 
@@ -823,7 +823,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					testGeneralBehaviour()
 
 					By("Patching EnvVar")
-					_, _, err = util.PatchPerconaXtraDB(context.TODO(), f.ExtClient().KubedbV1alpha1(), perconaxtradb, func(in *api.PerconaXtraDB) *api.PerconaXtraDB {
+					_, _, err = util.PatchPerconaXtraDB(context.TODO(), f.ExtClient().KubedbV1alpha2(), perconaxtradb, func(in *api.PerconaXtraDB) *api.PerconaXtraDB {
 						in.Spec.PodTemplate.Spec.Env = []core.EnvVar{
 							{
 								Name:  MYSQL_DATABASE,
