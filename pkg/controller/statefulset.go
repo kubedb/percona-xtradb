@@ -145,7 +145,7 @@ func (c *Controller) ensurePerconaXtraDB(px *api.PerconaXtraDB) (kutil.VerbType,
 	}
 
 	var monitorContainer core.Container
-	if px.GetMonitoringVendor() == mona.VendorPrometheus {
+	if px.Spec.Monitor != nil && px.Spec.Monitor.Agent.Vendor() == mona.VendorPrometheus {
 		monitorContainer = core.Container{
 			Name: "exporter",
 			Command: []string{
@@ -162,7 +162,7 @@ func (c *Controller) ensurePerconaXtraDB(px *api.PerconaXtraDB) (kutil.VerbType,
 			Image: pxVersion.Spec.Exporter.Image,
 			Ports: []core.ContainerPort{
 				{
-					Name:          api.PrometheusExporterPortName,
+					Name:          mona.PrometheusExporterPortName,
 					Protocol:      core.ProtocolTCP,
 					ContainerPort: px.Spec.Monitor.Prometheus.Exporter.Port,
 				},
@@ -329,7 +329,7 @@ func (c *Controller) ensureStatefulSet(px *api.PerconaXtraDB, opts workloadOptio
 				opts.initContainers,
 			)
 
-			if opts.monitorContainer != nil && px.GetMonitoringVendor() == mona.VendorPrometheus {
+			if opts.monitorContainer != nil && px.Spec.Monitor != nil && px.Spec.Monitor.Agent.Vendor() == mona.VendorPrometheus {
 				in.Spec.Template.Spec.Containers = core_util.UpsertContainer(
 					in.Spec.Template.Spec.Containers, *opts.monitorContainer)
 			}
