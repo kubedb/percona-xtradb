@@ -458,7 +458,7 @@ func completeProvisioning(old api.PerconaXtraDB) api.PerconaXtraDB {
 	old.Status.Conditions = []kmapi.Condition{
 		{
 			Type:   api.DatabaseProvisioned,
-			Status: kmapi.ConditionTrue,
+			Status: core.ConditionTrue,
 		},
 	}
 	return old
