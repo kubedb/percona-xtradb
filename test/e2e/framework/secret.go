@@ -175,7 +175,7 @@ func (f *Framework) UpdateSecret(meta metav1.ObjectMeta, transformer func(core.S
 }
 
 func (f *Framework) GetMySQLRootPassword(px *api.PerconaXtraDB) (string, error) {
-	secret, err := f.kubeClient.CoreV1().Secrets(px.Namespace).Get(context.TODO(), px.Spec.DatabaseSecret.SecretName, metav1.GetOptions{})
+	secret, err := f.kubeClient.CoreV1().Secrets(px.Namespace).Get(context.TODO(), px.Spec.AuthSecret.Name, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

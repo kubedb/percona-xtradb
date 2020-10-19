@@ -443,7 +443,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 				By("Create PerconaXtraDB for initializing from stash")
 				*px = *f.PerconaXtraDBCluster()
 				rs = f.RestoreSessionForCluster(px.ObjectMeta, oldPerconaXtraDB.ObjectMeta, oldPerconaXtraDB.Spec.Replicas)
-				px.Spec.DatabaseSecret = oldPerconaXtraDB.Spec.DatabaseSecret
+				px.Spec.AuthSecret = oldPerconaXtraDB.Spec.AuthSecret
 				px.Spec.Init = &api.InitSpec{
 					WaitForInitialRestore: true,
 				}
