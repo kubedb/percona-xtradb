@@ -369,7 +369,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					By("Create PerconaXtraDB for initializing from stash")
 					*perconaxtradb = *f.PerconaXtraDB()
 					rs = f.RestoreSessionForStandalone(perconaxtradb.ObjectMeta, oldPerconaXtraDB.ObjectMeta)
-					perconaxtradb.Spec.DatabaseSecret = oldPerconaXtraDB.Spec.DatabaseSecret
+					perconaxtradb.Spec.AuthSecret = oldPerconaXtraDB.Spec.AuthSecret
 					perconaxtradb.Spec.Init = &api.InitSpec{
 						WaitForInitialRestore: true,
 					}
@@ -845,15 +845,15 @@ var _ = Describe("PerconaXtraDB", func() {
 			}
 
 			Context("from configMap", func() {
-				var userConfig *core.ConfigMap
+				var userConfig *core.Secret
 
 				BeforeEach(func() {
 					userConfig = f.GetCustomConfig(customConfigs)
 				})
 
 				AfterEach(func() {
-					By("Deleting configMap: " + userConfig.Name)
-					err := f.DeleteConfigMap(userConfig.ObjectMeta)
+					By("Deleting secret: " + userConfig.Name)
+					err := f.DeleteSecret(userConfig.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
 				})
@@ -864,15 +864,11 @@ var _ = Describe("PerconaXtraDB", func() {
 					}
 
 					By("Creating configMap: " + userConfig.Name)
-					err := f.CreateConfigMap(userConfig)
+					err := f.CreateSecret(userConfig)
 					Expect(err).NotTo(HaveOccurred())
 
-					perconaxtradb.Spec.ConfigSource = &core.VolumeSource{
-						ConfigMap: &core.ConfigMapVolumeSource{
-							LocalObjectReference: core.LocalObjectReference{
-								Name: userConfig.Name,
-							},
-						},
+					perconaxtradb.Spec.ConfigSecret = &core.LocalObjectReference{
+						Name: userConfig.Name,
 					}
 
 					// Create PerconaXtraDB

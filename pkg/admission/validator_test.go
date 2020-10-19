@@ -174,7 +174,7 @@ var cases = []struct {
 		false,
 		false,
 	},
-	{"Edit PerconaXtraDB Spec.DatabaseSecret with Existing Secret",
+	{"Edit PerconaXtraDB Spec.AuthSecret with Existing Secret",
 		requestKind,
 		"foo",
 		"default",
@@ -184,7 +184,7 @@ var cases = []struct {
 		false,
 		true,
 	},
-	{"Edit PerconaXtraDB Spec.DatabaseSecret with non Existing Secret",
+	{"Edit PerconaXtraDB Spec.AuthSecret with non Existing Secret",
 		requestKind,
 		"foo",
 		"default",
@@ -368,15 +368,15 @@ func getAwkwardPerconaXtraDB() api.PerconaXtraDB {
 }
 
 func editExistingSecret(old api.PerconaXtraDB) api.PerconaXtraDB {
-	old.Spec.DatabaseSecret = &core.SecretVolumeSource{
-		SecretName: "foo-auth",
+	old.Spec.AuthSecret = &core.LocalObjectReference{
+		Name: "foo-auth",
 	}
 	return old
 }
 
 func editNonExistingSecret(old api.PerconaXtraDB) api.PerconaXtraDB {
-	old.Spec.DatabaseSecret = &core.SecretVolumeSource{
-		SecretName: "foo-auth-fused",
+	old.Spec.AuthSecret = &core.LocalObjectReference{
+		Name: "foo-auth-fused",
 	}
 	return old
 }

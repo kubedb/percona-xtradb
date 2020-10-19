@@ -60,7 +60,7 @@ func (f *Framework) getPerconaXtraDBClient(meta metav1.ObjectMeta, tunnel *portf
 		return nil, err
 	}
 	secretMeta := metav1.ObjectMeta{
-		Name:      px.Spec.DatabaseSecret.SecretName,
+		Name:      px.Spec.AuthSecret.Name,
 		Namespace: px.Namespace,
 	}
 
