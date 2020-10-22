@@ -321,7 +321,7 @@ var cases = []struct {
 		"default",
 		admission.Update,
 		updateInit(completeInitialization(samplePerconaXtraDB())),
-		samplePerconaXtraDB(),
+		completeInitialization(samplePerconaXtraDB()),
 		true,
 		false,
 	},
