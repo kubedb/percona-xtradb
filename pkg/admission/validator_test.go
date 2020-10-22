@@ -37,7 +37,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	clientSetScheme "k8s.io/client-go/kubernetes/scheme"
-	kmapi "kmodules.xyz/client-go/api/v1"
 	"kmodules.xyz/client-go/meta"
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
 )
@@ -321,8 +320,8 @@ var cases = []struct {
 		"foo",
 		"default",
 		admission.Update,
-		updateInit(completeProvisioning(samplePerconaXtraDB())),
-		samplePerconaXtraDB(),
+		updateInit(completeInitialization(samplePerconaXtraDB())),
+		completeInitialization(samplePerconaXtraDB()),
 		true,
 		false,
 	},
@@ -454,13 +453,8 @@ func largerClusterNameThanRecommended() api.PerconaXtraDB {
 	return perconaxtradb
 }
 
-func completeProvisioning(old api.PerconaXtraDB) api.PerconaXtraDB {
-	old.Status.Conditions = []kmapi.Condition{
-		{
-			Type:   api.DatabaseProvisioned,
-			Status: core.ConditionTrue,
-		},
-	}
+func completeInitialization(old api.PerconaXtraDB) api.PerconaXtraDB {
+	old.Spec.Init.Initialized = true
 	return old
 }
 
