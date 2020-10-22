@@ -249,7 +249,7 @@ func ValidatePerconaXtraDB(client kubernetes.Interface, extClient cs.Interface, 
 }
 
 func validateUpdate(obj, oldObj *api.PerconaXtraDB) error {
-	preconditions := getPreconditionFunc(obj)
+	preconditions := getPreconditionFunc(oldObj)
 	_, err := meta_util.CreateStrategicPatch(oldObj, obj, preconditions...)
 	if err != nil {
 		if mergepatch.IsPreconditionFailed(err) {
