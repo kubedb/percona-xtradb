@@ -26,9 +26,9 @@ import (
 	"kubedb.dev/percona-xtradb/test/e2e/framework"
 	"kubedb.dev/percona-xtradb/test/e2e/matcher"
 
-	"github.com/appscode/go/log"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"gomodules.xyz/x/log"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

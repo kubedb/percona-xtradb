@@ -28,8 +28,8 @@ import (
 	pxAdmsn "kubedb.dev/percona-xtradb/pkg/admission"
 	"kubedb.dev/percona-xtradb/pkg/controller"
 
-	"github.com/appscode/go/log"
 	license "go.bytebuilders.dev/license-verifier/kubernetes"
+	"gomodules.xyz/x/log"
 	admission "k8s.io/api/admission/v1beta1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

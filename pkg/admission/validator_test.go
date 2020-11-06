@@ -26,7 +26,7 @@ import (
 	extFake "kubedb.dev/apimachinery/client/clientset/versioned/fake"
 	"kubedb.dev/apimachinery/client/clientset/versioned/scheme"
 
-	"github.com/appscode/go/types"
+	"gomodules.xyz/pointer"
 	admission "k8s.io/api/admission/v1beta1"
 	authenticationV1 "k8s.io/api/authentication/v1"
 	core "k8s.io/api/core/v1"
@@ -342,10 +342,10 @@ func samplePerconaXtraDB() api.PerconaXtraDB {
 		},
 		Spec: api.PerconaXtraDBSpec{
 			Version:     "5.7",
-			Replicas:    types.Int32P(1),
+			Replicas:    pointer.Int32P(1),
 			StorageType: api.StorageTypeDurable,
 			Storage: &core.PersistentVolumeClaimSpec{
-				StorageClassName: types.StringP("standard"),
+				StorageClassName: pointer.StringP("standard"),
 				Resources: core.ResourceRequirements{
 					Requests: core.ResourceList{
 						core.ResourceStorage: resource.MustParse("100Mi"),
@@ -414,7 +414,7 @@ func pauseDatabase(old api.PerconaXtraDB) api.PerconaXtraDB {
 
 func sampleXtraDBClusterContainingInitsript() api.PerconaXtraDB {
 	perconaxtradb := samplePerconaXtraDB()
-	perconaxtradb.Spec.Replicas = types.Int32P(api.PerconaXtraDBDefaultClusterSize)
+	perconaxtradb.Spec.Replicas = pointer.Int32P(api.PerconaXtraDBDefaultClusterSize)
 	perconaxtradb.Spec.Init = &api.InitSpec{
 		Script: &api.ScriptSourceSpec{
 			VolumeSource: core.VolumeSource{
@@ -431,7 +431,7 @@ func sampleXtraDBClusterContainingInitsript() api.PerconaXtraDB {
 
 func sampleValidXtraDBCluster() api.PerconaXtraDB {
 	perconaxtradb := samplePerconaXtraDB()
-	perconaxtradb.Spec.Replicas = types.Int32P(api.PerconaXtraDBDefaultClusterSize)
+	perconaxtradb.Spec.Replicas = pointer.Int32P(api.PerconaXtraDBDefaultClusterSize)
 	if perconaxtradb.Spec.Init != nil {
 		perconaxtradb.Spec.Init.Script = nil
 	}
@@ -441,7 +441,7 @@ func sampleValidXtraDBCluster() api.PerconaXtraDB {
 
 func insufficientNodeReplicas() api.PerconaXtraDB {
 	perconaxtradb := sampleValidXtraDBCluster()
-	perconaxtradb.Spec.Replicas = types.Int32P(2)
+	perconaxtradb.Spec.Replicas = pointer.Int32P(2)
 
 	return perconaxtradb
 }

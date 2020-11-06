@@ -24,14 +24,14 @@ import (
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha2"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha2/util"
 
-	"github.com/appscode/go/crypto/rand"
-	"github.com/appscode/go/types"
-	"github.com/appscode/go/wait"
 	. "github.com/onsi/gomega"
+	"gomodules.xyz/pointer"
+	"gomodules.xyz/x/crypto/rand"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	kutil "kmodules.xyz/client-go"
 	meta_util "kmodules.xyz/client-go/meta"
 )
@@ -51,7 +51,7 @@ func (f *Invocation) PerconaXtraDB() *api.PerconaXtraDB {
 			},
 		},
 		Spec: api.PerconaXtraDBSpec{
-			Replicas:    types.Int32P(1),
+			Replicas:    pointer.Int32P(1),
 			Version:     DBCatalogName,
 			StorageType: api.StorageTypeDurable,
 			Storage: &core.PersistentVolumeClaimSpec{
@@ -60,7 +60,7 @@ func (f *Invocation) PerconaXtraDB() *api.PerconaXtraDB {
 						core.ResourceStorage: resource.MustParse(DBPvcStorageSize),
 					},
 				},
-				StorageClassName: types.StringP(f.StorageClass),
+				StorageClassName: pointer.StringP(f.StorageClass),
 			},
 			TerminationPolicy: api.TerminationPolicyHalt,
 		},
@@ -69,7 +69,7 @@ func (f *Invocation) PerconaXtraDB() *api.PerconaXtraDB {
 
 func (f *Invocation) PerconaXtraDBCluster() *api.PerconaXtraDB {
 	perconaxtradb := f.PerconaXtraDB()
-	perconaxtradb.Spec.Replicas = types.Int32P(api.PerconaXtraDBDefaultClusterSize)
+	perconaxtradb.Spec.Replicas = pointer.Int32P(api.PerconaXtraDBDefaultClusterSize)
 
 	return perconaxtradb
 }
