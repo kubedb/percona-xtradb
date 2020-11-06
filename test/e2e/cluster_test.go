@@ -25,10 +25,10 @@ import (
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha2"
 	"kubedb.dev/percona-xtradb/test/e2e/framework"
 
-	"github.com/appscode/go/log"
-	"github.com/appscode/go/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"gomodules.xyz/pointer"
+	"gomodules.xyz/x/log"
 	corev1 "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -281,7 +281,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 
 				By("Scaling up")
 				px, err = f.PatchPerconaXtraDB(px.ObjectMeta, func(in *api.PerconaXtraDB) *api.PerconaXtraDB {
-					in.Spec.Replicas = types.Int32P(api.PerconaXtraDBDefaultClusterSize + 1)
+					in.Spec.Replicas = pointer.Int32P(api.PerconaXtraDBDefaultClusterSize + 1)
 
 					return in
 				})
@@ -292,7 +292,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 
 				By("Wait for new member to be ready")
 				Expect(f.WaitUntilPodRunningBySelector(
-					px.Namespace, px.OffshootSelectors(), int(types.Int32(px.Spec.Replicas)),
+					px.Namespace, px.OffshootSelectors(), int(pointer.Int32(px.Spec.Replicas)),
 				)).NotTo(HaveOccurred())
 
 				By("Checking status after scaling up")
@@ -311,7 +311,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 
 		Context("Scale down", func() {
 			BeforeEach(func() {
-				px.Spec.Replicas = types.Int32P(4)
+				px.Spec.Replicas = pointer.Int32P(4)
 
 				createAndWaitForRunningPerconaXtraDB()
 				storeWsClusterStats()
@@ -327,7 +327,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 
 				By("Scaling down")
 				px, err = f.PatchPerconaXtraDB(px.ObjectMeta, func(in *api.PerconaXtraDB) *api.PerconaXtraDB {
-					in.Spec.Replicas = types.Int32P(api.PerconaXtraDBDefaultClusterSize)
+					in.Spec.Replicas = pointer.Int32P(api.PerconaXtraDBDefaultClusterSize)
 
 					return in
 				})
@@ -338,7 +338,7 @@ var _ = Describe("PerconaXtraDB cluster Tests", func() {
 
 				By("Wait for new member to be ready")
 				Expect(f.WaitUntilPodRunningBySelector(
-					px.Namespace, px.OffshootSelectors(), int(types.Int32(px.Spec.Replicas)),
+					px.Namespace, px.OffshootSelectors(), int(pointer.Int32(px.Spec.Replicas)),
 				)).NotTo(HaveOccurred())
 
 				By("Checking status after scaling down")
