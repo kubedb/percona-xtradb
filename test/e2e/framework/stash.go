@@ -147,8 +147,8 @@ func (f *Invocation) RestoreSessionForCluster(meta, oldMeta metav1.ObjectMeta, r
 			Name:      meta.Name,
 			Namespace: f.namespace,
 			Labels: map[string]string{
-				"app":                 f.app,
-				api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
+				"app":                  f.app,
+				meta_util.NameLabelKey: api.PerconaXtraDB{}.ResourceFQN(),
 			},
 		},
 		Spec: stashv1beta1.RestoreSessionSpec{
@@ -205,8 +205,8 @@ func (f *Invocation) RestoreSessionForStandalone(meta, oldMeta metav1.ObjectMeta
 			Name:      meta.Name,
 			Namespace: f.namespace,
 			Labels: map[string]string{
-				"app":                 f.app,
-				api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
+				"app":                  f.app,
+				meta_util.NameLabelKey: api.PerconaXtraDB{}.ResourceFQN(),
 			},
 		},
 		Spec: stashv1beta1.RestoreSessionSpec{
