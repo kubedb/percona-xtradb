@@ -202,8 +202,8 @@ func (f *Framework) DeleteSecret(meta metav1.ObjectMeta) error {
 
 func (f *Framework) EventuallyDBSecretCount(meta metav1.ObjectMeta) GomegaAsyncAssertion {
 	labelMap := map[string]string{
-		api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
-		api.LabelDatabaseName: meta.Name,
+		meta_util.NameLabelKey:     api.PerconaXtraDB{}.ResourceFQN(),
+		meta_util.InstanceLabelKey: meta.Name,
 	}
 	labelSelector := labels.SelectorFromSet(labelMap)
 	return Eventually(

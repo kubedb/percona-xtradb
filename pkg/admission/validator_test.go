@@ -38,6 +38,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	clientSetScheme "k8s.io/client-go/kubernetes/scheme"
 	"kmodules.xyz/client-go/meta"
+	meta_util "kmodules.xyz/client-go/meta"
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
 )
 
@@ -337,7 +338,7 @@ func samplePerconaXtraDB() api.PerconaXtraDB {
 			Name:      "foo",
 			Namespace: "default",
 			Labels: map[string]string{
-				api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
+				meta_util.NameLabelKey: api.PerconaXtraDB{}.ResourceFQN(),
 			},
 		},
 		Spec: api.PerconaXtraDBSpec{

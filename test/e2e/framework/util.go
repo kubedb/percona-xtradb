@@ -43,7 +43,7 @@ func (f *Framework) CleanWorkloadLeftOvers() {
 	// delete statefulset
 	if err := f.kubeClient.AppsV1().StatefulSets(f.namespace).DeleteCollection(context.TODO(), meta_util.DeleteInForeground(), metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
-			api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
+			meta_util.NameLabelKey: api.PerconaXtraDB{}.ResourceFQN(),
 		}).String(),
 	}); err != nil && !kerr.IsNotFound(err) {
 		fmt.Printf("error in deletion of Statefulset. Error: %v", err)
@@ -52,7 +52,7 @@ func (f *Framework) CleanWorkloadLeftOvers() {
 	// delete pvc
 	if err := f.kubeClient.CoreV1().PersistentVolumeClaims(f.namespace).DeleteCollection(context.TODO(), meta_util.DeleteInForeground(), metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
-			api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
+			meta_util.NameLabelKey: api.PerconaXtraDB{}.ResourceFQN(),
 		}).String(),
 	}); err != nil && !kerr.IsNotFound(err) {
 		fmt.Printf("error in deletion of PVC. Error: %v", err)
@@ -61,7 +61,7 @@ func (f *Framework) CleanWorkloadLeftOvers() {
 	// delete secret
 	if err := f.kubeClient.CoreV1().Secrets(f.namespace).DeleteCollection(context.TODO(), meta_util.DeleteInForeground(), metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
-			api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
+			meta_util.NameLabelKey: api.PerconaXtraDB{}.ResourceFQN(),
 		}).String(),
 	}); err != nil && !kerr.IsNotFound(err) {
 		fmt.Printf("error in deletion of Secret. Error: %v", err)
@@ -167,8 +167,8 @@ func (f *Framework) EventuallyWipedOut(meta metav1.ObjectMeta) GomegaAsyncAssert
 	return Eventually(
 		func() error {
 			labelMap := map[string]string{
-				api.LabelDatabaseName: meta.Name,
-				api.LabelDatabaseKind: api.ResourceKindPerconaXtraDB,
+				meta_util.NameLabelKey:     api.PerconaXtraDB{}.ResourceFQN(),
+				meta_util.InstanceLabelKey: meta.Name,
 			}
 			labelSelector := labels.SelectorFromSet(labelMap)
 
