@@ -777,7 +777,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					}
 
 					dbName = f.App()
-					perconaxtradb.Spec.PodTemplate.Spec.Container.Env = []core.EnvVar{
+					perconaxtradb.Spec.PodTemplate.Spec.Env = []core.EnvVar{
 						{
 							Name:  MYSQL_DATABASE,
 							Value: dbName,
@@ -794,7 +794,7 @@ var _ = Describe("PerconaXtraDB", func() {
 						Skip(skipMessage)
 					}
 
-					perconaxtradb.Spec.PodTemplate.Spec.Container.Env = []core.EnvVar{
+					perconaxtradb.Spec.PodTemplate.Spec.Env = []core.EnvVar{
 						{
 							Name:  MYSQL_ROOT_PASSWORD,
 							Value: "not@secret",
@@ -813,7 +813,7 @@ var _ = Describe("PerconaXtraDB", func() {
 					}
 
 					dbName = f.App()
-					perconaxtradb.Spec.PodTemplate.Spec.Container.Env = []core.EnvVar{
+					perconaxtradb.Spec.PodTemplate.Spec.Env = []core.EnvVar{
 						{
 							Name:  MYSQL_DATABASE,
 							Value: dbName,
@@ -824,7 +824,7 @@ var _ = Describe("PerconaXtraDB", func() {
 
 					By("Patching EnvVar")
 					_, _, err = util.PatchPerconaXtraDB(context.TODO(), f.ExtClient().KubedbV1alpha2(), perconaxtradb, func(in *api.PerconaXtraDB) *api.PerconaXtraDB {
-						in.Spec.PodTemplate.Spec.Container.Env = []core.EnvVar{
+						in.Spec.PodTemplate.Spec.Env = []core.EnvVar{
 							{
 								Name:  MYSQL_DATABASE,
 								Value: "patched-db",
