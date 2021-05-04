@@ -28,10 +28,10 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"gomodules.xyz/x/log"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 	kmapi "kmodules.xyz/client-go/api/v1"
 	store "kmodules.xyz/objectstore-api/api/v1"
 	stashV1alpha1 "stash.appscode.dev/apimachinery/apis/stash/v1alpha1"
@@ -174,7 +174,7 @@ var _ = Describe("PerconaXtraDB", func() {
 
 	var deleteTestResource = func() {
 		if perconaxtradb == nil {
-			log.Infoln("Skipping cleanup. Reason: PerconaXtraDB object is nil")
+			klog.Infoln("Skipping cleanup. Reason: PerconaXtraDB object is nil")
 			return
 		}
 

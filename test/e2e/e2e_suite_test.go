@@ -18,7 +18,6 @@ package e2e_test
 
 import (
 	"flag"
-	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -57,7 +56,7 @@ var (
 
 func init() {
 	if err := scheme.AddToScheme(clientSetScheme.Scheme); err != nil {
-		log.Println(err)
+		klog.Println(err)
 	}
 
 	flag.StringVar(&kubeconfigPath, "kubeconfig", kubeconfigPath, "Path to kubeconfig file with authorization information (the master location is set by the master flag).")
@@ -104,7 +103,7 @@ var _ = BeforeSuite(func() {
 	stashClient := scs.NewForConfigOrDie(config)
 
 	if err != nil {
-		log.Fatalln(err)
+		klog.Fatalln(err)
 	}
 
 	// Framework

@@ -29,7 +29,6 @@ import (
 	"kubedb.dev/percona-xtradb/pkg/controller"
 
 	license "go.bytebuilders.dev/license-verifier/kubernetes"
-	"gomodules.xyz/x/log"
 	admission "k8s.io/api/admission/v1beta1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,6 +39,7 @@ import (
 	"k8s.io/apiserver/pkg/registry/rest"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 	reg_util "kmodules.xyz/client-go/admissionregistration/v1beta1"
 	dynamic_util "kmodules.xyz/client-go/dynamic"
 	hooks "kmodules.xyz/webhook-runtime/admission/v1beta1"
@@ -57,7 +57,7 @@ var (
 
 func init() {
 	if err := admission.AddToScheme(Scheme); err != nil {
-		log.Infoln(err)
+		klog.Infoln(err)
 	}
 
 	// we need to add the options to empty v1

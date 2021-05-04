@@ -24,11 +24,11 @@ import (
 
 	"github.com/spf13/cobra"
 	"gomodules.xyz/x/flags"
-	"gomodules.xyz/x/log"
 	"gomodules.xyz/x/log/golog"
 	v "gomodules.xyz/x/version"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/klog/v2"
 	"kmodules.xyz/client-go/logs"
 	"kmodules.xyz/client-go/tools/cli"
 	appcatscheme "kmodules.xyz/custom-resources/client/clientset/versioned/scheme"
@@ -44,11 +44,11 @@ func NewRootCmd(version string) *cobra.Command {
 
 			//scheme.AddToScheme(clientsetscheme.Scheme)
 			if err := scheme.AddToScheme(clientsetscheme.Scheme); err != nil {
-				log.Errorln(err)
+				klog.Errorln(err)
 			}
 			//appcatscheme.AddToScheme(clientsetscheme.Scheme)
 			if err := appcatscheme.AddToScheme(clientsetscheme.Scheme); err != nil {
-				log.Errorln(err)
+				klog.Errorln(err)
 			}
 			cli.LoggerOptions = golog.ParseFlags(c.Flags())
 		},
