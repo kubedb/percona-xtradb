@@ -21,7 +21,7 @@ import (
 	"context"
 	"strings"
 
-	shell "github.com/codeskyblue/go-sh"
+	shell "gomodules.xyz/go-sh"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
