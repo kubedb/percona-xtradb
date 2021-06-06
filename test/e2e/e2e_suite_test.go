@@ -30,7 +30,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
-	"gomodules.xyz/kglog"
+	"gomodules.xyz/logs"
 	kext_cs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	clientSetScheme "k8s.io/client-go/kubernetes/scheme"
@@ -57,7 +57,7 @@ var (
 
 func init() {
 	if err := scheme.AddToScheme(clientSetScheme.Scheme); err != nil {
-		klog.Println(err)
+		klog.Infoln(err)
 	}
 
 	flag.StringVar(&kubeconfigPath, "kubeconfig", kubeconfigPath, "Path to kubeconfig file with authorization information (the master location is set by the master flag).")
@@ -78,8 +78,8 @@ var (
 )
 
 func TestE2e(t *testing.T) {
-	kglog.InitLogs()
-	defer kglog.FlushLogs()
+	logs.InitLogs()
+	defer logs.FlushLogs()
 	RegisterFailHandler(Fail)
 	SetDefaultEventuallyTimeout(TIMEOUT)
 
